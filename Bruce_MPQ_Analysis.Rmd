@@ -123,6 +123,7 @@ str(mpq2)
 write.csv(mpq2, here("Data", "2015-2019_MPQ_Data.csv"))
 
 
+#Dom is mean
 
 
 
