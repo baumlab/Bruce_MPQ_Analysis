@@ -1,0 +1,237 @@
+---
+title: "2019_MPQ_Data_Explore"
+author: "Kevin Bruce"
+date: "`r format(Sys.time(),'%d %B, %Y')`"
+output: 
+html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+   
+---
+
+```{r Load Packages & Data, include=FALSE}
+#rm(list=ls())
+#dev.off()
+
+#Load in Packages
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+
+#Load in 2019 MPQ Data as a csv file
+mpq19 <- read.csv(here("Data", "2019_MPQ_Complexity_Data.csv"))
+
+#Load in 2015 & 2017 MPQ Data as csv file
+mpq15.17 <- read.csv(here("Data", "MPQdata_FINAL.csv"))
+
+#Load in MPQ values obtained by KB VS JM at select MPQ's
+mpq_arc <- read.csv(here("Data", "Comparing MPQ sizes and metric changes.csv"))
+mpq_arc
+
+#See the colnames for each dataframe
+colnames(mpq19)
+colnames(mpq15.17)
+
+#Bring Over Collumns that I want to compare
+mpq.jm <- subset(mpq15.17, select=c("Site", "hum_dist_site", "Year", "PPQ","X2D_Area", "rugosity", "terrain_rug","heat_stress", "hum_dist"))
+
+mpq.kb <- subset(mpq19, select=c("Site", "hum_dist_site", "Sample.Year", "PPQ", "SHAPE_Area","X3D.Surface.Area.Complexity", "Avg_terrain_ruggedness..VRM.")) 
+
+
+#Change collumn names in KB Dataframe to match JM Dataframe
+colnames(mpq.kb)[which(names(mpq.kb)== "Sample.Year")] <- "Year" #change capital T to lower case t
+colnames(mpq.kb)[which(names(mpq.kb)== "X3D.Surface.Area.Complexity")] <- "rugosity"
+colnames(mpq.kb)[which(names(mpq.kb)== "Avg_terrain_ruggedness..VRM.")] <- "terrain_rug"
+colnames(mpq.kb)[which(names(mpq.kb)== "SHAPE_Area")] <- "X2D_Area"
+
+#Add human_dist collumn to kb Dataframe
+mpq.kb$hum_dist <- "a"
+
+#Add heat_stress collumn to kb Dataframe
+mpq.kb$heat_stress <- "After"
+
+#Add according values to human dist collumn
+for(i in c(1:nrow(mpq.kb))) {
+  if(mpq.kb$Site[i]=="5") {
+    mpq.kb$hum_dist[i] <- "Very Low"
+  } else if(mpq.kb$Site[i]=="19") {
+    mpq.kb$hum_dist[i] <- "Very Low"
+  } else if(mpq.kb$Site[i]=="15") {
+    mpq.kb$hum_dist[i] <- "Very Low"
+  } else if(mpq.kb$Site[i]=="8") {
+    mpq.kb$hum_dist[i] <- "Medium"
+  } else if(mpq.kb$Site[i]=="34") {
+    mpq.kb$hum_dist[i] <- "Medium"
+  } else if(mpq.kb$Site[i]=="35") {
+   mpq.kb$hum_dist[i] <- "Medium"
+  } else if(mpq.kb$Site[i]=="27") {
+   mpq.kb$hum_dist[i] <- "Very High"
+  } else if(mpq.kb$Site[i]=="30") {
+   mpq.kb$hum_dist[i] <- "Very High"
+  } else if(mpq.kb$Site[i]=="32") {
+    mpq.kb$hum_dist[i] <- "Very High"
+  } else if(mpq.kb$Site[i]=="37") {
+    mpq.kb$hum_dist[i] <- "Very Low"
+  } else if(mpq.kb$Site[i]=="40") {
+    mpq.kb$hum_dist[i] <- "High"
+  } else if(mpq.kb$Site[i]=="3") {
+    mpq.kb$hum_dist[i] <- "Low"
+  }}
+
+
+#Create Unique Col ID to match dataframes to
+mpq.jm$Year.Site <- paste(mpq.jm$Year, mpq.jm$Site, sep=".")
+mpq.kb$Year.Site <- paste(mpq.kb$Year, mpq.kb$Site, sep=".")
+
+
+
+#Merge both files into one dataframe
+mpq <- rbind(mpq.jm,mpq.kb)
+
+#Make Year a factor for plotting ease
+str(mpq$Year)
+mpq$Year <- as.factor(mpq$Year)
+
+#Make PPQ a Character
+str(mpq$PPQ)
+mpq$PPQ <- as.character(mpq$PPQ)
+
+#Only include sites with 3 time point measurements
+mpq2 <- subset(mpq, Site == 5| Site == 15|Site == 19|Site == 27|Site == 30|Site == 32|Site == 8|Site == 34|Site == 35)
+mpq2
+
+#Make Year a factor for plotting ease
+str(mpq2$Year)
+mpq2$Year <- as.factor(mpq2$Year)
+
+#Make PPQ a Character
+str(mpq2$PPQ)
+mpq2$PPQ <- as.character(mpq2$PPQ)
+
+#Make Site a character
+str(mpq2$Site)
+mpq2$Site <- as.character(mpq2$Site)
+
+
+str(mpq2)
+
+#Export Mpq2 dataframe to a csv file
+write.csv(mpq2, here("Data", "2015-2019_MPQ_Data.csv"))
+
+
+
+
+
+
+
+```
+
+```{r Compare KB vs. JM Arc Outputs}
+##################################
+###Comparing KB VS JM ARC Files###
+##################################
+
+#Database:
+mpq_arc
+
+#Create Unique Col ID to match dataframes to
+mpq_arc$Site.Processor <- paste(mpq_arc$Site, mpq_arc$Year, mpq_arc$Processor, sep = ".")
+mpq_arc
+
+#Change collumn names to make easier for plotting
+
+#Change collumn names in KB Dataframe to match JM Dataframe
+colnames(mpq_arc)[which(names(mpq_arc)== "X2D_Area")] <- "PlotArea" #change capital T to lower case t
+colnames(mpq_arc)[which(names(mpq_arc)== "abs_curv")] <- "Curvature" #change capital T to lower case t
+
+
+
+
+
+
+
+
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r Rugosity by Site over time, echo=FALSE}
+ggplot(mpq2, aes(x = Site, y=rugosity)) + ggtitle("Site's with greatest turnover in Rugosity") + geom_boxplot()
+
+ggplot(mpq2, aes(x = Site, y=rugosity, fill = Year)) + ggtitle("Rugosity changes over time at each site") + geom_boxplot()
+
+
+```
+
+```{r Terrain Ruggedness over time by site, echo=FALSE}
+ggplot(mpq2, aes(x = Site, y=terrain_rug)) + ggtitle("Site's with greatest turnover in Terrain Ruggedness over time at each site") + geom_boxplot()
+
+ggplot(mpq2, aes(x = Site, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness changes over time at each site") + geom_boxplot()
+
+```
+
+
+```{r Each MPQ for each site at each time point ,echo=FALSE}
+#Rugosity
+ggplot(mpq2, aes(PPQ, rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
+
+#Terrain Ruggedness
+ggplot(mpq2, aes(PPQ, terrain_rug, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
+
+```
+
+```{r Each MPQ's 2D Surface Area at each time point, echo=FALSE}
+#Each MPQ's 2D Surface Area at each time point.
+ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
+
+
+ggplot(mpq2, aes(x = Site, y= X2D_Area, fill= Year)) + ggtitle("Surface area changes over time") + geom_bar(stat = 'identity')
+
+```
+
+# Plots illustrating KB ArcMap Calculations vs JM's
+## Plot Area Measurements
+```{r Area Measurements, echo=FALSE}
+ggplot(mpq_arc, aes(x= Site.Processor, y= PlotArea)) +  geom_bar(stat = 'identity')
+
+```
+
+## Surface Rugosity
+```{r Rugosity KB vs. JM, echo = FALSE}
+ggplot(mpq_arc, aes(x= Site.Processor, y= rugosity)) +  geom_bar(stat = 'identity')
+
+```
+
+## Terrain Ruggedness
+```{r TR KB Vs. JM, echo=FALSE}
+ggplot(mpq_arc, aes(x= Site.Processor, y= terrain_rug)) +  geom_bar(stat = 'identity')
+
+```
+
+
+## Curvature
+```{r Curvature vallues KB Vs. JM, echo=FALSE}
+ggplot(mpq_arc, aes(x= Site.Processor, y= Curvature)) +  geom_bar(stat = 'identity')
+
+```
+
+
+
+
+
+
+
