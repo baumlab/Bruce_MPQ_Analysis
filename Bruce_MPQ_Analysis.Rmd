@@ -131,7 +131,7 @@ write.csv(mpq2, here("Data", "2015-2019_MPQ_Data.csv"))
 
 ```
 
-```{r Compare KB vs. JM Arc Outputs}
+```{r Compare KB vs. JM Arc Outputs, include=FALSE}
 ##################################
 ###Comparing KB VS JM ARC Files###
 ##################################
@@ -158,75 +158,70 @@ colnames(mpq_arc)[which(names(mpq_arc)== "abs_curv")] <- "Curvature" #change cap
 
 ```
 
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
+# Rugosity values at each site at each time point (averaged)
 ```{r Rugosity by Site over time, echo=FALSE}
-ggplot(mpq2, aes(x = Site, y=rugosity)) + ggtitle("Site's with greatest turnover in Rugosity") + geom_boxplot()
-
+#ggplot(mpq2, aes(x = Site, y=rugosity)) + ggtitle("Site's with greatest turnover in Rugosity") + geom_boxplot()
 ggplot(mpq2, aes(x = Site, y=rugosity, fill = Year)) + ggtitle("Rugosity changes over time at each site") + geom_boxplot()
 
 
 ```
 
+# Terrain Ruggedness at each site at each time point (averaged)
 ```{r Terrain Ruggedness over time by site, echo=FALSE}
-ggplot(mpq2, aes(x = Site, y=terrain_rug)) + ggtitle("Site's with greatest turnover in Terrain Ruggedness over time at each site") + geom_boxplot()
+#ggplot(mpq2, aes(x = Site, y=terrain_rug)) + ggtitle("Site's with greatest turnover in Terrain Ruggedness over time at each site") + geom_boxplot()
 
 ggplot(mpq2, aes(x = Site, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness changes over time at each site") + geom_boxplot()
 
 ```
 
-
-```{r Each MPQ for each site at each time point ,echo=FALSE}
+# Rugosity of each MPQ at each time point
+```{r Each MPQ for each site at each time point, echo=FALSE}
 #Rugosity
 ggplot(mpq2, aes(PPQ, rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
+
+```
+
+# Terrain Ruggedness of each MPQ at each time point
+```{r TR at each site at each time point, echo=FALSE}
 
 #Terrain Ruggedness
 ggplot(mpq2, aes(PPQ, terrain_rug, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
 
 ```
 
-```{r Each MPQ's 2D Surface Area at each time point, echo=FALSE}
+# Surface Area of each MPQ at each time point
+```{r Each MPQs 2D Surface Area at each time point, echo=FALSE}
 #Each MPQ's 2D Surface Area at each time point.
 ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
 
 
-ggplot(mpq2, aes(x = Site, y= X2D_Area, fill= Year)) + ggtitle("Surface area changes over time") + geom_bar(stat = 'identity')
+#ggplot(mpq2, aes(x = Site, y= X2D_Area, fill= Year)) + ggtitle("Surface area changes over time") + geom_bar(stat = 'identity')
 
 ```
 
 # Plots illustrating KB ArcMap Calculations vs JM's
-## Plot Area Measurements
+## Plot 2D Surface Area Comparissons
 ```{r Area Measurements, echo=FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= PlotArea)) +  geom_bar(stat = 'identity')
+ggplot(mpq_arc, aes(x= Site.Processor, y= PlotArea, fill=Processor)) +  geom_bar(stat = 'identity')
 
 ```
 
-## Surface Rugosity
+## Surface Rugosity Comparissons
 ```{r Rugosity KB vs. JM, echo = FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= rugosity)) +  geom_bar(stat = 'identity')
+ggplot(mpq_arc, aes(x= Site.Processor, y= rugosity, fill=Processor)) +  geom_bar(stat = 'identity')
 
 ```
 
-## Terrain Ruggedness
+## Terrain Ruggedness Comparissons
 ```{r TR KB Vs. JM, echo=FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= terrain_rug)) +  geom_bar(stat = 'identity')
+ggplot(mpq_arc, aes(x= Site.Processor, y= terrain_rug, fill=Processor)) +  geom_bar(stat = 'identity')
 
 ```
 
 
-## Curvature
-```{r Curvature vallues KB Vs. JM, echo=FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= Curvature)) +  geom_bar(stat = 'identity')
+## Curvature Comparisons
+```{r Curvature values KB Vs. JM, echo=FALSE}
+ggplot(mpq_arc, aes(x= Site.Processor, y= Curvature, fill=Processor)) +  geom_bar(stat = 'identity')
 
 ```
 
