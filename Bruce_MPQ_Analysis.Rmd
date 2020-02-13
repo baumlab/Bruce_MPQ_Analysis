@@ -140,9 +140,11 @@ write.csv(mpq2, here("Data", "2015-2019_MPQ_Data.csv"))
 mpq_arc
 
 #Create Unique Col ID to match dataframes to
-mpq_arc$Site.Processor <- paste(mpq_arc$Site, mpq_arc$Year, mpq_arc$Processor, sep = ".")
+mpq_arc$Processor.Year <- paste(mpq_arc$Year, mpq_arc$Processor, sep = ".")
 mpq_arc
 
+mpq_arc$Site.PPQ <- paste(mpq_arc$Site, mpq_arc$PPQ, sep = ".")
+mpq_arc
 #Change collumn names to make easier for plotting
 
 #Change collumn names in KB Dataframe to match JM Dataframe
@@ -202,26 +204,26 @@ ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Si
 # Plots illustrating KB ArcMap Calculations vs JM's
 ## Plot 2D Surface Area Comparissons
 ```{r Area Measurements, echo=FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= PlotArea, fill=Processor)) +  geom_bar(stat = 'identity')
+ggplot(mpq_arc, aes(x= Processor.Year, y= PlotArea, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
 
 ```
 
 ## Surface Rugosity Comparissons
 ```{r Rugosity KB vs. JM, echo = FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= rugosity, fill=Processor)) +  geom_bar(stat = 'identity')
+ggplot(mpq_arc, aes(x= Processor.Year, y= rugosity, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
 
 ```
 
 ## Terrain Ruggedness Comparissons
 ```{r TR KB Vs. JM, echo=FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= terrain_rug, fill=Processor)) +  geom_bar(stat = 'identity')
+ggplot(mpq_arc, aes(x= Processor.Year, y= terrain_rug, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
 
 ```
 
 
 ## Curvature Comparisons
 ```{r Curvature values KB Vs. JM, echo=FALSE}
-ggplot(mpq_arc, aes(x= Site.Processor, y= Curvature, fill=Processor)) +  geom_bar(stat = 'identity')
+ggplot(mpq_arc, aes(x= Processor.Year, y= Curvature, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
 
 ```
 
