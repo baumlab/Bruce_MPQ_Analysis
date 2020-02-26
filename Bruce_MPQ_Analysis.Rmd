@@ -1,12 +1,12 @@
 ---
-title: "2019_MPQ_Data_Explore"
-author: "Kevin Bruce"
+title: "Kiritimati MPQ Data Exploration"
+author: "Kevin Bruce, John Burns, Jenn Magel, & Julia Baum"
 date: "`r format(Sys.time(),'%d %B, %Y')`"
 output: 
-html_document:
-    toc: true
-    toc_float: true
-    toc_depth: 3
+  html_document:
+    toc: yes
+    toc_depth: 2
+    toc_float: yes 
    
 ---
 
@@ -21,6 +21,8 @@ library(stats)
 library(Rmisc)
 library(here)
 library(ggpmisc)
+library(knitr)
+library(magick)
 
 #Load in 2019 MPQ Data as a csv file
 mpq19 <- read.csv(here("Data", "2019_MPQ_Complexity_Data.csv"))
@@ -119,25 +121,20 @@ mpq2$PPQ <- as.character(mpq2$PPQ)
 str(mpq2$Site)
 mpq2$Site <- as.character(mpq2$Site)
 
+#Change the order of human disturbance levels for the plots
+levels(mpq2$hum_dist)
+mpq2$hum_dist <- factor(mpq2$hum_dist, levels = c("Very Low", "Low", "Medium", "High", "Very High" ))
 
-str(mpq2)
+
+#Change the order of human disturbance levels for the Site level plots
+levels(mpq2$hum_dist_site)
+mpq2$hum_dist_site <- factor(mpq2$hum_dist_site, levels = c("VL1", "VL2", "VL3", "VL4", "L1", "M1", "M2", "M3", "H1", "VH1", "VH2", "VH3"))
+
+
 
 #Export Mpq2 dataframe to a csv file
 write.csv(mpq2, here("Data", "2015-2019_MPQ_Data.csv"))
 
-
-
-
-
-
-
-
-```
-
-```{r Compare KB vs. JM Arc Outputs, include=FALSE}
-##################################
-###Comparing KB VS JM ARC Files###
-##################################
 
 #Database:
 mpq_arc
@@ -154,122 +151,247 @@ mpq_arc
 colnames(mpq_arc)[which(names(mpq_arc)== "X2D_Area")] <- "PlotArea" #change capital T to lower case t
 colnames(mpq_arc)[which(names(mpq_arc)== "abs_curv")] <- "Curvature" #change capital T to lower case t
 
+```
 
 
+## Introduction 
+Kiritimati Research Project- MPQ rugosity analyses 2015 - 2019
+
+This document is for the MPQ data collected on Kiritimati to look at rugosity changes that occur on reefs following a mass mortality event.
+
+The plots below show a view of the data across different spatial and temporal scales. We will start by looking at the data braodly before zooming in to specific MPQ fluctuations over time. 
+
+It is important to note that Sites 15 and 19 (both within the Very Low disturbance category) were unable to be sampled in 2019 due to weather, however Site 37 in Vaskess Bay was accessible and used as a Very Low site (VL4) along with Site 5 (VL3).
+
+For reference, here is the map of Kiritimati listing the sites that I plan to use for the manuscript. Sites H1, H2, and L1 haven't been used in these analyses as there is no Agisoft Model created to compare yet. (all will be compared to levels post-El Niño). 
 
 
-
-
+```{r map, echo=FALSE, fig.height=11, fig.width=7, fig.align="center"}
+map <- image_read("Map/KI_map_sites_villages_inset_KB_MSc_Ch1.png")
+map
 
 ```
 
-# Rugosity values at each site at each time point (averaged)
+
+
+
+## Year level
+The three rugosity metrics are averaged to the year level, showing each metric's changes across the three time points. 
+
+### Rugosity 
+```{r Rugosity by year, echo=FALSE}
+ggplot(mpq2, aes(x = Year, y=rugosity)) + ggtitle("Surface Rugosity by Year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+```{r Rug by year Presentation graph, eval=FALSE, include=FALSE}
+ggplot(mpq2, aes(x = Year, y=rugosity)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),  
+        #legend.position=c(0.15, 0.89), 
+        plot.background=element_blank(), 
+        panel.background = element_blank() ,
+        axis.text = element_text(color="black", size = 18), 
+        axis.ticks=element_line(color = "black"),axis.ticks.length = unit(0.2, "cm"), axis.line = element_line(color = "black"), 
+        axis.title = element_text(color = "black", size = 26))
+```
+
+There as a large decline between 2015 and 2017, however it appears to level out when comparing 2017 and 2019.
+
+### Terrain Ruggedness
+```{r TR/yr, echo=FALSE}
+ggplot(mpq2, aes(x = Year, y=terrain_rug)) + ggtitle("Terrain Ruggedness by Year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+```
+
+```{r TR by year Presentation graph, eval=FALSE, include=FALSE}
+ggplot(mpq2, aes(x = Year, y=terrain_rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),  
+        #legend.position=c(0.15, 0.89), 
+        plot.background=element_blank(), 
+        panel.background = element_blank() ,
+        axis.text = element_text(color="black", size = 18), 
+        axis.ticks=element_line(color = "black"),axis.ticks.length = unit(0.2, "cm"), axis.line = element_line(color = "black"), 
+        axis.title = element_text(color = "black", size = 26))
+```
+
+
+Similar results that were seen with surface rugosity, to rugosity, however it seems that Terrain Ruggedness slightly increases from its lowest point in 2017. Any ideas what could cause that?
+
+### Curvature
+```{r Abs_curv/yr, echo=FALSE}
+ggplot(mpq2, aes(x = Year, y=abs_curv)) + ggtitle("Absolute Curvature by year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+Similar to the previous two plots, curvature appers to stay the same between 2017 and 2019, although 2019 has the highest variability between all three sampling periods. 
+
+
+## Disturbance gradient level
+The three rugosity metrics are now averaged by disturbance gradient, which in this case has 3 levels: Very Low, Medium, Very High. These levels are pre-determined by previous publications taking into effect the fishing pressure and distance from the human populous.
+
+It's worth noting that the very low sites from 2019 include only 1 that was sampled in 2015 and 2017, with another that was new that year. We were unable to get to two of the sites (VL1 and VL2) in 2019 due to weather. 
+
+### Rugosity
+```{r rug by dist.lvl, echo=FALSE}
+ggplot(mpq2, aes(x = hum_dist, y=rugosity, fill = Year)) + ggtitle("Surface rugosity by human disturbance gradient") + geom_boxplot() + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+```{r rug by dist.lvl for presentation, eval=FALSE, include=FALSE}
+ggplot(mpq2, aes(x = hum_dist, y=rugosity, fill = Year)) +  geom_boxplot() + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),  
+        #legend.position=c(0.15, 0.89), 
+        plot.background=element_blank(), 
+        panel.background = element_blank() ,
+        axis.text = element_text(color="black", size = 18), 
+        axis.ticks=element_line(color = "black"),axis.ticks.length = unit(0.2, "cm"), axis.line = element_line(color = "black"), axis.title = element_text(color = "black", size = 26))
+
+```
+
+Results show a similar trend to what we witnessed earlier when looking at the metrics by year, in that 2017 and 2019 values appear relatively similar, or even with 2019 values slightly increased. The medium sites appear to be driving the overall increase seen in 2019, with both the Very Low and Very High sites experiencing similar values to the 2017 value. 
+
+### Terrain Ruggedness
+```{r TR/hum, echo=FALSE}
+ggplot(mpq2, aes(x = hum_dist, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness by fishing disturbance") + geom_boxplot() + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+```{r TR by dist.lvl for presentation, eval=FALSE, include=FALSE}
+ggplot(mpq2, aes(x = hum_dist, y=terrain_rug, fill = Year)) +  geom_boxplot() + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),  
+        #legend.position=c(0.15, 0.89), 
+        plot.background=element_blank(), 
+        panel.background = element_blank() ,
+        axis.text = element_text(color="black", size = 18), 
+        axis.ticks=element_line(color = "black"),axis.ticks.length = unit(0.2, "cm"), axis.line = element_line(color = "black"), axis.title = element_text(color = "black", size = 26))
+
+```
+Here we actually see all 3 human disturbance gradients actually experienced an increase in Terrain ruggedness in 2019 vs 2017. Is it possible to keep the structure intact and increase TR? TR = grooves and valleys of the surface, so does this potentially mean that there are more of these appearing on the reef?
+
+### Curvature
+```{r Curv/Human, echo=FALSE}
+ggplot(mpq2, aes(x = hum_dist, y=abs_curv, fill = Year)) + ggtitle("Curvature by fishing disturbance") + geom_boxplot()+ theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Disturbance Level") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+```
+
+Huge variation in the 2019 medium disturabnce gardient, with very high experiencing expected curvature values. Very low experienced an increase in curvature values in 2019 to even pre-El nino levels, however site differences may play a role on this one too. 
+
+
+
+
+
+
+
+## Site level
+Here I averaged the rugosity metrics by site for each time point sampled. At this level, declines from 2015 to 2017 were noted as in JM's paper, but many of the 2019 values seem to increase. Unsure what is going on?
+
+### Rugosity
 ```{r Rugosity by Site over time, echo=FALSE}
-#ggplot(mpq2, aes(x = Site, y=rugosity)) + ggtitle("Site's with greatest turnover in Rugosity") + geom_boxplot()
-ggplot(mpq2, aes(x = Site, y=rugosity, fill = Year)) + ggtitle("Rugosity changes over time at each site") + geom_boxplot()
-
+ggplot(mpq2, aes(x = hum_dist_site, y=rugosity, fill = Year)) + ggtitle("Rugosity changes over time at each site") + geom_boxplot()+ theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ```
 
-# Terrain Ruggedness at each site at each time point (averaged)
+
+Some sites are experiencing increases in surface rugosity to levels even higher than in 2015 (Ex: Site VH2) with many others having larger values than in 2017 (Ex: VL3, M2). These discrepencies span across the disturbance gradient as well. 
+
+
+### Terrain Ruggedness
 ```{r Terrain Ruggedness over time by site, echo=FALSE}
-#ggplot(mpq2, aes(x = Site, y=terrain_rug)) + ggtitle("Site's with greatest turnover in Terrain Ruggedness over time at each site") + geom_boxplot()
-
-ggplot(mpq2, aes(x = Site, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness changes over time at each site") + geom_boxplot()
-
-```
-
-# Curvature at each site at each time point (averaged)
-```{r curvature at each site and time period}
-ggplot(mpq2, aes(x = Site, y=abs_curv, fill = Year)) + ggtitle("Absolute Curvature changes over time at each site") + geom_boxplot()
-
-
+ggplot(mpq2, aes(x = hum_dist_site, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness changes over time at each site") + geom_boxplot() + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 ```
 
 
-# Rugosity of each MPQ at each time point
+Same as surface rugosity notes, with site VH2 still having larger TR values in 2019 than in 2015. 
+
+### Curvature
+```{r curvature at each site and time period, echo=FALSE}
+ggplot(mpq2, aes(x = hum_dist_site, y=abs_curv, fill = Year)) + ggtitle("Absolute Curvature changes over time at each site") + geom_boxplot() + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Site") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+
+Curvature is a bit of an oddball, as a it appears the variation between sites is huge (very long boxplots), with sites VL3 and M2 having larger values in 2019 than in 2015. Doesn't seem to be a discernable pattern here that I can tell. 
+
+
+
+## MPQ level
+The rugosity metrics are brought down to the MPQ level, with metric values at each of the three time points the MPQ's were sampled. Sites 15 and 19 were unable to be reached (due to weather) in 2019, hence the two time points shown.
+
+### Rugosity 
 ```{r Each MPQ for each site at each time point, echo=FALSE}
-#Rugosity
-ggplot(mpq2, aes(PPQ, rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
+ggplot(mpq2, aes(PPQ, rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~hum_dist_site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ```
 
-# Terrain Ruggedness of each MPQ at each time point
+For a few sites and mpq's, rugosity has declined, or stayed stable since 2017 [as expected] but, for some MPQ's and sites, rugosity seems to increase to 2015 levels or even exceeding them. Eg: Site 32. Not sure how this could be the case? 
+
+
+
+### Terrain Ruggedness
 ```{r TR at each site at each time point, echo=FALSE}
+ggplot(mpq2, aes(PPQ, terrain_rug, colour = Year)) + geom_boxplot() +facet_wrap(~hum_dist_site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
 
-#Terrain Ruggedness
-ggplot(mpq2, aes(PPQ, terrain_rug, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
+Similar issue to Rugosity at the mpq level, some sites are higher in 2019 than in 2017, with site 30 MPQ3 even higher than pre-el Nino in 2015. Site 32 as a whole experienced this, but we are looking at the orthos for each plot to see if we can visually see a difference (hypothesis is that this high disturbance sites have lots of loose abiotic material movement throughout the year)
+
+### Curvature
+```{r curvature at each mpq, echo=FALSE}
+ggplot(mpq2, aes(PPQ, abs_curv, colour = Year)) + geom_boxplot() +facet_wrap(~hum_dist_site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ```
 
-# Curvature at each MPQ at each time point
-``` {r curvature at each mpq}
-ggplot(mpq2, aes(PPQ, abs_curv, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
 
-```
+Similar problem, except here its site 35 MPQ 1 & 2, Site 5 MPQ1 that have their highest curvature vales in 2019. Why? 
 
-# Surface Area of each MPQ at each time point
+
+
+
+## Surface Area of each MPQ at each time point
+Could the different values we are getting over the 3 time points be because we are not exactly photographing the same area, despite the steel stakes being there? Divers did the best they could in ensuring the location of new, replacement stakes from 2016 onwards were located in the same area as the intial stake, but given these results, it appears they weren't as sucessful as hoped. 
+
 ```{r Each MPQs 2D Surface Area at each time point, echo=FALSE}
-#Each MPQ's 2D Surface Area at each time point.
-ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3)
-
-
-#ggplot(mpq2, aes(x = Site, y= X2D_Area, fill= Year)) + ggtitle("Surface area changes over time") + geom_bar(stat = 'identity')
-
+ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("2D Plot Surface Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 ```
 
+In theory, the MPQ's should all be the same (~16m2 in area), however you can see that there is large amounts of variability between sample time points. This could potentially account for some of the variability that we are seeing in the previous rugosity measurements, however I'm not really sure where to go from here. Any idea how to fix this or experience with this in the past? 
 
 
 
+## ArcMap output comparissons
+These plots were done to make sure the differences we were seeing in rugosity, TR, and cuvature weren't different due to user error. KB compared the same 3 sites Surface Rugosity and Terrain Ruggedness values to those reported by JM and found that his values were very similar to hers.
 
-
-
-
-
-# Looking at plan and pro curvature at each site
-```{r pro and plan curvature values, echo=FALSE}
-# mpq19
-# 
-# ggplot(mpq19, aes(x=Site, y=Pro.Curv.JM.style)) + geom_bar(stat = 'identity')
-# 
-# colnames(mpq19)
-# 
-# #try to model after this stle of graph. 
-# ggplot(mpq_arc, aes(x= Processor.Year, y= PlotArea, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
-
-```
-
-
-
-# Plots illustrating KB ArcMap Calculations vs JM's
-## Plot 2D Surface Area Comparissons
-```{r Area Measurements, echo=FALSE}
-ggplot(mpq_arc, aes(x= Processor.Year, y= PlotArea, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
-
-```
-
-## Surface Rugosity Comparissons
+### Rugosity 
 ```{r Rugosity KB vs. JM, echo = FALSE}
-ggplot(mpq_arc, aes(x= Processor.Year, y= rugosity, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
+ggplot(mpq_arc, aes(x= Processor.Year, y= rugosity, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) + xlab("Year and Processor") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ```
 
-## Terrain Ruggedness Comparissons
+KB and JM's values are close enough at the three sites to ensure they were calculating this metric the same way.
+
+### Terrain Ruggedness
 ```{r TR KB Vs. JM, echo=FALSE}
-ggplot(mpq_arc, aes(x= Processor.Year, y= terrain_rug, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
+ggplot(mpq_arc, aes(x= Processor.Year, y= terrain_rug, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) + xlab("Year and Processor") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
 
 ```
 
+Similar to Surface Rugosity, values are consistent between processor indicating the same methodology was used. 
 
-## Curvature Comparisons
+### Curvature
 ```{r Curvature values KB Vs. JM, echo=FALSE}
-ggplot(mpq_arc, aes(x= Processor.Year, y= Curvature, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ)
+ggplot(mpq_arc, aes(x= Processor.Year, y= Curvature, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) + xlab("Year and Processor") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
 
 ```
 
+Curvature values are close, but also not as similar as the previous two metrics. Unsure as to what is causing these discrepencies. Additionally, while these values align with similar values to what JM has received, they are not what ArcMAP help uses to describe Curvature. Is there a way that we can scale these where we are able to set the range of values to a range used in other publicized studies, from say -1 to 1? 
+
+Values may be slightly off as KB analyzed his plot area from the base of the metal stakes, whereas JM analyzed her plots from the centre of the reflectors. 
 
 
 
+## Plot 2D Surface Area Comparissons
+While those values are similar, the area of each plot is different between processors as KB went to the base of the metal stakes and JM went to the centre of the reflectors, as shown below by the differing areas of the plots. 
 
+```{r Area Measurements, echo=FALSE}
+ggplot(mpq_arc, aes(x= Processor.Year, y= PlotArea, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) +  xlab("Year and Processor") + ylab("2D Plot Surface Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
+```
 
+This plot highlights the differences in plot area that occur based on where the corners of the plot are digitized in ArcMap. JM's digitized vertices were located on the reflectors while KB's are at the base of the metal stakes. Is it a big enough difference to warrant redoing all of 2015 and 2017 data to keep consistent?
+
+## Future work
+1. Potentially look at how the planiform and profile curavtures differ across time points? I was reading that profile curvature affects the acceleration and deceleration fo flow ==> Perhaps higher plots experiencing higher values of this will experience faster erosion rates?
+
+2. At a conference I just attended, a post-doc inquired whether Ocean Acidification could play a role on this. Perhaps it is eroding the rock and opening up more of those "nooks and crannies", thereby enabling the TR values to increase?
