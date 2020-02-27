@@ -5,8 +5,8 @@ date: "`r format(Sys.time(),'%d %B, %Y')`"
 output:
   html_document:
     toc: yes
-    toc_float: true
     toc_depth: 3
+    toc_float: yes
 ---
 
 ```{r Load Packages & Data, include=FALSE}
