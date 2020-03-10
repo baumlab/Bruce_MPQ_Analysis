@@ -22,6 +22,9 @@ library(here)
 library(ggpmisc)
 library(knitr)
 library(magick)
+library(gridExtra)
+
+
 
 #Load in 2019 MPQ Data as a csv file
 mpq19 <- read.csv(here("Data", "2019_MPQ_Complexity_Data.csv"))
@@ -32,6 +35,16 @@ mpq15.17 <- read.csv(here("Data", "MPQdata_FINAL.csv"))
 #Load in MPQ values obtained by KB VS JM at select MPQ's
 mpq_arc <- read.csv(here("Data", "Comparing MPQ sizes and metric changes.csv"))
 mpq_arc
+
+#Load in DEM at different scales dataframe
+dem <- read.csv(here("Data", "Differing DEM's.csv"))
+
+#Load in stakes worksheet
+stakes <- read.csv(here("Data", "Stake Changes.csv"))
+
+#Load in 2d area round 2 where I tried to get as close as possible to one another
+surface <- read.csv(here("Data", "2dSA.csv"))
+
 
 #See the colnames for each dataframe
 colnames(mpq19)
@@ -48,6 +61,9 @@ colnames(mpq.kb)[which(names(mpq.kb)== "X3D.Surface.Area.Complexity")] <- "rugos
 colnames(mpq.kb)[which(names(mpq.kb)== "Avg_terrain_ruggedness..VRM.")] <- "terrain_rug"
 colnames(mpq.kb)[which(names(mpq.kb)== "SHAPE_Area")] <- "X2D_Area"
 colnames(mpq.kb)[which(names(mpq.kb)== "Curvature.JM.style")] <- "curvature"
+
+#Rename collumn name in dem dataframe
+colnames(dem)[which(names(dem)== "DEM_Scale..cm.")] <- "DEM.scale"
 
 
 #Add human_dist collumn to kb Dataframe
@@ -143,16 +159,95 @@ mpq_arc$Processor.Year <- paste(mpq_arc$Year, mpq_arc$Processor, sep = ".")
 mpq_arc
 
 mpq_arc$Site.PPQ <- paste(mpq_arc$Site, mpq_arc$PPQ, sep = ".")
-mpq_arc
+str(mpq_arc)
+
 #Change collumn names to make easier for plotting
 
 #Change collumn names in KB Dataframe to match JM Dataframe
 colnames(mpq_arc)[which(names(mpq_arc)== "X2D_Area")] <- "PlotArea" #change capital T to lower case t
 colnames(mpq_arc)[which(names(mpq_arc)== "abs_curv")] <- "Curvature" #change capital T to lower case t
 
+
+
+#Database:
+dem
+
+#Make DEM Scale a factor 
+dem$DEM.scale <- as.character(dem$DEM.scale)
+
+#In the DEM dataframe, add a collumn for hum.dist
+dem$hum_dist <- "a"
+
+#Add according values to human dist collumn
+for(i in c(1:nrow(dem))) {
+  if(dem$Site[i]=="5") {
+    dem$hum_dist[i] <- "VL3"
+  } else if(dem$Site[i]=="27") {
+    dem$hum_dist[i] <- "VH1"
+  } else if(dem$Site[i]=="35") {
+    dem$hum_dist[i] <- "M2"
+  }}
+
+str(dem)
+
+
+
+#Create a unique collumn for hum_dist and PPQ
+dem$site.ppq <- paste(dem$hum_dist, dem$PPQ, sep = ".")
+
+
+#Change the order of human disturbance levels for the Site level plots
+levels(dem$hum_dist)
+dem$site.ppq <- factor(dem$site.ppq, levels = c("VL3.1", "VL3.2", "M2.1", "M2.2","VH1.1", "VH1.2"))
+
+
+##Stakes dataframe##
+colnames(stakes)
+
+#Change collumn names in stakes 
+colnames(stakes)[which(names(stakes)== "X..of.new.stakes.2017...2019.")] <- "stakes.lost" 
+
+levels(stakes$hum_dist)
+stakes$hum_dist <- factor(stakes$hum_dist, levels = c("VL","M","H","VH"))
+
+##2d surface area changes dataframe##
+surface.area <- subset(surface, select=c("Year", "Site", "PPQ", "SHAPE_Area"))
+  
+colnames(surface)
+
+#only include 2017 and 2019 years
+surface.area <- subset(surface.area, Year == 2017| Year == 2019)
+
+#Change the structure of some of the collumns in the surface.area dataframe
+str(surface.area)
+surface.area$Year <- as.factor(surface.area$Year)
+surface.area$PPQ <- as.factor(surface.area$PPQ)
+
+#Create a unique collumn for Year and PPQ
+surface.area$Year.PPQ <- paste(surface.area$Year, surface.area$PPQ, sep = ".")
+
+
+
+##For the followup results removing a few sites
+#Create new dataframe to then delete out specific sites
+mpq3 <- mpq2
+
+#Create new collumn to 
+mpq3$site.ppq <- paste(mpq3$hum_dist_site, mpq3$PPQ, sep = ".")
+mpq3
+
+#Only include certain ppq's in the new dataframe (exclude: VH2 PPQ 1,2,3; VH3 PPQ3; M1 PPQ2 (for Rugosity), and also VH1 PPQ2; M2 PPQ3 for Terrain Ruggedness)
+
+ilike <- c("VL3.1" ,"VL3.2", "VL3.3" ,"M1.1" , "M1.3",  "VL1.1", "VL1.2" ,"VL1.3" ,"VL2.2", "VL2.3", "VH1.1", "VH1.3" ,"VH3.1", "VH3.2" ,"M3.1",  "M3.2" , "M3.3" , "M2.1" , "M2.2")
+  
+
+mpq4 <- subset(mpq3, site.ppq %in% ilike)
+
+
+
 ```
 
-
+# Initial Data sent to JB on Feb 26, 2020
 ## Introduction 
 Kiritimati Research Project- PPQ rugosity analyses 2015 - 2019
 
@@ -342,8 +437,8 @@ Similar problem, except here its site 35 PPQ 1 & 2, Site 5 PPQ1 that have their 
 ## Surface Area of each PPQ at each time point
 Could the different values we are getting over the 3 time points be because we are not exactly photographing the same area, despite the steel stakes being there? Divers did the best they could in ensuring the location of new, replacement stakes from 2016 onwards were located in the same area as the intial stake, but given these results, it appears they weren't as sucessful as hoped. 
 
-Values may be slightly off as KB analyzed his plot area from the base of the metal stakes, whereas JM analyzed her plots from the centre of the reflectors. 
 
+Here is the plot area of all plots, showing how they change over time.
 
 ```{r Each PPQs 2D Surface Area at each time point, echo=FALSE}
 ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("2D Plot Surface Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
@@ -351,6 +446,16 @@ ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Si
 
 In theory, the PPQ's should all be the same (~16m2 in area), however you can see that there is large amounts of variability between sample time points. This could potentially account for some of the variability that we are seeing in the previous rugosity measurements, however I'm not really sure where to go from here. Any idea how to fix this or experience with this in the past? 
 
+
+## Plot 2D Surface Area Comparissons
+While those values are similar, the area of each plot is different between processors as KB went to the base of the metal stakes and JM went to the centre of the reflectors, as shown below by the differing areas of the plots. 
+
+```{r Area Measurements, echo=FALSE}
+ggplot(mpq_arc, aes(x= Processor.Year, y= PlotArea, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) +  xlab("Year and Processor") + ylab("2D Plot Surface Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+This plot highlights the differences in plot area that occur based on where the corners of the plot are digitized in ArcMap. JM's digitized vertices were located on the reflectors while KB's are at the base of the metal stakes. In conclusion, KB should redo JM's plots form 2015 and 2017 to have the plot vertices at the base of the metal stakes vs the reflectors.
 
 
 ## ArcMap output comparissons
@@ -378,25 +483,174 @@ Values appear consistent between processor, however with rugosity being differen
 ggplot(mpq_arc, aes(x= Processor.Year, y= Curvature, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) + xlab("Year and Processor") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
+ggplot(mpq_arc, aes(x= Processor.Year, y= rugosity, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) + xlab("Year and Processor") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + theme(plot.title = element_text(size=22))
+
 ```
 
 Similar to rugosity results, where the differences between measurements are too high to use JM's values from her results. Unsure as to what is causing these discrepencies. Additionally, while these values align with similar values to what JM has received, they are not what ArcMAP help uses to describe Curvature. Is there a way that we can scale these where we are able to set the range of values to a range used in other publicized studies, from say -1 to 1? 
 
 
 
-
-## Plot 2D Surface Area Comparissons
-While those values are similar, the area of each plot is different between processors as KB went to the base of the metal stakes and JM went to the centre of the reflectors, as shown below by the differing areas of the plots. 
-
-```{r Area Measurements, echo=FALSE}
-ggplot(mpq_arc, aes(x= Processor.Year, y= PlotArea, fill=Processor.Year)) +  geom_bar(stat = 'identity') + facet_grid(~Site.PPQ) +  xlab("Year and Processor") + ylab("2D Plot Surface Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-```
-
-This plot highlights the differences in plot area that occur based on where the corners of the plot are digitized in ArcMap. JM's digitized vertices were located on the reflectors while KB's are at the base of the metal stakes. In conclusion, KB should redo JM's plots form 2015 and 2017 to have the plot vertices at the base of the metal stakes vs the reflectors.
-
-
 ## Future work
 1. Potentially look at how the planiform and profile curavtures differ across time points? I was reading that profile curvature affects the acceleration and deceleration fo flow ==> Perhaps higher plots experiencing higher values of this will experience faster erosion rates?
 
 2. At a conference I just attended, a post-doc inquired whether Ocean Acidification could play a role on this. Perhaps it is eroding the rock and opening up more of those "nooks and crannies", thereby enabling the TR values to increase?
+
+
+
+--------------------------------------------
+# Follow-up to JB's response
+
+John replied on March 2, 2020 with questions regarding the preliminary results sent out (my findings I list directly below the question)
+
+
+
+**1. Am I noticing any algae growth or calcifying animals (ex: CCA) in the 2019 plots?**
+
+Nothing significant. If anything, there are large matts of macroalgae within the 2017 plots that have dissappeared mostly in the 2019 plots, so shouldn't the values decrease?
+
+
+**2. Can you confidently assess the plot areas visually by looking at the mosaics?**
+
+For some of the sites, with the stakes located staying consistent between timepoints (IE: no stakes were replaced between two years), it is possible however there is still minute observor error in arcmap as the placement of the vertices obviously isn't the same (as shown in the graph below). With the Agisoft files from John, this will hopefully be negated as you can filter photos by points and place the vertice at the base of the stake as closely as possible, however there will still be some variation in overall size involved.
+
+
+```{r Differing Surface areas between timepoints, echo=FALSE}
+ggplot(surface.area, aes(Year.PPQ, SHAPE_Area, fill=Year.PPQ)) + geom_col() + facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("Year & PPQ") + ylab("2D Plot Surface Area") + theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + theme(plot.title = element_text(size=22))
+```
+
+
+However, sites in the very high human disturbance levels experienced the most stakes removed between 2017 and 2019, so replicating this evenly across all PPQ's will be very difficult (or impossible in sites there 3 of the stakes needed to be replaced in 2019)
+
+```{r stakes lost, echo=FALSE}
+ggplot(stakes, aes(x= hum_dist, y= stakes.lost, fill = hum_dist)) + geom_bar(stat = 'identity') +  xlab("Human Disturbance Gradient") + ylab("Stakes Lost between 2017 - 2019")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+```
+
+
+You can see the amount of abiotic rubble that moves between years in the below image. 2017 is on the left and 2019 is on the right of VH2-PPQ1. 
+
+
+```{r map2, echo=FALSE, fig.height=11, fig.width=7, fig.align="center"}
+map3 <- image_read("Map/VH2_MPQ1_2017_2019.png")
+map3
+
+```
+
+The only reason I can ensure this is the correct layout as the seabird was consistent in the 2 years (on the stake the transect line starts on) and the other stake (bottom left corner in 2017) was the only other remaining permenant stake in 2019. Some sites within the VH disturbance gradient experienced this and some even lost 3 stakes over those 2 years, making it incredibly difficult to accurately place the true corners over time. 
+
+
+**3. Assess the photomosaics among the years and see if the shape is different due to the orientation of the camera when the models were made. **
+
+I have done that and all photomosaics appear to be from the same view (birdseye). However the DEM scales from some of the 2015 mosaics are not set to 0.01 so I will redo those assessments once the hard drive arrives at UVIC. 
+
+
+**4. Have you tried statistically analyzing the differences in the PDF?**
+
+Not yet, I would like some direction on what tests to run (ANOVA?) or whether running a model would be best (statistics isn't my stronest subject).
+
+## Removing mosaics of concern: do trends remain?
+**5. Check all mosaics, remove the ones of concern and then assess the trends again.**
+
+I removed the suspect sites: VH2:PPQ 1,2,3; M1: PPQ2; VH3:PPQ3, VH1 PPQ2 & M2 PPQ3. 
+
+These were chosen by looking at the indicdiaul PPQ measurements from the intial results and removed based on those results for Surface rugsoity and Terrain Ruggedness. 
+
+For all metrics, the blue graphs indicate the intial results presented, while the red graph on the righ shows the results with the above sites removed.
+
+### Surface Rugosity by year
+
+```{r Removed bad sites, echo=FALSE}
+plot1<- ggplot(mpq2, aes(x = Year, y=rugosity)) + ggtitle("SR  by year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=16))
+
+plot2 <- ggplot(mpq4, aes(x = Year, y=rugosity)) + ggtitle("SR  by year (missing sites)") + geom_boxplot(fill="red") + theme_classic(base_size = 14) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=16))
+
+#Compare plots side by side
+grid.arrange(plot1, plot2, ncol=2)
+
+
+```
+
+The trend appears to slightly dissapear in the surface rugosity data, with 2019 being very similar to that of 2017. Next step would be to statistically test if any are significantly different.
+
+### Terrain Ruggedness by year
+
+```{r TR removing sites, echo=FALSE}
+
+plot3<- ggplot(mpq2, aes(x = Year, y=terrain_rug)) + ggtitle("TR by year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=16))
+
+plot4 <- ggplot(mpq4, aes(x = Year, y=terrain_rug)) + ggtitle("TR by year (missing sites)") + geom_boxplot(fill="red") + theme_classic(base_size = 14) + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=16))
+
+#Compare plots side by side
+grid.arrange(plot3, plot4, ncol=2)
+```
+
+The TR trend remains consistent between both graphs, indicating that removing the suspect sites didn't alter our results.
+
+
+### Absolute Curvature by year
+
+```{r abs_curv removed sites, echo=FALSE}
+plot5<- ggplot(mpq2, aes(x = Year, y=terrain_rug)) + ggtitle("AbsCurv by year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=16))
+
+plot6 <- ggplot(mpq4, aes(x = Year, y=terrain_rug)) + ggtitle("AbsCurv by year (missing sites)") + geom_boxplot(fill="red") + theme_classic(base_size = 14) + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=16))
+
+#Compare plots side by side
+grid.arrange(plot5, plot6, ncol=2)
+
+
+```
+
+Similar to TR, absolute curvature's trend remained similar between samples.
+
+
+## Differing DEM sizes
+**6. Does the rugosity value trends stay consistent with what we are already seeing with differing sized DEM's? **
+
+Yes it does, as you can see in the graphs below. I scaled out the DEM's from 3 sites within 3 separate human disturbance gradients (VH1, M2, VL3). The value after the site indicates the PPQ that was sampled. Each box represents a certain's site PPQ (ex: VL3.PPQ1) from sites that weren't removed from the dataset from point #5. 
+
+
+### Surface Rugosity @ differing DEMs
+```{r rugosity dems, echo=FALSE}
+ggplot(dem, aes(x= DEM.scale, y= Rugosity, fill = site.ppq)) + geom_bar(stat="identity") +facet_wrap(~site.ppq, scales = "fixed", ncol= 2) + xlab("DEM Scale (cm)") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+Surface rugosity decreased as the DEM's got larger across the board, with the lowest SR values seen at 8cm DEM's.
+
+### Terrain Ruggedness @ differing DEMs
+```{r TR DEMs, echo=FALSE}
+ggplot(dem, aes(x= DEM.scale, y= Terrain.Ruggedness,fill = site.ppq)) + geom_bar(stat="identity") +facet_wrap(~site.ppq, scales = "fixed", ncol= 2) + xlab("DEM Scale") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+Interestingly, it appears that DEM's at scale 4 had the highest TR values of the three in most of the PPQ's. 
+
+
+### Absoulute Curvature @ differing DEMs
+```{r Abs_curv DEMs, echo=FALSE}
+ggplot(dem, aes(x= DEM.scale, y= Rugosity, fill = site.ppq)) + geom_bar(stat="identity") +facet_wrap(~site.ppq, scales = "fixed", ncol= 2) + xlab("DEM Scale") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+Shows a similar trend to that of Surface rugosity, where the larger DEM scales have the lowest values for absolute curavture.
+ 
+ 
+## Interesting find
+
+In looking at the mosaics throughout the years, it was intesting to notice certain corals and realize how much they grow over the time. This below coral shows the coral in 2017(left) and 2019 (right), indicating pretty large amounts of growth. Perhaps this could be a portion of a potential 2nd chapter? 
+
+```{r coral growth noticed,  echo=FALSE}
+map2 <- image_read("Map/Coral_Growth_2017_Vs_2019.png")
+map2
+```
+
+## Questions for John
+
+1. Is there a way to set a range of outputs for curvature and TR? Where 0 = flat and higher values mean more rugged or indicate higher values of curvature until a maximum which is basically a cliff (for Rugosity example)
+
+2. 
+
+
+
+
+
+
+
