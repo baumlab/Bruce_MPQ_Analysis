@@ -1,0 +1,428 @@
+---
+title: "Bruce_MPQ_Analysis_NEW- Updated as of July 11, 2020"
+author: "Kevin Bruce"
+date: "03/07/2020"
+output: html_document
+---
+
+```{r Load Packages, include=FALSE}
+#Load in Packages
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+```
+
+
+# Introduction 
+Kiritimati Research Project- PPQ rugosity analyses 2015 - 2019
+
+PPQ = Permenant Photoquadrat (16m2)
+
+This document is for the PPQ data collected on Kiritimati to look at rugosity changes that occur on reefs following a mass mortality event.
+
+The plots below show a view of the data across different spatial and temporal scales. We will start by looking at the data braodly before zooming in to specific PPQ fluctuations over time. 
+
+It is important to note that Sites 15 and 19 (both within the Very Low disturbance category) were unable to be sampled in March 2016 & 2019 due to weather. Site 37 (VL4) was installed in 2017 and has been sampled in both 2017 and 2019. 
+
+```{r map, echo=FALSE, fig.height=11, fig.width=7, fig.align="center"}
+map <- image_read("Map/KI_map_sites_villages_inset_KB_MSc_CH1_MPQ.png")
+map
+
+```
+
+
+# Site data available
+
+#### Below is a table indicating the various sites around Kiritimati and how many MPQ's were sampled during each expedition
+
+```{r Table for Julia, echo=FALSE, fig.align="center"}
+map4 <- image_read("Map/sites_sampled_updated.png")
+map4
+
+```
+
+
+# There are 6 complexity metrics collected from each MPG
+### 1. Volumetric Change
+### 2. Surface Rugosity
+### 3. Terrain Ruggedness (VRM)
+### 4. Slope
+### 5. Profile Curvature
+### 6. Planform Curvature
+
+This document will take us through each of these metrics at various levels of detail. Starting broad, we'll eventually be looking at the individual plot's changes throught the years and across DEM scales (except Volumetric Change, which cannot be examined at different resolution scales).
+
+
+# 1. Volumetric Change
+##### Volumetric change between 2015-2017 and 2015-2019 was quantified in CloudCompare, with the change between 
+#### 2017 - 2019 calculated algabraeically from the equation below:
+
+### 2017 - 2019 Change = (2015-2019 Change) - (2015-2017 Change)
+
+
+```{r Load Data, include=FALSE}
+#dev.off()
+rm(list=ls())
+
+#Load CloudCompare data
+CC <- read.csv(here("Data", "MPQ_CloudCompare_Data.csv"))
+
+#Load mpq data
+mpq <- read.csv(here("Data","ArcMap.Complexity.Data.Final.csv"))
+mpq
+
+```
+
+```{r clean ArcMap,CloudCompare mpq data, include=FALSE}
+str(mpq)
+colnames(mpq)
+
+#Change some collum header titles
+#colnames(mpq)[which(names(mpq)=="Year")] <- "year"
+#colnames(mpq)[which(names(mpq)=="Site")] <- "site"
+colnames(mpq)[which(names(mpq)=="plot")] <- "ppq"
+colnames(mpq)[which(names(mpq)=="DEM.scale")] <- "DEM"
+colnames(mpq)[which(names(mpq)=="Complexity.Calculation")] <- "rug"
+colnames(mpq)[which(names(mpq)=="Avg..BTM_Slope")] <- "slope"
+colnames(mpq)[which(names(mpq)=="Avg_terrain_ruggedness..VRM."  )] <- "vrm"
+colnames(mpq)[which(names(mpq)=="profile.curvature")] <- "pro.curv"
+colnames(mpq)[which(names(mpq)=="planform.curvature")] <- "plan.curv"
+colnames(mpq)[which(names(mpq)=="average.curvature")] <- "curv"
+
+colnames(mpq)
+
+#Create new dataframe pulling over only collumms I need
+mpq1 <- subset(mpq, select = c("year", "hum_dist","site", "ppq", "SHAPE_Area", "rug", "slope", "vrm", "DEM", "pro.curv", "plan.curv"))
+
+#Switch it back to mpq
+mpq <- mpq1
+str(mpq)
+
+#Change DEM, Site, Year,Plot all to character
+mpq$DEM <- as.character(mpq$DEM)
+mpq$site <- as.character(mpq$site)
+mpq$year <- as.character(mpq$year)
+mpq$ppq <- as.character(mpq$ppq)
+
+str(mpq)
+
+#Change levels of hum_dist & site
+levels(mpq$hum_dist)
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "High", "Medium", "Low", "Very Low" ))
+mpq$site <- factor(mpq$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+#####Subset Data based on DEM Size ####
+#Make a subset for 1cm DEM 
+mpq.1 <- mpq[mpq$DEM == 1,] 
+
+#Reorder sites so they fit in as VH --> M --> VL
+mpq.1$site <- factor(mpq.1$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+#Make Unique collumns for Site.plot
+mpq.1$site.ppq <- paste(mpq.1$site, mpq.1$ppq, sep=".")
+
+
+#Make a subset for 8cm DEM 
+mpq.8 <- mpq[mpq$DEM == 8,]
+
+#Reorder sites so they fit in as VH --> M --> VL
+mpq.8$site <- factor(mpq.8$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+#Make Unique collumns for Site.plot
+mpq.8$site.ppq <- paste(mpq.8$site, mpq.8$ppq, sep=".")  
+
+#Change the levels of this dataframe so that the sites are arranged correctly
+levels(mpq.1$site.plot)
+mpq.1$site.ppq <- factor(mpq.1$site.ppq, levels=c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
+levels(mpq.1$site.ppq)
+
+levels(mpq$hum_dist)
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "High", "Medium", "Low", "Very Low" ))
+
+
+
+####Subset Data based on Human Disturbance Level####
+#Make a subset for Very High human disturbance
+mpq.vh <- mpq[mpq$hum_dist == "Very High",] 
+mpq.vh
+
+#Make a subset for Medium human disturbance
+mpq.m <- mpq[mpq$hum_dist == "Medium",] 
+
+#Make a subset for Low human disturbance
+mpq.vl <- mpq[mpq$hum_dist == "Very Low",] 
+
+####Make Unique collumns for Site.plot
+mpq.vh$site.plot <- paste(mpq.vh$site, mpq.vh$plot, sep=".")
+
+#Change the levels of this dataframe so that the sites are arranged correctly
+levels(mpq.8$site.ppq)
+mpq.8$site.ppq <- factor(mpq.8$site.ppq, levels=c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
+levels(mpq.8$site.ppq)
+
+#Subset plan and pro curv values to convert to proper Z units
+mpq.curv <- subset(mpq, select = c("pro.curv", "plan.curv", "DEM", "year"))
+
+#Add collumn for z-units
+mpq.curv$pro.z <- "a"
+mpq.curv$plan.z <- "b"
+
+#Convert the curvature values to Z values (basically just divide them by 100)
+mpq.curv$pro.z <- mpq.curv[,"pro.curv"]/100
+mpq.curv$plan.z <- mpq.curv[,"plan.curv"]/100
+
+```
+
+```{r Clean CloudCompare Data, include=FALSE}
+#Remove the extra collums in the cloudcompare data that aren't necessary
+CC <- subset(CC, select = c("hum_dist","timepoint", "site", "mpq", "volume.change" ))
+CC
+
+#Delete the extra rows in the dataframe with NA's
+CC <- CC[-c(72,73,74,75,76,77,78,79,80),]
+CC
+
+#Check structure of CC
+str(CC)   ###human_dist is a factor, which we need to change to a character
+
+#Change hum_dist to a character
+CC$hum_dist <- as.character(CC$hum_dist)
+str(CC)
+
+#Assign levels to CC$hum_dist
+levels(CC$hum_dist)
+CC$hum_dist <- factor(CC$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(CC$hum_dist)
+
+#Change timepoint information from A, B,C to year differences
+CC$timepoint <- factor(CC$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+
+```
+
+```{r Plot CloudCompare Data By Timepoints, echo=FALSE}
+ggplot(CC, aes(x = timepoint, y=volume.change)) + ggtitle("Volumetric Change(m3) by timepoint") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)
+
+```
+
+```{r Plot CC Data by Timepoint & disturbance, echo=FALSE}
+ggplot(CC, aes(x = timepoint, y=volume.change, fill = hum_dist)) + ggtitle("Volumetric Change(m3) by disturbance level") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)
+       
+```
+
+```{r CC Data facetwrapped by timepoint, echo=FALSE}
+ggplot(CC, aes(hum_dist, volume.change, fill = hum_dist)) + geom_boxplot() +facet_wrap(~timepoint, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+
+```
+
+## Metrics across the years and DEM scales
+
+The rugosity metrics are averaged at the year level, showing each metric's average values around the atoll at the three time points (2015,2017,2019). 
+
+### Surface Rugosity 
+
+```{r SR by year and by DEM, echo=FALSE}
+ggplot(mpq, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity")
+
+```
+
+### Terrain Ruggedness
+```{r TR by yr, echo=FALSE}
+ggplot(mpq, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness")
+
+```
+
+### Slope
+```{r Slope by yr, echo=FALSE}
+ggplot(mpq, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope")
+
+```
+
+### Profile Curvature
+```{r ProCurv surf rug by yr, echo=FALSE}
+ggplot(mpq, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")
+
+
+```
+
+### Planform Curvature
+```{r PlanCurv surf rug by yr, echo=FALSE}
+ggplot(mpq, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")
+
+
+```
+
+
+### Profile and Planform Curvature variation
+
+This is a plot that I have borrorwed from Kailey's Hurricane Walaka paper that shows how the dispersion of the two curvature values changed after the disturbance event or, in our case, thorughout time throughout that event.
+
+```{r Curv values variation at 3 timepoints and DEM, echo=FALSE}
+ggplot(mpq, aes(x= year, y=pro.curv)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
+
+ggplot(mpq.curv, aes(x= year, y=mpq.curv$pro.z)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
+
+#ggplot(mpq.curv, aes(x= year, y=mpq.curv$pro.z)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
+
+#ggplot(mpq.curv, aes(x= year, y=mpq.curv$plan.z)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
+
+
+```
+
+
+## Metrics across the human disturbance gradient and DEM scales
+Investigating the various metrics at the human disturbance gradient, contianing 3 levels (very high, medium, very low) and across both 1cm and 8cm DEM resoltions.
+
+### Surface Rugosity
+
+```{r SR by disturbance gradient, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=rug, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+
+```
+
+### Terrain Ruggedness
+```{r TR hum_dist, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=vrm, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+
+```
+
+### Slope
+```{r Slope, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=slope, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+
+```
+
+### Profile Curvature
+```{r ProCurv, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=pro.curv, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+```
+
+
+### Planform Curvature
+```{r PlanCurv, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=plan.curv, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+```
+
+
+
+## Metrics at each site, by year and DEM resolution
+Investigating metrics at the site level, while separating year and DEM scale resolution to investigate trends further.
+
+### Surface Rugosity 
+```{r SR by site by DEM, echo=FALSE}
+ggplot(mpq, aes(x = site, y=rug, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+
+#ggplot(mpq.1, aes(x = Site, y=surface.rugosity, fill = Year)) + ggtitle("1cm DEM") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+#ggplot(mpq.8, aes(x = Site, y=surface.rugosity, fill = Year)) + ggtitle("8cm DEM") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+#Compare plots side by side
+#grid.arrange(p1, p2, ncol=2)
+
+
+
+```
+
+### Terrain Ruggedness
+```{r TR by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=vrm, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+```
+
+### Slope
+```{r Slope surf rug by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=slope, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+```
+
+### Profile Curvature
+```{r ProCurv surf rug by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=pro.curv, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+```
+
+### Planform Curvature
+```{r PlanCurv surf rug by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=plan.curv, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+```
+
+
+## Metrics for each plot by year and DEM resolution
+Finally, investigating metrics at the plot level, again separated by year and DEM resoltuion, with sites clustered together based on their human disturbance level (VH --> M --> VL. 
+
+### Surface Rugosity 
+```{r SR by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.8, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+#Compare plots side by side
+#grid.arrange(p1, p2, ncol=2)
+
+```
+
+### Terrain Ruggedness
+```{r TR by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.8, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+
+```
+
+### Slope
+```{r Slope by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.8, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+```
+
+### Profile Curvature
+```{r ProCurv by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.8, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+
+```
+
+
+### Planform Curvature
+```{r PlanCurv surf by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.8, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planiform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+
+```
+
+
+
+
+### Surface Rugosity by plot at 1cm DEM resolution
+```{r SR by plot at 1cm DEM, echo=FALSE}
+#ggplot(mpq.1, aes(Plot, surface.rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+#ggplot(mpq.1, aes(x = site.plot, y=surface.rugosity, fill = Year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))+ geom_segment(aes(x = 3.5, y = 0, xend = 3.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 6.5, y = 0, xend = 6.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 12.5, y = 0, xend = 12.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 15.5, y = 0, xend = 15.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 18.5, y = 0, xend = 18.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 21.5, y = 0, xend = 21.5, yend = 2.5, color = "red"))
+  
+```
+
+### Surface Rugosity by plot at 8cm DEM resoltion
+```{r SR by plot at 8cm DEM, echo=FALSE}
+#ggplot(mpq.8, aes(Plot, surface.rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+#ggplot(mpq.8, aes(x = site.plot, y=surface.rugosity, fill = Year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1)) + geom_segment(aes(x = 3.5, y = 0, xend = 3.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 6.5, y = 0, xend = 6.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 12.5, y = 0, xend = 12.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 15.5, y = 0, xend = 15.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 18.5, y = 0, xend = 18.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 21.5, y = 0, xend = 21.5, yend = 2.5, color = "red"))
+  
+```
