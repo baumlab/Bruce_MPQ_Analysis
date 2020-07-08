@@ -2,7 +2,11 @@
 title: "Bruce_MPQ_Analysis_NEW- Updated as of July 11, 2020"
 author: "Kevin Bruce"
 date: "03/07/2020"
-output: html_document
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
 ---
 
 ```{r Load Packages, include=FALSE}
@@ -37,9 +41,8 @@ map
 ```
 
 
-# Site data available
-
-#### Below is a table indicating the various sites around Kiritimati and how many MPQ's were sampled during each expedition
+## Site data available
+Below is a table indicating the various sites around Kiritimati and how many MPQ's were sampled during each expedition
 
 ```{r Table for Julia, echo=FALSE, fig.align="center"}
 map4 <- image_read("Map/sites_sampled_updated.png")
@@ -48,22 +51,23 @@ map4
 ```
 
 
-# There are 6 complexity metrics collected from each MPG
-### 1. Volumetric Change
-### 2. Surface Rugosity
-### 3. Terrain Ruggedness (VRM)
-### 4. Slope
-### 5. Profile Curvature
-### 6. Planform Curvature
+## There are 6 complexity metrics collected from each MPG
+1. Habitat Volumetric Change
+2. Surface Rugosity
+3. Terrain Ruggedness (VRM)
+4. Slope
+5. Profile Curvature
+6. Planform Curvature
 
 This document will take us through each of these metrics at various levels of detail. Starting broad, we'll eventually be looking at the individual plot's changes throught the years and across DEM scales (except Volumetric Change, which cannot be examined at different resolution scales).
 
 
-# 1. Volumetric Change
-##### Volumetric change between 2015-2017 and 2015-2019 was quantified in CloudCompare, with the change between 
-#### 2017 - 2019 calculated algabraeically from the equation below:
+# Habitat Volumetric Change
 
-### 2017 - 2019 Change = (2015-2019 Change) - (2015-2017 Change)
+Volumetric change between 2015-2017 and 2015-2019 was quantified in CloudCompare, with the change between 
+
+2017 - 2019 calculated algabraeically from the equation below:
+#### 2017 - 2019 Change = (2015-2019 Change) - (2015-2017 Change)
 
 
 ```{r Load Data, include=FALSE}
@@ -179,6 +183,7 @@ mpq.curv$plan.z <- mpq.curv[,"plan.curv"]/100
 
 ```
 
+
 ```{r Clean CloudCompare Data, include=FALSE}
 #Remove the extra collums in the cloudcompare data that aren't necessary
 CC <- subset(CC, select = c("hum_dist","timepoint", "site", "mpq", "volume.change" ))
@@ -191,8 +196,10 @@ CC
 #Check structure of CC
 str(CC)   ###human_dist is a factor, which we need to change to a character
 
-#Change hum_dist to a character
+#Change hum_dist and mpq to a character
 CC$hum_dist <- as.character(CC$hum_dist)
+CC$mpq <- as.character(CC$mpq)
+
 str(CC)
 
 #Assign levels to CC$hum_dist
@@ -203,82 +210,388 @@ levels(CC$hum_dist)
 #Change timepoint information from A, B,C to year differences
 CC$timepoint <- factor(CC$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
 
+#Change levels of sites to match disturbance level
+CC$site <- factor(CC$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+
+#Make a subset for all data not including medium sites
+CC.1 <- CC[CC$hum_dist == "Very Low",]
+CC.2 <- CC[CC$hum_dist == "Very High",]
+
+#Merge both files
+CC.3 <- rbind(CC.1, CC.2)
+CC.3
+
+#Finally, make a dataframe that has deleted rows from the middle timepoint
+CC.4 <- CC.3[!grepl("2017-2019", CC.3$timepoint),]
+
+
+#Vaskess bay sites
+CC.v <- subset(CC, site == 5| site == 37) 
+CC.bow <- subset(CC, site == 15| site == 19)
+
 ```
 
-```{r Plot CloudCompare Data By Timepoints, echo=FALSE}
-ggplot(CC, aes(x = timepoint, y=volume.change)) + ggtitle("Volumetric Change(m3) by timepoint") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)
+## Year Level
+
+When looking at volumetric change by timepoint for all plots measured, we see the following:
+
+- Appears that 2015-2017 losses occur, which is similar to what Jenn's study found
+
+- While losses in 2015-2019 were experienced, greatest losses of volume appear to occur from 2015-2017, which is interesting as while collecting the data, I felt that these values could have been higher if that large matt of macroalgae wasn't present in many of the 2017 plots.
+
+
+```{r CC 1, echo=FALSE}
+ggplot(CC, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+
+
+#a1 <- aov(volume.change~timepoint, data = CC)
+#summary(a1)
 
 ```
+
+## Disturbance Level
+Now breaking it down by disturbance level, losses in very high and very low disturbance sites are noted (in both 2015-2017 and 2015-2019 timeframes). 
+
+- Greatest losses of volume appear to occur from 2015-2017, which is interesting. While collecting the data, I felt that these values could have been higher if that large matt of macroalgae wasn't present in many of the 2017 plots 
+
+Interestingly, the medium disturbance sites exeperienced minimal losses in volume. This was seen in Jenn's study as well, and I hypothesize this lack of loss could be due to multiple causes:
+
+1. These plots are well cemented together and have minimal coral species that are quickly eroded away once they die (Ex: Branching/Plating species). 
+
+2. The mass algae bloom in 2017 might obscure how much loss occured at these plots from 2015-2017, which is when I would expect the largest losses to occur (IE: there isn't enough time within that timepoint for new coral growth to offset the losses in other coral structure) 
+
+By doing an ANOVA between volume change & timepoint, I got a P value of 0.147
+
+Via a linear model with an interaction between timepoint and human disturbance, P = 0.4164 overall, with no coefficients having a significant p-value. 
+
+- However, from help by Dom, my Q-Q plot indicates the data isn't normally distributed so perhaps try a different distribution? 
 
 ```{r Plot CC Data by Timepoint & disturbance, echo=FALSE}
-ggplot(CC, aes(x = timepoint, y=volume.change, fill = hum_dist)) + ggtitle("Volumetric Change(m3) by disturbance level") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)
-       
-```
+ggplot(CC, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2))
 
-```{r CC Data facetwrapped by timepoint, echo=FALSE}
-ggplot(CC, aes(hum_dist, volume.change, fill = hum_dist)) + geom_boxplot() +facet_wrap(~timepoint, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
 
 ```
 
-## Metrics across the years and DEM scales
+Here I broke down the volumetric changes by disturbance level differently, and I think this tells the story a bit better. 
 
-The rugosity metrics are averaged at the year level, showing each metric's average values around the atoll at the three time points (2015,2017,2019). 
+Very Low Sites: This seems accurate. These sites experienced losses in structure (primarily through dissapearance of branching and plating corals). 
+
+Medium Sites: Minimal losses experienced across the board. Refer above to see my hypotheses on why.
+
+Very High Sites: These sites are predominantly rubble, and therefore the "volume" of the plot at a specific year will be highly dependent on the rubble present. From visual inspection, there are few features that remain consistent throughout the years.
+
+```{r CC facetwrapped by disturbance level, echo=FALSE}
+ggplot(CC, aes(timepoint, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+
+
+#a2 <- aov(volume.change~hum_dist, data = CC)
+#summary(a2)     
+
+
+```
+
+```{r dist anova 1, echo=FALSE}
+
+a3 <- lm(CC$volume.change~CC$timepoint*CC$hum_dist)
+#summary(a3)
+
+#Linear model residual plots to show julia
+par(mfrow=c(2,2))
+plot(a3)
+#par(mfrow=c(1,1))
+
+
+#Comment: Not normally distributed, look at glm of some kind
+
+
+#hist(CC$volume.change)
+
+
+
+```
+
+## Vaskess Bay
+
+** I beleived that this trend seen at medium sites might be similar in Vaskess bay as well, as sites 5 and 37 coral communities appear more similar to the medium sites than the other VL disturbance sites in the Bay of Wrecks (from my personal recollection- it will be interesting to see what the digitization tells us). 
+
+However, after graphing this, it highlighted:
+
+- Site 5, which is the only site sampled in 2015-2017, experienced an increase in volume  oddly enough.
+
+- In 2015-2019, it experienced the decrease that we expected to see.
+
+- From looking at the data, its Site 5 MPQ2 in particular that is causing this issue (as it increased in volume by 0.892 from 2015-2017)
+
+
+```{r vaskess sites, echo=FALSE}
+ggplot(CC.v, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) +geom_label(label= "p=0.24", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+
+#a4 <- aov(volume.change~timepoint, data = CC.v)
+#summary(a4)
+
+```
+
+## Bay of Wrecks
+
+I did the same graph for only the Bay of Wrecks sites. It is less intersting as these are only available for 1 timepoint, but we can see the anticipated volume loss similar to what Jenn Magel found.
+
+```{r BOW, echo=FALSE}
+ggplot(CC.bow, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) 
+
+```
+
+## Year- Medium Sites Removed
+
+If we remove the medium sites, these are the trends that are present at the year scale. 
+
+- Both 2015-2017 and 2015-2019 timepoints experienced more pronounced losses when medium sites are removed (unsure if significant)
+
+- The 2017-2019 timepoint shows a further increase, although I have reservations about it and am not sure where that is coming from. Since this timepoint was determined algabraeically, I'm unsure whether it is as descriptive as it should be. 
+
+```{r CC2 no medium sites, echo=FALSE}
+ggplot(CC.3, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+geom_label(label= "p=0.388", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+#a5 <- aov(volume.change~timepoint, data = CC.3)
+#summary(a5)
+
+```
+
+
+## Site Level 
+
+```{r CC DAta by site, echo=FALSE}
+
+ggplot(CC, aes(timepoint, volume.change, fill = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ theme(axis.text.x = element_text(angle = 20, vjust = 1.1, hjust=1))
+
+
+```
+
+
+## PPQ Level
+
+To try to see if any specific plots could be skewing the data, I examined volumetric changes at the three timepoints based on the PPQ.
+
+```{r CC Data by plot, echo=FALSE}
+ggplot(CC, aes(mpq, volume.change, colour = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+```
+
+From this plot, the following site/plot combinations jump out at me:
+
+- Site 30 MPQ 2, 3 - both illustrate plot volume increases as time progresses, which I attest to the large amounts of rubble that blow through the VH plots
+
+- Site 34 MPQ 1 & Site 35 MPQ 1,3 - all show increases in volume. Unsure exactly why....
+
+- Site 5 MPQ 1, MPQ 2- Large increases in volme from 2015-2017 are seen in these plots. 
+
+
+I need to look at these plots between the two years and see what could be driving these results we are seeing.
+
+
+
+# ArcMap Complexity Metrics
+
+For all plots, all sites are included, even if they were only sampled in 2 of the 3 timepoints (Notably, sites 15, 19, and 37)
+
+## Year Level
+The complexity metrics are averaged at the year level, showing each metric's average values around the atoll at the three timepoints (2015,2017,2019). 
 
 ### Surface Rugosity 
 
+- Surface rugosity exhibited decreases between 2015 and 2017 at both DEM scales, as expected due to Jenn's previously results
+
+- However, these losses didn't continue in 2019
+
+- I hypothesize this is due to the following:
+
+- The initial declines seen between 2015 and 2017 was due to the mass die-off and subsequent bioerosion of the more complex coral (branching and plating) species. 
+
+- However, I observed that many of these species had eroded away by 2017, therby not leaving behind much else to erode away in large amounts.
+
+- The portions of the plot that did erode away between 2017-2019 were offset by both rubble settling in the plot area and/or the growth of the prevailing coral species in the plot area. 
+
 ```{r SR by year and by DEM, echo=FALSE}
-ggplot(mpq, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity")
+#ggplot(mpq, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=0.00394", x= 3, y=2.6, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+SR1 <- ggplot(mpq.1, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=0.00394", x= 2, y=2.7, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+SR2 <- ggplot(mpq.8, aes(x = year, y=rug)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=0.433", x= 2, y=1.5, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+grid.arrange(SR1, SR2, nrow=2)
+
+a7 <- aov(rug~year, data = mpq.1)
+#summary(a7)
+
+a8 <- aov(rug~year, data = mpq.8)
+#summary(a8)
 
 ```
 
-### Terrain Ruggedness
+
+
+
+### Terrain Ruggedness by year
+
+- The changes between the years are more pronounced in the terrain ruggedness values than those of surface rugosity.
+
+- As this metric is more sensitive than surface rugosity to fine-scale complexity changes, I beleive the larger increase we see from 2017-2019 is due to the amount of ruble increasing in the plots.
+
+- Additionally, I beleive the values would actually be lower in the 2017 plots, however the presence of large amounts of macroalgae in many of the plots hid this.
+
 ```{r TR by yr, echo=FALSE}
-ggplot(mpq, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness")
+#ggplot(mpq, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness")
+
+TR1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness") + geom_label(label= "p=5.83E-7", x= 2, y=0.1, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+TR2 <-ggplot(mpq.8, aes(x = year, y=vrm)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness") +geom_label(label= "p=0.306", x= 2, y=0.1, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+
+a9<- aov(vrm~year, data = mpq.1)
+a10<- aov(vrm~year, data = mpq.8)
+
+grid.arrange(TR1, TR2, nrow=2)
+
+#summary(a9)
+#summary(a10)
 
 ```
+
 
 ### Slope
+- Slope at 1cm DEM resolution exhibits a similar trend to that of TR, in that a decrease is experienced from 2015-2017, with a similar value to 2017 in 2019.
+
+- At 8cm DEM, the trend was different. There was minimal progressive losses in slope from 2015-2019. Unsure what could have caused this
+
 ```{r Slope by yr, echo=FALSE}
-ggplot(mpq, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope")
+#ggplot(mpq, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope")
+
+S1 <- ggplot(mpq.1, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope") +geom_label(label= "p=0.0237", x= 3, y=48, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+S2<- ggplot(mpq.8, aes(x = year, y=slope)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope") +geom_label(label= "p=0.586", x= 3, y=36.5, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+grid.arrange(S1, S2, nrow=2)
+
+
+a11<- aov(slope~year, data = mpq.1)
+a12<- aov(slope~year, data = mpq.8)
+
+grid.arrange(TR1, TR2, nrow=2)
+
+#summary(a11)
+#summary(a12)
+
+
+
 
 ```
 
-### Profile Curvature
-```{r ProCurv surf rug by yr, echo=FALSE}
-ggplot(mpq, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")
 
+### Profile Curvature
+
+- The range of values is largest in 2015, with the variability the lowest in 2017 of the 3 timepoints, especially at the 1cm DEM scale; at 8cm, 2015 and 2019 variability appear to be quite similar. 
+
+- There is a shift from more negative values to more positive ones as we progress throughout time, indicating changes of structure shape in the direction of the maximum slope from outwardly convex to inwardly concave; to me this indicates erosion is occuring, eating away at that surface as the water flows over it. 
+
+```{r ProCurv surf rug by yr, echo=FALSE}
+#ggplot(mpq, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")
+
+Pro1 <- ggplot(mpq.1, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")+geom_label(label= "p=8.82E-5", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+Pro2 <- ggplot(mpq.8, aes(x = year, y=pro.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")+geom_label(label= "p=0.125", x= 2, y=110, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+
+grid.arrange(Pro1, Pro2, nrow=2)
+
+
+a13<- aov(pro.curv~year, data = mpq.1)
+a14<- aov(pro.curv~year, data = mpq.8)
+
+#summary(a13)
+#summary(a14)
 
 ```
 
 ### Planform Curvature
+
+- Similar trends seein to the profile curvature in terms of variability and shift from negative to positive values 
+
+- The shift indicates that the structure is transitioning from concave (negative) to more convex (positive) features perpendicular to the maximum slope of the surface. 
+
+- I beleive this is still due to erosion. As water flows along the surface of maximum slope (eroding away that part causing the values we see in the profile curvature), the concave feature is being cut out of the structure in that direction, but in doing so, ridges are created on the edges of eroded surface, which I beleive are what are causing these planform values seen.
+
 ```{r PlanCurv surf rug by yr, echo=FALSE}
-ggplot(mpq, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")
+#ggplot(mpq, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")
+
+Plan1 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")+geom_label(label= "p=8.65E-5", x= 2, y=380, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+
+Plan2 <- ggplot(mpq.8, aes(x = year, y=plan.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")+geom_label(label= "p=0.0211", x= 2, y=100, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
 
 
-```
+grid.arrange(Plan1, Plan2, nrow=2)
 
 
-### Profile and Planform Curvature variation
+a15<- aov(plan.curv~year, data = mpq.1)
+a16<- aov(plan.curv~year, data = mpq.8)
 
-This is a plot that I have borrorwed from Kailey's Hurricane Walaka paper that shows how the dispersion of the two curvature values changed after the disturbance event or, in our case, thorughout time throughout that event.
-
-```{r Curv values variation at 3 timepoints and DEM, echo=FALSE}
-ggplot(mpq, aes(x= year, y=pro.curv)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
-
-ggplot(mpq.curv, aes(x= year, y=mpq.curv$pro.z)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
-
-#ggplot(mpq.curv, aes(x= year, y=mpq.curv$pro.z)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
-
-#ggplot(mpq.curv, aes(x= year, y=mpq.curv$plan.z)) +facet_wrap(~DEM, scales = "fixed", ncol= 2)  + geom_point() + ylab("Profile Curvature") + xlab("Year")
-
+#summary(a15)
+#summary(a16)
 
 ```
 
 
-## Metrics across the human disturbance gradient and DEM scales
-Investigating the various metrics at the human disturbance gradient, contianing 3 levels (very high, medium, very low) and across both 1cm and 8cm DEM resoltions.
+### Curvature variation
+
+- This is a plot that I have borrorwed from Kailey's Hurricane Walaka paper that shows how the dispersion of the two curvature values's density changed after the disturbance event or, in our case, throughout time.
+
+- In this paper, a monitored plot endured a major disturbance event (storm), which caused the range of the curvature density values to shrink, with larger spikes around 0.
+
+- We see this spike in our data in 2017, however in 2019 the spike decreased to levels below that of 2015. There is a noticable shift from more negative values to more positive values though post-mortality event. 
+
+This shift to more positive values for both curvature values indicate:
+
+1. Profile Curvature: The structure is transitioning from outwardly convex to inwardly concave features, which indicates erosion is occuring. 
+
+2. Planform Curvature: Structure transitioning from negative (concave) features to more positive (convex) values, perpendicular to the maximum slope of the surface. 
+
+- I beleive that the planform curvature value is still due to erosion. As water flows along the surface of maximum slope (eroding away that part causing the values we see in the profile curvature), the concave feature is being cut out of the structure in that direction, but in doing so, ridges are created on the edges of eroded surface, which I beleive are what are causing these planform values seen.
+ 
+##### Profile Curvature Density Plots
+
+```{r Curv density plots, echo=FALSE}
+p1 <- ggplot(mpq, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.2)
+p2 <- ggplot(mpq, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+grid.arrange(p1, p2, nrow=2)
+
+```
+
+##### Planform Curvature Density Plots
+
+```{r Plan Curv density plots, echo=FALSE}
+p3 <- ggplot(mpq, aes(x=plan.curv, fill=year)) + geom_density(alpha=0.2)
+p4 <- ggplot(mpq, aes(x=plan.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+grid.arrange(p3, p4, nrow=2)
+
+```
+
+
+## Human Disturbance Gradient Level
+Investigates complexity metrics, at both 1cm and 8cm DEM resolutions, across the human disturbance gradient, which contains 3 levels (very high, medium, very low).
+
+All sites were included, including 15, 19, and 37 which were only sampled in 2 of the 3 years
+
 
 ### Surface Rugosity
+
+- Early trends appear similar to what Jenn found (VL disturbance sites have higher SR than VH sites)
+
+- Losses appear to occur at all levels from 2015-2017, however at the medium disturbance sites, this loss is less pronounced, with some plots appearing to experience an increase
+
+- 2019 values almost all show some form of increase in SR from the lowest of lows in 2017. 
 
 ```{r SR by disturbance gradient, echo=FALSE}
 ggplot(mpq, aes(x = hum_dist, y=rug, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
@@ -286,38 +599,78 @@ ggplot(mpq, aes(x = hum_dist, y=rug, fill = year)) + geom_boxplot()+ theme_class
 ```
 
 ### Terrain Ruggedness
+
+- More pronounced differences between the disturbance levels are seen here, especially in 2015 at the 1cm DEM scale
+
+- At the 8cm DEM scale, while there are less differences between disturbance levels, a more stepwise pattern is shown between the disturbance levels from lowest values at VH sites to largest values at VL sites
+
+- At 1cm DEM, VH sites have similar values at 2015 and 2019; I beleive this is due to rubble transport moving in and out of the plots, making the time at which we sample the plot highly dependent on how prevalent the storms were that year in transporting rubble to and from the plot area
+
+- The increase in TR at the VL sites from 2017 - 2019 is intersting. Unsure what could be causing that.
 ```{r TR hum_dist, echo=FALSE}
 ggplot(mpq, aes(x = hum_dist, y=vrm, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
 
 ```
 
 ### Slope
+
+- At 1cm DEM, slope decrease in a stepwise pattern at VH and M sites; VL sites experienced an increase from 2017-2019
+
+- The trend is similar at 8cm DEM, however the increase in 2019 TR values is less and the M sites plots indicate that the higest slopes were seen during the 2017 timepoint. 
+
+
 ```{r Slope, echo=FALSE}
 ggplot(mpq, aes(x = hum_dist, y=slope, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
 
 ```
 
+
 ### Profile Curvature
+
+- At 1cm DEM, all sites experience a similar trend where the profile curvature values shift towards larger, more positive values; this indicates a change in structure shape already discussed
+
+- The very low values seein in 2015 at the VL sites I attest to the presence of those large plating species that almost entirely dissapeared by 2017; interestingly this trend disappears at the 8cm DEM
+
 ```{r ProCurv, echo=FALSE}
 ggplot(mpq, aes(x = hum_dist, y=pro.curv, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
 ```
 
 
 ### Planform Curvature
+
+-Similar trends present to Profile Curvature; refer to plot above for hypotheses on why we are seeing these trends. 
+
 ```{r PlanCurv, echo=FALSE}
 ggplot(mpq, aes(x = hum_dist, y=plan.curv, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
 ```
 
 
 
-## Metrics at each site, by year and DEM resolution
+## Site Level
 Investigating metrics at the site level, while separating year and DEM scale resolution to investigate trends further.
 
+Again, all sites sampled are included, even if only sampled in 2 of the 3 timepoints.
+
+For all metrics, I have 3 plots: 1 that includes both DEM scales, and then 2 subsequent plots, 1 for each of the DEM scales.
+
 ### Surface Rugosity 
+
+- In all sites, 2015-2017 shows decreases in SR
+
+- In the majority of sites, 2017-2019  indicate increases in SR, with most not quite to the levels seen in 2015
+
+- The sites that didn't experience this increase are:
+
+- Site 30 - Rubble transport is highly dependent 
+
+-Site 8 - I'm unsure what is causing this. When we look at individual plots, we will be able to see if any of those are driving this trend
+
 ```{r SR by site by DEM, echo=FALSE}
 ggplot(mpq, aes(x = site, y=rug, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
+ggplot(mpq.1, aes(x = site, y=rug, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
+ggplot(mpq.8, aes(x = site, y=rug, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 #ggplot(mpq.1, aes(x = Site, y=surface.rugosity, fill = Year)) + ggtitle("1cm DEM") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
@@ -331,37 +684,85 @@ ggplot(mpq, aes(x = site, y=rug, fill = DEM)) +facet_wrap(~year, scales = "fixed
 ```
 
 ### Terrain Ruggedness
+
+- Similar trends present are similar to those of SR
+
+- I really don't know what is causing 2019 values to be the same or even higher than 2015 values; its interesting though. The differences are more pronounced in the 1cm DEM resolution, but are still present in the 8cm scale too.
+
 ```{r TR by site, echo=FALSE}
 ggplot(mpq, aes(x = site, y=vrm, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.1, aes(x = site, y=vrm, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=vrm, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 
 ```
 
 ### Slope
+
+- Similar trends as the previous 2 metrics
+
+- I'm curious to see if it could be due to the structure being broken down into more "pieces" of rubble, thereby providing more surfaces with sharper surfaces, and therefore increased slopes? 
+
+- That hypothesis wouldn't explain why 2015 values are mostly higher, but maybe sharper rubble doesn't make up for living, complex corals?
+
 ```{r Slope surf rug by site, echo=FALSE}
 ggplot(mpq, aes(x = site, y=slope, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+ggplot(mpq.1, aes(x = site, y=slope, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=slope, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ```
 
 ### Profile Curvature
+
+- This illustrates how profile curvature values are highest in 2019 almost across the board, and that 2015 exhibited some of the more negative values, especially at the VH disturbance sites
+
+- As mentioned before, this describes how the surface of the structure is changing from outwardly convex to more inwardly concave structure, which I hypothesize is due to erosion
+
 ```{r ProCurv surf rug by site, echo=FALSE}
 ggplot(mpq, aes(x = site, y=pro.curv, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.1, aes(x = site, y=pro.curv, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=pro.curv, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 
 ```
 
 ### Planform Curvature
+
+- Similar trends to that of profile curvature
+
+- The overall shape of the structure has transformed from more negative (concave) to more positive (convex) values, however these changes are perpendicular to the maximum slope of the surface. 
+
+
 ```{r PlanCurv surf rug by site, echo=FALSE}
 ggplot(mpq, aes(x = site, y=plan.curv, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.1, aes(x = site, y=plan.curv, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=plan.curv, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 
 ```
 
 
-## Metrics for each plot by year and DEM resolution
-Finally, investigating metrics at the plot level, again separated by year and DEM resoltuion, with sites clustered together based on their human disturbance level (VH --> M --> VL. 
+## Plot Level
+Finally, I examined down the changes at each plot through time and by DEM scale. These sites are clustered  together based on their human disturbance level (VH --> M --> VL). 
 
 ### Surface Rugosity 
+
+- All the plots at site 27, 32 exhibit the same trend at 1cm DEM, where 2019 SR is higher than any other year; I beleive this is due to the fact that the rubble transport is so variable by year that its just luck of the draw what ends up in the plot area
+
+- I looked at Site 34 MPQ 3 at the three timepoints, and have a new hypothesis: The large macroalgae bloom seen in 2017 made the coral features (now mostly dead), less pronounced from the seafloor, and therefore less complex. I'm not sure why that is being picked up at the DEM scale of 8cm however....
+
+- VL sites all had complexity values return to pre-mortality event mostly, or at least very close. 2017 was by far the lowest valued year for all the plots.
+
+
 ```{r SR by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
@@ -373,6 +774,9 @@ ggplot(mpq.8, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, 
 ```
 
 ### Terrain Ruggedness
+
+- Similar trends to what were seen with SR; refer to there for hypotheses/description
+
 ```{r TR by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
@@ -382,6 +786,9 @@ ggplot(mpq.8, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, 
 ```
 
 ### Slope
+
+- Again, very similar trends to SR and VRM; refer to those sections for hypotheses
+
 ```{r Slope by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
@@ -390,6 +797,13 @@ ggplot(mpq.8, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site
 ```
 
 ### Profile Curvature
+
+- A shift towards more positive values is clear throughout the years, although appears most pronounced in the VL sites
+
+- By eyeballing it, the magnitude of the shift  in curvature values throughout time is highest in VL > VH > M
+
+- As previously stated, I beleive this is due to erosion occuring on the structure surfaces, causing the outward projection to become more concave.
+
 ```{r ProCurv by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
@@ -400,6 +814,9 @@ ggplot(mpq.8, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~s
 
 
 ### Planform Curvature
+
+- Similar trends to that of Profile Curvature; refer to there for hypotheses
+
 ```{r PlanCurv surf by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
@@ -408,21 +825,3 @@ ggplot(mpq.8, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~
 
 ```
 
-
-
-
-### Surface Rugosity by plot at 1cm DEM resolution
-```{r SR by plot at 1cm DEM, echo=FALSE}
-#ggplot(mpq.1, aes(Plot, surface.rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
-
-#ggplot(mpq.1, aes(x = site.plot, y=surface.rugosity, fill = Year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))+ geom_segment(aes(x = 3.5, y = 0, xend = 3.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 6.5, y = 0, xend = 6.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 12.5, y = 0, xend = 12.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 15.5, y = 0, xend = 15.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 18.5, y = 0, xend = 18.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 21.5, y = 0, xend = 21.5, yend = 2.5, color = "red"))
-  
-```
-
-### Surface Rugosity by plot at 8cm DEM resoltion
-```{r SR by plot at 8cm DEM, echo=FALSE}
-#ggplot(mpq.8, aes(Plot, surface.rugosity, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
-
-#ggplot(mpq.8, aes(x = site.plot, y=surface.rugosity, fill = Year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1)) + geom_segment(aes(x = 3.5, y = 0, xend = 3.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 6.5, y = 0, xend = 6.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 9.5, y = 0, xend = 9.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 12.5, y = 0, xend = 12.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 15.5, y = 0, xend = 15.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 18.5, y = 0, xend = 18.5, yend = 2.5, color = "red")) + geom_segment(aes(x = 21.5, y = 0, xend = 21.5, yend = 2.5, color = "red"))
-  
-```
