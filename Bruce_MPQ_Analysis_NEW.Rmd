@@ -21,6 +21,7 @@ library(knitr)
 library(magick)
 library(gridExtra)
 library(car)
+library(tidyr)
 ```
 
 
@@ -74,9 +75,6 @@ Volumetric change between 2015-2017 and 2015-2019 was quantified in CloudCompare
 ```{r Load Data, include=FALSE}
 #dev.off()
 rm(list=ls())
-
-#Load CloudCompare data
-CC <- read.csv(here("Data", "MPQ_CloudCompare_Data.csv"))
 
 #Load mpq data
 mpq <- read.csv(here("Data","ArcMap.Complexity.Data.Final.csv"))
@@ -184,8 +182,10 @@ mpq.curv$plan.z <- mpq.curv[,"plan.curv"]/100
 
 ```
 
-
 ```{r Clean CloudCompare Data, include=FALSE}
+#Load CloudCompare data
+CC <- read.csv(here("Data", "MPQ_CloudCompare_Data.csv"))
+
 #Remove the extra collums in the cloudcompare data that aren't necessary
 CC <- subset(CC, select = c("hum_dist","timepoint", "site", "mpq", "volume.change" ))
 CC
@@ -231,6 +231,146 @@ CC.4 <- CC.3[!grepl("2017-2019", CC.3$timepoint),]
 CC.v <- subset(CC, site == 5| site == 37) 
 CC.bow <- subset(CC, site == 15| site == 19)
 
+
+
+
+
+##### REPEAT ALL DATA CHANGES FOR NEW data ###
+#Load Newer CloudCompare data
+CC.new <- read.csv(here("Data", "CloudCompare.Data.New.csv"))
+
+
+#Remove the extra collums in the cloudcompare data that aren't necessary
+CC.new <- subset(CC.new, select = c("Hum_Dist","Period", "Site", "MPQ", "Volume", "Added.Volume", "Removed.Volume" ))
+CC.new
+
+
+#Change colnames for the collumns
+colnames(CC.new)[which(names(CC.new)=="Hum_Dist")] <- "hum_dist"
+colnames(CC.new)[which(names(CC.new)=="Period")] <- "timepoint"
+colnames(CC.new)[which(names(CC.new)=="MPQ")] <- "mpq"
+colnames(CC.new)[which(names(CC.new)=="Site")] <- "site"
+colnames(CC.new)[which(names(CC.new)=="Volume")] <- "volume.change"
+colnames(CC.new)[which(names(CC.new)=="Added.Volume")] <- "volume.added"
+colnames(CC.new)[which(names(CC.new)=="Removed.Volume")] <- "volume.removed"
+
+colnames(CC.new)
+
+
+
+#Delete the extra rows in the dataframe with NA's
+#CC <- CC[-c(72,73,74,75,76,77,78,79,80),]
+#CC
+
+#Check structure of CC
+str(CC.new)   ###human_dist is a factor, which we need to change to a character
+
+#Change hum_dist and mpq to a character
+CC.new$hum_dist <- as.character(CC.new$hum_dist)
+CC.new$mpq <- as.character(CC.new$mpq)
+
+str(CC.new)
+
+#Assign levels to CC$hum_dist
+levels(CC.new$hum_dist)
+CC.new$hum_dist <- factor(CC.new$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(CC.new$hum_dist)
+
+#Change timepoint information from A, B,C to year differences
+#CC.new$timepoint <- factor(CC.new$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+
+#CC.new
+
+#Remove 2015-2017 timepoint
+CC.new.2.timepts <- subset (CC.new, timepoint == "A" | timepoint == "C") 
+CC.new.2.timepts
+CC.new
+
+CC.new.2.timepts$timepoint <- factor(CC.new.2.timepts$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+
+
+#Change levels of sites to match disturbance level
+CC.new$site <- factor(CC.new$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+
+#Make a subset for all data not including medium sites
+CC.new.1 <- CC.new[CC.new$hum_dist == "Very Low",]
+CC.new.2 <- CC.new[CC.new$hum_dist == "Very High",]
+
+#Merge both files
+CC.new.3 <- rbind(CC.new.1, CC.new.2)
+CC.new.3
+
+#Finally, make a dataframe that has deleted rows from the middle timepoint
+CC.new.4 <- CC.new.3[!grepl("2017-2019", CC.new.3$timepoint),]
+
+
+#Vaskess bay & BOW sites
+CC.new.v <- subset(CC.new, site == 5| site == 37) 
+CC.new.bow <- subset(CC.new, site == 15| site == 19)
+```
+
+```{r load and clean digitization data, echo=FALSE}
+#Load Data for digitization
+library(readxl)
+dig <- read_excel(here("Data", "MPQ.Digitization.Data.xlsx"))
+
+#Turn into numeric
+dig$SHAPE_Area[is.na(dig$SHAPE_Area)] <- 0
+dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
+
+#Rename shape_area to area
+colnames(dig)[which(names(dig)=="SHAPE_Area")] <- "area"
+colnames(dig)[which(names(dig)=="Year")] <- "year"
+
+#Make new dataframe without unneeded collums
+#dig <- subset(dig, c= ())
+
+# Make a unique collum for year.site.ppq
+#dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=",")
+
+colnames(dig)
+dig
+
+
+#### What I need to do:#### DOM HELP PLEASE
+#1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
+#2. Calculate the % of each morphology at each plot & Graph the proportion of  each morphology present at each plot using stacked bar charts
+#3. Create a new dataframe with same data from step 2, but convert all live_encrusting category tags to either dead_massive OR rubble (based on the one category left til the end of each plot) --> Via a 4-loop?
+#4. Repeat Step 2 for the new dataframe constructed in step 3
+
+
+# Summarize shape.area by site.ppq and benthic_morphology
+dig.sum <- spread(dig, Benthic_Morphology, fill = 0)
+
+#dig.sum.test <- subset(dig, year == "2015" & hum_dist == "Very High" & site == "27" & ppq == "3" & Benthic_Morphology == "Dead_Branching")
+
+
+
+
+
+
+######
+##### WHAT DOM DID FOR ME WITH OTHER MPQ WORK, BUT THIS WAS AFTER CORALNET SUMMARIZED IT ALL#####
+
+#Change to long format dataframe
+mpq_benthos_long <- gather(mpq_benthos, Substance, Prop.Cover, LiveCoral:TurfAlgae)
+
+#Change site to a factor
+str(mpq_benthos_long)
+mpq_benthos_long$Site <- as.factor(mpq_benthos_long$Site)
+
+#Create Unique ID for Site.mpq
+mpq_benthos_long$Site.MPQ <- paste(mpq_benthos_long$Site, mpq_benthos_long$MPQ, sep=".")
+
+
+#Make a bar plot for the proportion of each coral cover type at each plot
+ggplot(dig, aes(x = site.ppq, y= SHAPE_Area)) + ggtitle("Benthic Compositon") + geom_bar(stat = 'identity', position = "stack")+facet_wrap(~site.ppq, scales = "fixed", ncol= 3)
+
+
+ggplot(mpq_benthos_long, aes(x = Site.MPQ, y= Prop.Cover, fill= Substance)) + ggtitle("Benthic Compositon") + geom_bar(stat = 'identity', position = "stack")
+
+
 ```
 
 ## Year Level
@@ -245,12 +385,29 @@ When looking at volumetric change by time point for all plots measured, we see t
 ```{r CC 1, echo=FALSE}
 ggplot(CC, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
 
-
-
 a1 <- aov(volume.change~timepoint, data = CC)
 #summary(a1)
 
 #kruskal.test(volume.change~timepoint, data = CC) #p=0.4511
+
+
+
+
+###ADDED GRAPHS###
+CC.100 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+ geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+#Volume added
+CC.101 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.added)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+ geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+#Volume removed
+CC.102 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.removed)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+ geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+grid.arrange(CC.100,CC.101, CC.102, nrow=3)
+
+
+
+
+
 
 
 ```
@@ -418,7 +575,7 @@ ggplot(CC, aes(mpq, volume.change, colour = timepoint)) + geom_boxplot() +facet_
 
 From this plot, the following site/plot combinations jump out at me:
 
-- Site 30 MPQ 2, 3 - both illustrate plot volume increases as time progresses, which I attest to the large amounts of rubble that blow through the VH plots
+- Site 30 MPQ 2, 3 - both illustrate plot volume increases as time progresses, which I attest to the large amounts of rubble that blow through the VH plots. MPQ 2 had a large boulder move between during 2015-2017, while the overhaul of all other rubble components at this site varied from year to year (but given the values, more and more settled)
 
 - Site 34 MPQ 1 & Site 35 MPQ 1,3 - all show increases in volume. Unsure exactly why....
 
