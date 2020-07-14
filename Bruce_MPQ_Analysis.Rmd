@@ -24,8 +24,6 @@ library(knitr)
 library(magick)
 library(gridExtra)
 
-
-
 #Load in 2019 MPQ Data as a csv file
 mpq19 <- read.csv(here("Data", "2019_MPQ_Complexity_Data.csv"))
 
@@ -45,7 +43,15 @@ stakes <- read.csv(here("Data", "Stake Changes.csv"))
 #Load in 2d area round 2 where I tried to get as close as possible to one another
 surface <- read.csv(here("Data", "2dSA.csv"))
 
+#Load in Variability Assessment data
+variability <- read.csv(here("Data", "VariabilityTests.csv"))
+colnames(variability)
 
+#Load CloudCompare data
+CC <- read.csv(here("Data", "MPQ_CloudCompare_Data.csv"))
+```
+
+```{r prep dataframes of old data, include=FALSE}
 #See the colnames for each dataframe
 colnames(mpq19)
 colnames(mpq15.17)
@@ -120,7 +126,7 @@ mpq$Year <- as.factor(mpq$Year)
 str(mpq$PPQ)
 mpq$PPQ <- as.character(mpq$PPQ)
 
-#Only include sites with 3 time point measurements
+#Include all sites with data across 3 time point measurements
 mpq2 <- subset(mpq, Site == 5| Site == 15|Site == 19|Site == 27|Site == 30|Site == 32|Site == 8|Site == 34|Site == 35)
 mpq2
 
@@ -145,11 +151,8 @@ mpq2$hum_dist <- factor(mpq2$hum_dist, levels = c("Very Low", "Low", "Medium", "
 levels(mpq2$hum_dist_site)
 mpq2$hum_dist_site <- factor(mpq2$hum_dist_site, levels = c("VL1", "VL2", "VL3", "VL4", "L1", "M1", "M2", "M3", "H1", "VH1", "VH2", "VH3"))
 
-
-
 #Export Mpq2 dataframe to a csv file
 write.csv(mpq2, here("Data", "2015-2019_MPQ_Data.csv"))
-
 
 #Database:
 mpq_arc
@@ -196,9 +199,9 @@ str(dem)
 dem$site.ppq <- paste(dem$hum_dist, dem$PPQ, sep = ".")
 
 
-#Change the order of human disturbance levels for the Site level plots
-levels(dem$hum_dist)
-dem$site.ppq <- factor(dem$site.ppq, levels = c("VL3.1", "VL3.2", "M2.1", "M2.2","VH1.1", "VH1.2"))
+# #Change the order of human disturbance levels for the Site level plots
+# levels(dem$hum_dist)
+# dem$site.ppq <- factor(dem$site.ppq, levels = c("VL3.1", "VL3.2", "M2.1", "M2.2","VH1.1", "VH1.2"))
 
 
 ##Stakes dataframe##
@@ -243,6 +246,43 @@ ilike <- c("VL3.1" ,"VL3.2", "VL3.3" ,"M1.1" , "M1.3",  "VL1.1", "VL1.2" ,"VL1.3
 
 mpq4 <- subset(mpq3, site.ppq %in% ilike)
 
+##Making plots including sites sampled ALL 3 timepoints##
+
+#Only include sites with 3 time point measurements
+mpq5 <- subset(mpq2, Site == 5 |Site == 27|Site == 30|Site == 32|Site == 8|Site == 34|Site == 35)
+mpq5
+
+
+### Organizing dataframe of varying dem's to graph ### 
+str(dem)
+str(dem$Year)
+dem$Year <- as.character(dem$Year)
+
+#Add according values to human dist collumn
+for(i in c(1:nrow(dem))) {
+  if(dem$Site[i]=="5") {
+    dem$hum_dist[i] <- "Very Low"
+  } else if(dem$Site[i]=="27") {
+    dem$hum_dist[i] <- "Very High"
+  } else if(dem$Site[i]=="35") {
+    dem$hum_dist[i] <- "Medium"
+  }}
+
+#Change the order of human disturbance levels for the plots
+levels(dem$hum_dist)
+dem$hum_dist <- factor(dem$hum_dist, levels = c("Very Low", "Medium", "Very High" ))
+
+
+# #Change the order of human disturbance levels for the Site level plots
+# levels(dem$hum_dist)
+# dem$site.ppq <- factor(dem$site.ppq, levels = c("VL3.1", "VL3.2", "M2.1", "M2.2","VH1.1", "VH1.2"))
+
+
+###Variability tests###
+#Create a unique ID collumn for Site.PPQ
+variability$site.ppq <- paste(variability$Site, variability$PPQ, sep=".")
+variability
+
 
 
 ```
@@ -269,15 +309,38 @@ map
 
 ```
 
+Below is a table indicating the various sites around Kiritimati and how many MPQ's were sampled during each expedition
+
+```{r Table for Julia, echo=FALSE, fig.align="center"}
+map4 <- image_read("Map/sites_sampled_table.png")
+map4
+
+```
 
 
 
 ## Year level
-The three rugosity metrics are averaged to the year level, showing each metric's changes across the three time points. 
+The three rugosity metrics are averaged to the year level, showing each metric's changes across the three time points. For each metric, I've included the graph of all available sites on the left, with the graph showing only the sites with data from all three timepoints (2015, 2017, 2019). 
+
+These sites include:
+
+VH 1,2,3
+
+M 1,2,3
+
+VL 3
+
 
 ### Rugosity 
+
 ```{r Rugosity by year, echo=FALSE}
-ggplot(mpq2, aes(x = Year, y=rugosity)) + ggtitle("Surface Rugosity by Year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+plot10 <- ggplot(mpq2, aes(x = Year, y=rugosity)) + ggtitle("All sites") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))
+
+plot11<- ggplot(mpq5, aes(x = Year, y=rugosity)) + ggtitle("3 timepoint sites only") + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))
+
+#Compare plots side by side
+grid.arrange(plot10, plot11, ncol=2)
+
 ```
 
 ```{r Rug by year Presentation graph, eval=FALSE, include=FALSE}
@@ -294,9 +357,15 @@ There as a large decline between 2015 and 2017, however it appears to level out 
 
 ### Terrain Ruggedness
 ```{r TR/yr, echo=FALSE}
-ggplot(mpq2, aes(x = Year, y=terrain_rug)) + ggtitle("Terrain Ruggedness by Year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+plot12 <- ggplot(mpq2, aes(x = Year, y=terrain_rug)) + ggtitle("All sites") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))
+
+plot13<- ggplot(mpq5, aes(x = Year, y=rugosity)) + ggtitle("3 timepoint sites only") + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) + xlab("Year") + ylab("Terrain Ruggedness ")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))
+
+#Compare plots side by side
+grid.arrange(plot12, plot13, ncol=2)
 
 ```
+
 
 ```{r TR by year Presentation graph, eval=FALSE, include=FALSE}
 ggplot(mpq2, aes(x = Year, y=terrain_rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),  
@@ -309,24 +378,40 @@ ggplot(mpq2, aes(x = Year, y=terrain_rug)) + geom_boxplot(fill="deepskyblue") + 
 ```
 
 
-Similar results that were seen with surface rugosity, to rugosity, however it seems that Terrain Ruggedness slightly increases from its lowest point in 2017. Any ideas what could cause that?
+Similar results that were seen with surface rugosity, however it seems that Terrain Ruggedness  increases from its lowest point in 2017. 
 
 ### Curvature
 ```{r Abs_curv/yr, echo=FALSE}
-ggplot(mpq2, aes(x = Year, y=abs_curv)) + ggtitle("Absolute Curvature by year") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+plot14 <- ggplot(mpq2, aes(x = Year, y=rugosity)) + ggtitle("All sites") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))
+
+plot15<- ggplot(mpq5, aes(x = Year, y=rugosity)) + ggtitle("3 timepoint sites only") + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) + xlab("Year") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))
+
+#Compare plots side by side
+grid.arrange(plot14, plot15, ncol=2)
+
 ```
 
-Similar to the previous two plots, curvature appers to stay the same between 2017 and 2019, although 2019 has the highest variability between all three sampling periods. 
+Similar to Terrain Ruggedness, absolute curvature increases from 2017 to 2019, although the variation between the sites in 2019 is higher than in 2017. 
+
 
 
 ## Disturbance gradient level
 The three rugosity metrics are now averaged by disturbance gradient, which in this case has 3 levels: Very Low, Medium, Very High. These levels are pre-determined by previous publications taking into effect the fishing pressure and distance from the human populous.
 
-It's worth noting that the very low sites from 2019 include only 1 that was sampled in 2015 and 2017, with another that was new that year. We were unable to get to two of the sites (VL1 and VL2) in 2019 due to weather. 
+For each metric there will be two graphs. The first is including all applicable sites with data from 2015, 2017, and 2019. The second graph only includes sites that have data from all 3 timepoints, meaning that the VL sites only has 1 site on these graphs as VL1 and VL2 weren't accessible in 2019 due to weather. 
+
 
 ### Rugosity
 ```{r rug by dist.lvl, echo=FALSE}
 ggplot(mpq2, aes(x = hum_dist, y=rugosity, fill = Year)) + ggtitle("Surface rugosity by human disturbance gradient") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
+
+
+
+```{r rug by dist. level for 3 disturbance times, echo=FALSE}
+ggplot(mpq5, aes(x = hum_dist, y=rugosity, fill = Year)) + ggtitle("3 timepoint sites only") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
 ```
 
 ```{r rug by dist.lvl for presentation, eval=FALSE, include=FALSE}
@@ -339,12 +424,21 @@ ggplot(mpq2, aes(x = hum_dist, y=rugosity, fill = Year)) +  geom_boxplot() + the
 
 ```
 
-Results show a similar trend to what we witnessed earlier when looking at the metrics by year, in that 2017 and 2019 values appear relatively similar, or even with 2019 values slightly increased. The medium sites appear to be driving the overall increase seen in 2019, with both the Very Low and Very High sites experiencing similar values to the 2017 value. 
+
+Results show a similar trend to what we witnessed earlier when looking at the metrics by year, in that 2017 and 2019 values appear relatively similar, or even with 2019 values slightly increased. The Medium and Very Low sites appear to be driving the overall increase seen in 2019, with the Very High sites experiencing similar values to 2017. 
+
+
 
 ### Terrain Ruggedness
 ```{r TR/hum, echo=FALSE}
-ggplot(mpq2, aes(x = hum_dist, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness by fishing disturbance") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+ggplot(mpq2, aes(x = hum_dist, y=terrain_rug, fill = Year)) + ggtitle("TR all sites") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 ```
+
+
+```{r TR/hum 3 timepoints, echo= FALSE}
+ggplot(mpq5, aes(x = hum_dist, y=terrain_rug, fill = Year)) + ggtitle("TR 3 timepoint sites only") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```
+
 
 ```{r TR by dist.lvl for presentation, eval=FALSE, include=FALSE}
 ggplot(mpq2, aes(x = hum_dist, y=terrain_rug, fill = Year)) +  geom_boxplot() + theme_classic(base_size = 14, base_family = "Times New Roman") + xlab("Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),  
@@ -355,15 +449,24 @@ ggplot(mpq2, aes(x = hum_dist, y=terrain_rug, fill = Year)) +  geom_boxplot() + 
         axis.ticks=element_line(color = "black"),axis.ticks.length = unit(0.2, "cm"), axis.line = element_line(color = "black"), axis.title = element_text(color = "black", size = 26))
 
 ```
+
 Here we actually see all 3 human disturbance gradients actually experienced an increase in Terrain ruggedness in 2019 vs 2017. Is it possible to keep the structure intact and increase TR? TR = grooves and valleys of the surface, so does this potentially mean that there are more of these appearing on the reef?
+
+
 
 ### Curvature
 ```{r Curv/Human, echo=FALSE}
-ggplot(mpq2, aes(x = hum_dist, y=abs_curv, fill = Year)) + ggtitle("Curvature by fishing disturbance") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+ggplot(mpq2, aes(x = hum_dist, y=abs_curv, fill = Year)) + ggtitle("Curvature all sites") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ```
 
-Huge variation in the 2019 medium disturabnce gardient, with very high experiencing expected curvature values. Very low experienced an increase in curvature values in 2019 to even pre-El nino levels, however site differences may play a role on this one too. 
+
+```{r Curv/human 3 timpeoints, echo=FALSE}
+ggplot(mpq5, aes(x = hum_dist, y=abs_curv, fill = Year)) + ggtitle("Curvature 3 timepoint sitess only") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+```
+
+Huge variation in the 2019 medium disturbance gardient, with very high experiencing expected curvature values. Very low experienced an increase in curvature values in 2019 to even pre-El nino levels, however site differences may play a role on this one too. 
 
 
 
@@ -386,7 +489,7 @@ Some sites are experiencing increases in surface rugosity to levels even higher 
 
 ### Terrain Ruggedness
 ```{r Terrain Ruggedness over time by site, echo=FALSE}
-ggplot(mpq2, aes(x = hum_dist_site, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness changes over time at each site") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+ggplot(mpq2, aes(x = hum_dist_site, y=terrain_rug, fill = Year)) + ggtitle("Terrain Ruggedness changes over time at each site") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=20))
 ```
 
 
@@ -394,7 +497,7 @@ Same as surface rugosity notes, with site VH2 still having larger TR values in 2
 
 ### Curvature
 ```{r curvature at each site and time period, echo=FALSE}
-ggplot(mpq2, aes(x = hum_dist_site, y=abs_curv, fill = Year)) + ggtitle("Absolute Curvature changes over time at each site") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+ggplot(mpq2, aes(x = hum_dist_site, y=abs_curv, fill = Year)) + ggtitle("Absolute Curvature changes over time at each site") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Absolute Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=20))
 ```
 
 
@@ -442,6 +545,26 @@ Here is the plot area of all plots, showing how they change over time.
 
 ```{r Each PPQs 2D Surface Area at each time point, echo=FALSE}
 ggplot(mpq2, aes(PPQ, X2D_Area, colour = Year)) + geom_boxplot() +facet_wrap(~Site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("2D Plot Surface Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+
+#Create new dataframe for just area measurements
+area1 <- subset(mpq2, select=c("Site","Year", "PPQ","X2D_Area"))
+area1$x2d_rounded <-"0"
+
+#Add rounded values to dataframe
+area1$x2d_rounded <- round(mpq2$X2D_Area)
+
+#only include 2019 PPQ's
+area <- subset(area1, Year ==2019)
+
+#plot barchart of x2d_round values
+ID <- 10:30
+
+ggplot(area, aes(x2d_rounded)) + geom_bar()+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  scale_x_continuous("ID", labels = as.character(ID), breaks = ID)
+
+
 ```
 
 In theory, the PPQ's should all be the same (~16m2 in area), however you can see that there is large amounts of variability between sample time points. This could potentially account for some of the variability that we are seeing in the previous rugosity measurements, however I'm not really sure where to go from here. Any idea how to fix this or experience with this in the past? 
@@ -611,15 +734,17 @@ Yes it does, as you can see in the graphs below. I scaled out the DEM's from 3 s
 
 
 ### Surface Rugosity @ differing DEMs
-```{r rugosity dems, echo=FALSE}
-ggplot(dem, aes(x= DEM.scale, y= Rugosity, fill = site.ppq)) + geom_bar(stat="identity") +facet_wrap(~site.ppq, scales = "fixed", ncol= 2) + xlab("DEM Scale (cm)") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+```{r DEMs at varying scales on same plot}
+ggplot(dem, aes(x = hum_dist, y=Rugosity)) + facet_wrap(~DEM.scale, scales = "fixed", ncol= 3) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + ggtitle("2019 Surface Rugosity @ different DEM Scales") + xlab("Human Disturbance") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
 ```
+
 
 Surface rugosity decreased as the DEM's got larger across the board, with the lowest SR values seen at 8cm DEM's.
 
 ### Terrain Ruggedness @ differing DEMs
 ```{r TR DEMs, echo=FALSE}
-ggplot(dem, aes(x= DEM.scale, y= Terrain.Ruggedness,fill = site.ppq)) + geom_bar(stat="identity") +facet_wrap(~site.ppq, scales = "fixed", ncol= 2) + xlab("DEM Scale") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+ggplot(dem, aes(x = hum_dist, y=Terrain.Ruggedness)) + facet_wrap(~DEM.scale, scales = "fixed", ncol= 3) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + ggtitle("2019 Terrain Ruggedness @ different DEM scales") + xlab("Human Disturbance") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=16))
 ```
 
 Interestingly, it appears that DEM's at scale 4 had the highest TR values of the three in most of the PPQ's. 
@@ -627,10 +752,10 @@ Interestingly, it appears that DEM's at scale 4 had the highest TR values of the
 
 ### Absoulute Curvature @ differing DEMs
 ```{r Abs_curv DEMs, echo=FALSE}
-ggplot(dem, aes(x= DEM.scale, y= Rugosity, fill = site.ppq)) + geom_bar(stat="identity") +facet_wrap(~site.ppq, scales = "fixed", ncol= 2) + xlab("DEM Scale") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+ggplot(dem, aes(x = hum_dist, y=Abs.Curv)) + facet_wrap(~DEM.scale, scales = "fixed", ncol= 3) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 14) + ggtitle("2019 Absolute Curvature @ different DEM scales") + xlab("Human Disturbance") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 ```
 
-Shows a similar trend to that of Surface rugosity, where the larger DEM scales have the lowest values for absolute curavture.
+Interestingly, medium disturbance sites exhibit the highest curvature values by far across the disturbance gradient. 
  
  
 ## Interesting find
@@ -642,6 +767,17 @@ map2 <- image_read("Map/Coral_Growth_2017_Vs_2019.png")
 map2
 ```
 
+Coral Area covered in 2017: 0.051601
+
+Longest radius and diamter: 32cm X 18cm
+
+
+
+Coral Area covered in 2019: 0.092862
+
+Longest radius and diamter: 38cm X 30cm
+
+
 ## Questions for John
 
 1. Is there a way to set a range of outputs for curvature and TR? Where 0 = flat and higher values mean more rugged or indicate higher values of curvature until a maximum which is basically a cliff (for Rugosity example)
@@ -649,8 +785,123 @@ map2
 2. 
 
 
+### NEW WORK APRIL 2020 ###
+
+```{r variability test, echo=FALSE}
+variability
+colnames(variability)
+
+#Round X2D Surface Area to nearest whole number
+variability$X2D_Area <- round(variability$X2D_Area)
+
+#Make 2D SA a character
+str(variability)
+variability$X2D_Area <- as.character(variability$X2D_Area)
 
 
+#Rugosity
+ggplot(variability, aes(x= X2D_Area, y= Rugosity)) +  geom_bar(stat = 'identity') + facet_grid(~site.ppq) +  xlab("2D Plot Surface Area") + ylab("Rugosity")
+
+#VRM
+ggplot(variability, aes(x= X2D_Area, y= VRM)) +  geom_bar(stat = 'identity') + facet_grid(~site.ppq) +  xlab("2D Plot Surface Area") + ylab("VRM")
+
+#Curvature
+ggplot(variability, aes(x= X2D_Area, y= Curv)) +  geom_bar(stat = 'identity') + facet_grid(~site.ppq) +  xlab("2D Plot Surface Area") + ylab("Curvature")
+
+#Pro Curvature
+ggplot(variability, aes(x= X2D_Area, y= Curv.Pro)) +  geom_bar(stat = 'identity') + facet_grid(~site.ppq) +  xlab("2D Plot Surface Area") + ylab("Profile Curvature")
+
+#Plan Curvature
+ggplot(variability, aes(x= X2D_Area, y= Curv.Plan)) +  geom_bar(stat = 'identity') + facet_grid(~site.ppq) +  xlab("2D Plot Surface Area") + ylab("Planiform Curvature")
+```
 
 
+```{r committee meeting #1 plots}
+#Load in MPQ Data as a csv file
+mpq.all <- read.csv(here("Data", "CommitteeData.csv"))
 
+#Restructure data so that it matches it
+str(mpq.all)
+mpq.all$Year <- as.factor(mpq.all$Year)
+
+#Re-order the levels of human disturbance so that it graphs nicely
+mpq.all$Hum_Dist <- factor(mpq.all$Hum_Dist, levels = c("Very Low", "Medium", "Very High"))
+
+#Plot for rugosity
+ggplot(mpq.all, aes(x = Year, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14)) + annotate('text', 1, 2.5, label="n = 21", size=3.5) + annotate('text', 2, 2.5, label="n = 21", size=3.5) + annotate('text', 3, 2.5, label="n = 21", size=3.5)
+
+#Plot for terrain.ruggedness
+ggplot(mpq.all, aes(x = Year, y=terrain.rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5)) + theme(plot.title = element_text(size=14)) + annotate('text', 1, 0.1, label="n = 21", size=3.5) + annotate('text', 2, 0.1, label="n = 21", size=3.5) + annotate('text', 3, 0.1, label="n = 21", size=3.5)
+
+#Plot for rugosity across human disturbance
+ggplot(mpq.all, aes(x = Hum_Dist, y=surface.rugosity, fill = Year)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + annotate('text', 1, 2.5, label="n = 9", size=3.5) + annotate('text', 2, 2.5, label="n = 27", size=3.5) + annotate('text', 3, 2.5, label="n = 27", size=3.5)
+
+
+#Plot for terrain ruggedness across human disturbance
+ggplot(mpq.all, aes(x = Hum_Dist, y=terrain.rug, fill = Year)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + annotate('text', 1, 0.1, label="n = 9", size=3.5) + annotate('text', 2, 0.1, label="n = 27", size=3.5) + annotate('text', 3, 0.1, label="n = 27", size=3.5)
+
+
+#Plot for slope
+ggplot(mpq.all, aes(x = Year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))
+
+ggplot(mpq.all, aes(x = Hum_Dist, y=slope, fill = Year)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Disturbance Level") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) 
+
+```
+
+
+# CloudCompare Data
+# Volumetric analysis of the reef plots on Christmas Island between the timepoints from 2015 - 2019.
+
+# Volumetric change between 2015-2017 and 2015-2019 was quantified in CloudCompare, with the change between 2017 - 2019 calculated algabraeically from the equation below:
+    ## 2017 - 2019 Change = (2015-2019 Change) - (2015-2017 Change)
+
+```{r Clean CloudCompare Data, include=FALSE}
+#Remove the extra collums in the cloudcompare data that aren't necessary
+CC <- subset(CC, select = c("hum_dist","timepoint", "site", "mpq", "volume.change" ))
+CC
+
+#Delete the extra rows in the dataframe with NA's
+CC <- CC[-c(72,73,74,75,76,77,78,79,80),]
+CC
+
+#Check structure of CC
+str(CC)   ###human_dist is a factor, which we need to change to a character
+
+#Change hum_dist to a character
+CC$hum_dist <- as.character(CC$hum_dist)
+str(CC)
+
+#Assign levels to CC$hum_dist
+levels(CC$hum_dist)
+CC$hum_dist <- factor(CC$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(CC$hum_dist)
+
+
+#Change the order of human disturbance levels for the plots
+levels(mpq2$hum_dist)
+mpq2$hum_dist <- factor(mpq2$hum_dist, levels = c("Very Low", "Low", "Medium", "High", "Very High" ))
+
+#Change timepoint information from A, B,C to year differences
+CC$timepoint <- factor(CC$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+
+```
+
+
+```{r Plot CloudCompare Data By Timepoints, echo=FALSE}
+ggplot(CC, aes(x = timepoint, y=volume.change)) + ggtitle("Volume Change by timepoint") + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)
+
+```
+
+```{r Plot CC Data by Timepoint & disturbance, echo=FALSE}
+ggplot(CC, aes(x = timepoint, y=volume.change, fill = hum_dist)) + ggtitle("Volumetric Change by disturbance level") + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)
+       
+```
+
+```{r CC Data facetwrapped by timepoint, echo=FALSE}
+ggplot(CC, aes(hum_dist, volume.change, fill = hum_dist)) + geom_boxplot() +facet_wrap(~timepoint, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+
+```
+
+
+# MPQ Structural Complexity Work
+ 

@@ -345,6 +345,20 @@ dig.sum <- spread(dig, Benthic_Morphology, fill = 0)
 
 #dig.sum.test <- subset(dig, year == "2015" & hum_dist == "Very High" & site == "27" & ppq == "3" & Benthic_Morphology == "Dead_Branching")
 
+ggplot(dig, aes(x = Benthic_Morphology, y= area )) + ggtitle("Benthic Compositon") + geom_bar(stat = 'identity', position = "stack") +facet_wrap(~site, scales = "fixed", ncol= 3)
+
+
+
+#Change to long format dataframe
+dig_long <- gather(dig_sum, year, site, ppq, Benthic_Morphology, area)
+
+#Change site to a factor
+str(dig_long)
+dig_long$site <- as.factor(dig_long$site)
+
+#Create Unique ID for Site.mpq
+dig_long$Site.MPQ <- paste(mpq_benthos_long$Site, mpq_benthos_long$MPQ, sep=".")
+
 
 
 
