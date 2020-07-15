@@ -22,6 +22,10 @@ library(magick)
 library(gridExtra)
 library(car)
 library(tidyr)
+library(readxl)
+library(vegan)
+
+theme_DOM <- function () {theme_classic(base_size=12, base_family="Times New Roman") + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.title=element_text(size=16, face="bold"), axis.text = element_text(size=14, face="plain"), legend.text=element_text(size=14, face="plain"), legend.title = element_text(size=16, face="bold"))}
 ```
 
 
@@ -310,80 +314,125 @@ CC.new.v <- subset(CC.new, site == 5| site == 37)
 CC.new.bow <- subset(CC.new, site == 15| site == 19)
 ```
 
-```{r load and clean digitization data, echo=FALSE}
-#Load Data for digitization
-library(readxl)
+```{r doms dig df help, include=FALSE}
+#loading the data
 dig <- read_excel(here("Data", "MPQ.Digitization.Data.xlsx"))
 
-#Turn into numeric
-dig$SHAPE_Area[is.na(dig$SHAPE_Area)] <- 0
+#Turn the area into numeric
 dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
 
 #Rename shape_area to area
 colnames(dig)[which(names(dig)=="SHAPE_Area")] <- "area"
 colnames(dig)[which(names(dig)=="Year")] <- "year"
 
-#Make new dataframe without unneeded collums
-#dig <- subset(dig, c= ())
-
-# Make a unique collum for year.site.ppq
-#dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=",")
-
-colnames(dig)
-dig
-
+# Make a unique column for year.site.ppq
+dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep="_")
 
 #### What I need to do:#### DOM HELP PLEASE
 #1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
+
+# Summarize the total area of each morphology in Long format
+dig_sum <- dig %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(Area = sum(area))
+
+# Wide format total area
+dig_wide <- tidyr::spread(dig_sum, Benthic_Morphology, Area)
+dig_wide[is.na(dig_wide)] <- 0
+
 #2. Calculate the % of each morphology at each plot & Graph the proportion of  each morphology present at each plot using stacked bar charts
+
+#creating a matrix with the total areas for each year site ppq combination
+total_area <- dig_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
+
+#loop that takes the total area for each year site ppq combination and puts it in a new column
+for (i in 1:length(dig_sum$year)) {
+
+  xx <- subset(total_area, year.site.ppq == dig_sum$year.site.ppq[i])
+  
+  dig_sum$Tot_Area[i] <- xx$tot_area[1]
+  
+}
+
+#calculates the percent area for each Benthic Substrate
+dig_sum$Per_Area <- (dig_sum$Area / dig_sum$Tot_Area)*100 #remove *100 if you just want proportion
+
+#Plotting the percent area for each benthic substrate in each year site ppq combination
+Morphology.percent.plot <- ggplot(dig_sum, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + theme_DOM() + labs(x="Year Site Quadrat", y="Percent Area (%)")
+Morphology.percent.plot
+
+#Put the percent cover dataframe into wide format
+dig_wide_percent <- tidyr::spread(dig_sum[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
+dig_wide_percent[is.na(dig_wide_percent)] <- 0
+
+
 #3. Create a new dataframe with same data from step 2, but convert all live_encrusting category tags to either dead_massive OR rubble (based on the one category left til the end of each plot) --> Via a 4-loop?
+
+#creating a data frame for the "extra" category for each year site ppq combination
+max_benthic <- as.data.frame(matrix(data=NA, nrow = length(unique(dig_sum$year.site.ppq)), ncol = 2))
+colnames(max_benthic) <- c("year.site.ppq", "max_benthic")
+
+#new data frame name for this new "extra" category calculation
+dig_sum_extra <- dig_sum
+
+#loop that pulls out the rubble and dead massize categorues for each year site ppq combination and decides which is larger and adds that to the max_benthic data frame for that year site ppq combination
+for (i in 1:length(max_benthic$year.site.ppq)) {
+
+  xx <- subset(dig_sum_extra, year.site.ppq == unique(dig_sum_extra$year.site.ppq)[i] & (Benthic_Morphology == "Rubble" | Benthic_Morphology == "Dead_Massive"))
+  
+  yy <- subset(xx, Per_Area == max(xx$Per_Area))
+  
+  max_benthic$year.site.ppq[i] <- yy$year.site.ppq
+  max_benthic$max_benthic[i] <- yy$Benthic_Morphology
+  
+}
+
+#made an ID column for the max_benthic data frame
+max_benthic$ID <- paste(max_benthic$year.site.ppq, max_benthic$max_benthic, sep = "_", collapse = NULL)
+
+#subset only the columns I want
+#only doing the following analysis on percent area calculations
+dig_sum_extra <- dig_sum_extra[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")]
+
+#creating a new row in the long format for each sum "extra" category 
+for(i in 1:length(max_benthic$year.site.ppq)){
+
+  xx <- subset(dig_sum_extra, year.site.ppq == unique(dig_sum_extra$year.site.ppq)[i])
+  
+  max_benth <- subset(max_benthic, year.site.ppq == xx$year.site.ppq[1])
+  max_benth_var <- max_benth$max_benthic
+  
+  combo_var <- paste(max_benth_var, "Live_Encrusting", sep = "n")
+  
+  template_row <- xx[1,]
+  template_row$Benthic_Morphology <- combo_var
+  
+  summ_vars <- subset(xx, Benthic_Morphology == "Live_Encrusting" | Benthic_Morphology == max_benth_var)
+  template_row$Per_Area <- sum(summ_vars$Per_Area)
+  
+  dig_sum_extra <- rbind(dig_sum_extra, template_row)
+  
+}
+
+#creatubg a ID column for the dig_sum_extra data frame
+dig_sum_extra$ID <- paste(dig_sum_extra$year.site.ppq, dig_sum_extra$Benthic_Morphology, sep = "_", collapse = NULL)
+
+#the "extra" categories to remove
+var_remove <- max_benthic$ID
+
+#removing the Live_Encrusting and "extra" categories
+dig_sum_removed <- subset(dig_sum_extra, Benthic_Morphology != "Live_Encrusting")
+dig_sum_removed_full <- dig_sum_removed[!(dig_sum_removed$ID %in% var_remove),]
+
+#turning it into long format if you want it
+dig_wide_removed_full <- tidyr::spread(dig_sum_removed_full[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
+dig_wide_removed_full[is.na(dig_wide_removed_full)] <- 0
+
+
 #4. Repeat Step 2 for the new dataframe constructed in step 3
 
 
-# Summarize shape.area by site.ppq and benthic_morphology
-dig.sum <- spread(dig, Benthic_Morphology, fill = 0)
-
-#dig.sum.test <- subset(dig, year == "2015" & hum_dist == "Very High" & site == "27" & ppq == "3" & Benthic_Morphology == "Dead_Branching")
-
-ggplot(dig, aes(x = Benthic_Morphology, y= area )) + ggtitle("Benthic Compositon") + geom_bar(stat = 'identity', position = "stack") +facet_wrap(~site, scales = "fixed", ncol= 3)
-
-
-
-#Change to long format dataframe
-dig_long <- gather(dig_sum, year, site, ppq, Benthic_Morphology, area)
-
-#Change site to a factor
-str(dig_long)
-dig_long$site <- as.factor(dig_long$site)
-
-#Create Unique ID for Site.mpq
-dig_long$Site.MPQ <- paste(mpq_benthos_long$Site, mpq_benthos_long$MPQ, sep=".")
-
-
-
-
-
-
-######
-##### WHAT DOM DID FOR ME WITH OTHER MPQ WORK, BUT THIS WAS AFTER CORALNET SUMMARIZED IT ALL#####
-
-#Change to long format dataframe
-mpq_benthos_long <- gather(mpq_benthos, Substance, Prop.Cover, LiveCoral:TurfAlgae)
-
-#Change site to a factor
-str(mpq_benthos_long)
-mpq_benthos_long$Site <- as.factor(mpq_benthos_long$Site)
-
-#Create Unique ID for Site.mpq
-mpq_benthos_long$Site.MPQ <- paste(mpq_benthos_long$Site, mpq_benthos_long$MPQ, sep=".")
-
-
-#Make a bar plot for the proportion of each coral cover type at each plot
-ggplot(dig, aes(x = site.ppq, y= SHAPE_Area)) + ggtitle("Benthic Compositon") + geom_bar(stat = 'identity', position = "stack")+facet_wrap(~site.ppq, scales = "fixed", ncol= 3)
-
-
-ggplot(mpq_benthos_long, aes(x = Site.MPQ, y= Prop.Cover, fill= Substance)) + ggtitle("Benthic Compositon") + geom_bar(stat = 'identity', position = "stack")
-
+#Plotting the percent area for each benthic substrate in each year site ppq combination
+Morphology.extra.percent.plot <- ggplot(dig_sum_removed_full, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + theme_DOM() + labs(x="Year Site Quadrat", y="Percent Area (%)")
+Morphology.extra.percent.plot
 
 ```
 
