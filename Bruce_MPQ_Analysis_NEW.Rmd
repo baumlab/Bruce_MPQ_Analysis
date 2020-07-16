@@ -25,7 +25,7 @@ library(tidyr)
 library(readxl)
 library(vegan)
 
-theme_DOM <- function () {theme_classic(base_size=12, base_family="Times New Roman") + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.title=element_text(size=16, face="bold"), axis.text = element_text(size=14, face="plain"), legend.text=element_text(size=14, face="plain"), legend.title = element_text(size=16, face="bold"))}
+#theme_DOM <- function () {theme_classic(base_size=12, base_family="Times New Roman") + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.title=element_text(size=16, face="bold"), axis.text = element_text(size=14, face="plain"), legend.text=element_text(size=14, face="plain"), legend.title = element_text(size=16, face="bold"))}
 ```
 
 
@@ -183,7 +183,6 @@ mpq.curv$plan.z <- "b"
 #Convert the curvature values to Z values (basically just divide them by 100)
 mpq.curv$pro.z <- mpq.curv[,"pro.curv"]/100
 mpq.curv$plan.z <- mpq.curv[,"plan.curv"]/100
-
 ```
 
 ```{r Clean CloudCompare Data, include=FALSE}
@@ -316,7 +315,7 @@ CC.new.bow <- subset(CC.new, site == 15| site == 19)
 
 ```{r doms dig df help, include=FALSE}
 #loading the data
-dig <- read_excel(here("Data", "MPQ.Digitization.Data.xlsx"))
+dig <- read_excel(here("Data", "MPQ.Digitization.Data.new.xlsx")) #this is a new dataframe, so to fix everything just change this
 
 #Turn the area into numeric
 dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
@@ -326,7 +325,26 @@ colnames(dig)[which(names(dig)=="SHAPE_Area")] <- "area"
 colnames(dig)[which(names(dig)=="Year")] <- "year"
 
 # Make a unique column for year.site.ppq
-dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep="_")
+dig$site.ppq <- paste(dig$site, dig$ppq, sep=".") 
+dig$year.site.ppq <- dig$site.ppq #renamed to make code work better (will need to change back once we get multiple years I imagine)
+
+#Convert year.site.ppq from a character to a factor
+dig$year.site.ppq <- as.factor(dig$year.site.ppq)
+
+
+#Levels of dig$sites (will need to change when uploading more files)
+unique(dig$year.site.ppq)
+str(dig$year.site.ppq)
+levels(dig$year.site.ppq)
+
+
+#Convert year.site.ppq from a character to a factor
+dig$year.site.ppq <- as.factor(dig$year.site.ppq)
+
+#Check levels
+dig$year.site.ppq <- factor(dig$year.site.ppq, levels =c("27.3", "30.1", "32.1", "8.1", "34.1", "35.1", "19.1"))
+levels(dig$year.site.ppq)
+
 
 #### What I need to do:#### DOM HELP PLEASE
 #1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
@@ -343,6 +361,7 @@ dig_wide[is.na(dig_wide)] <- 0
 #creating a matrix with the total areas for each year site ppq combination
 total_area <- dig_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
 
+
 #loop that takes the total area for each year site ppq combination and puts it in a new column
 for (i in 1:length(dig_sum$year)) {
 
@@ -352,11 +371,11 @@ for (i in 1:length(dig_sum$year)) {
   
 }
 
-#calculates the percent area for each Benthic Substrate
+#calculates the percent area for each Benthic Substrate & puts it into percent
 dig_sum$Per_Area <- (dig_sum$Area / dig_sum$Tot_Area)*100 #remove *100 if you just want proportion
 
 #Plotting the percent area for each benthic substrate in each year site ppq combination
-Morphology.percent.plot <- ggplot(dig_sum, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + theme_DOM() + labs(x="Year Site Quadrat", y="Percent Area (%)")
+Morphology.percent.plot <- ggplot(dig_sum, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + labs(x="Site-Quadrat", y="Percent Area (%)") + scale_x_discrete(breaks = c("27.3", "30.1", "32.1", "8.1", "34.1", "35.1", "19.1"), labels = c("Site27 (PPQ3)", "Site30 (PPQ1)", "Site32 (PPQ1)", "Site8 (PPQ1)", "Site34 (PPQ1)", "Site35 (PPQ1)", "Site19 (PPQ1)")) + theme(axis.text.x= element_text(angle = 290)) #last two arguments are for axis labels (breaks are proportional to the later labels (ie- they come in the same order as that. If I add plots and change the levels, these will need to change))      + theme_DOM()
 Morphology.percent.plot
 
 #Put the percent cover dataframe into wide format
@@ -370,13 +389,15 @@ dig_wide_percent[is.na(dig_wide_percent)] <- 0
 max_benthic <- as.data.frame(matrix(data=NA, nrow = length(unique(dig_sum$year.site.ppq)), ncol = 2))
 colnames(max_benthic) <- c("year.site.ppq", "max_benthic")
 
+max_benthic$year.site.ppq <- unique(dig_sum$year.site.ppq)
+
 #new data frame name for this new "extra" category calculation
 dig_sum_extra <- dig_sum
 
 #loop that pulls out the rubble and dead massize categorues for each year site ppq combination and decides which is larger and adds that to the max_benthic data frame for that year site ppq combination
 for (i in 1:length(max_benthic$year.site.ppq)) {
 
-  xx <- subset(dig_sum_extra, year.site.ppq == unique(dig_sum_extra$year.site.ppq)[i] & (Benthic_Morphology == "Rubble" | Benthic_Morphology == "Dead_Massive"))
+  xx <- subset(dig_sum_extra, year.site.ppq == max_benthic$year.site.ppq[i] & (Benthic_Morphology == "Rubble" | Benthic_Morphology == "Dead_Massive"))
   
   yy <- subset(xx, Per_Area == max(xx$Per_Area))
   
@@ -398,9 +419,9 @@ for(i in 1:length(max_benthic$year.site.ppq)){
   xx <- subset(dig_sum_extra, year.site.ppq == unique(dig_sum_extra$year.site.ppq)[i])
   
   max_benth <- subset(max_benthic, year.site.ppq == xx$year.site.ppq[1])
-  max_benth_var <- max_benth$max_benthic
+  max_benth_var <- max_benth$max_benthic[1]
   
-  combo_var <- paste(max_benth_var, "Live_Encrusting", sep = "n")
+  combo_var <- paste(max_benth_var, "Live_Encrusting", sep = "_n_")
   
   template_row <- xx[1,]
   template_row$Benthic_Morphology <- combo_var
@@ -431,8 +452,10 @@ dig_wide_removed_full[is.na(dig_wide_removed_full)] <- 0
 
 
 #Plotting the percent area for each benthic substrate in each year site ppq combination
-Morphology.extra.percent.plot <- ggplot(dig_sum_removed_full, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + theme_DOM() + labs(x="Year Site Quadrat", y="Percent Area (%)")
+Morphology.extra.percent.plot <- ggplot(dig_sum_removed_full, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + labs(x="Year Site Quadrat", y="Percent Area (%)")   #+ theme_DOM() 
 Morphology.extra.percent.plot
+
+grid.arrange(Morphology.percent.plot,Morphology.extra.percent.plot, nrow=2)
 
 ```
 
@@ -1127,3 +1150,34 @@ ggplot(mpq.8, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~
 
 ```
 
+
+
+
+# Digitization 
+
+This is the initial digitiziation data collected from May 2020 - to the present. 
+
+The issue came up whether to include encrusting coral that is growing on rubble. To see if it matters, Julia asked for a sensetivity analysis to be conducted on the data.
+
+#### Site distributions with encrusting species as a separate category
+
+
+
+```{r Dig encrusting included, echo=FALSE}
+Morphology.percent.plot
+
+```
+
+  
+#### All encrusting corals are included into the one category forming the majority of cover in the plot
+
+The majority of cover in the plots tend to be either dead_massive structure or rubble.
+
+```{r Dig encrusting excluded, echo= FALSE}
+
+Morphology.extra.percent.plot
+
+grid.arrange(Morphology.percent.plot,Morphology.extra.percent.plot, nrow=2)
+
+
+```
