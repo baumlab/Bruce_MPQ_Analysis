@@ -24,6 +24,7 @@ library(car)
 library(tidyr)
 library(readxl)
 library(vegan)
+library(tidyverse)
 
 #theme_DOM <- function () {theme_classic(base_size=12, base_family="Times New Roman") + theme(panel.border = element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"), axis.title=element_text(size=16, face="bold"), axis.text = element_text(size=14, face="plain"), legend.text=element_text(size=14, face="plain"), legend.title = element_text(size=16, face="bold"))}
 ```
@@ -51,8 +52,8 @@ map
 Below is a table indicating the various sites around Kiritimati and how many MPQ's were sampled during each expedition
 
 ```{r Table for Julia, echo=FALSE, fig.align="center"}
-map4 <- image_read("Map/sites_sampled_updated.png")
-map4
+map1 <- image_read("Map/sites_sampled_updated.png")
+map1
 
 ```
 
@@ -86,7 +87,7 @@ mpq
 
 ```
 
-```{r clean ArcMap,CloudCompare mpq data, include=FALSE}
+```{r clean ArcMap complexity data, include=FALSE}
 str(mpq)
 colnames(mpq)
 
@@ -185,137 +186,10 @@ mpq.curv$pro.z <- mpq.curv[,"pro.curv"]/100
 mpq.curv$plan.z <- mpq.curv[,"plan.curv"]/100
 ```
 
-```{r Clean CloudCompare Data, include=FALSE}
-#Load CloudCompare data
-CC <- read.csv(here("Data", "MPQ_CloudCompare_Data.csv"))
 
-#Remove the extra collums in the cloudcompare data that aren't necessary
-CC <- subset(CC, select = c("hum_dist","timepoint", "site", "mpq", "volume.change" ))
-CC
-
-#Delete the extra rows in the dataframe with NA's
-CC <- CC[-c(72,73,74,75,76,77,78,79,80),]
-CC
-
-#Check structure of CC
-str(CC)   ###human_dist is a factor, which we need to change to a character
-
-#Change hum_dist and mpq to a character
-CC$hum_dist <- as.character(CC$hum_dist)
-CC$mpq <- as.character(CC$mpq)
-
-str(CC)
-
-#Assign levels to CC$hum_dist
-levels(CC$hum_dist)
-CC$hum_dist <- factor(CC$hum_dist, levels = c("Very Low", "Medium", "Very High"))
-levels(CC$hum_dist)
-
-#Change timepoint information from A, B,C to year differences
-CC$timepoint <- factor(CC$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
-
-#Change levels of sites to match disturbance level
-CC$site <- factor(CC$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
-
-
-#Make a subset for all data not including medium sites
-CC.1 <- CC[CC$hum_dist == "Very Low",]
-CC.2 <- CC[CC$hum_dist == "Very High",]
-
-#Merge both files
-CC.3 <- rbind(CC.1, CC.2)
-CC.3
-
-#Finally, make a dataframe that has deleted rows from the middle timepoint
-CC.4 <- CC.3[!grepl("2017-2019", CC.3$timepoint),]
-
-
-#Vaskess bay sites
-CC.v <- subset(CC, site == 5| site == 37) 
-CC.bow <- subset(CC, site == 15| site == 19)
-
-
-
-
-
-##### REPEAT ALL DATA CHANGES FOR NEW data ###
-#Load Newer CloudCompare data
-CC.new <- read.csv(here("Data", "CloudCompare.Data.New.csv"))
-
-
-#Remove the extra collums in the cloudcompare data that aren't necessary
-CC.new <- subset(CC.new, select = c("Hum_Dist","Period", "Site", "MPQ", "Volume", "Added.Volume", "Removed.Volume" ))
-CC.new
-
-
-#Change colnames for the collumns
-colnames(CC.new)[which(names(CC.new)=="Hum_Dist")] <- "hum_dist"
-colnames(CC.new)[which(names(CC.new)=="Period")] <- "timepoint"
-colnames(CC.new)[which(names(CC.new)=="MPQ")] <- "mpq"
-colnames(CC.new)[which(names(CC.new)=="Site")] <- "site"
-colnames(CC.new)[which(names(CC.new)=="Volume")] <- "volume.change"
-colnames(CC.new)[which(names(CC.new)=="Added.Volume")] <- "volume.added"
-colnames(CC.new)[which(names(CC.new)=="Removed.Volume")] <- "volume.removed"
-
-colnames(CC.new)
-
-
-
-#Delete the extra rows in the dataframe with NA's
-#CC <- CC[-c(72,73,74,75,76,77,78,79,80),]
-#CC
-
-#Check structure of CC
-str(CC.new)   ###human_dist is a factor, which we need to change to a character
-
-#Change hum_dist and mpq to a character
-CC.new$hum_dist <- as.character(CC.new$hum_dist)
-CC.new$mpq <- as.character(CC.new$mpq)
-
-str(CC.new)
-
-#Assign levels to CC$hum_dist
-levels(CC.new$hum_dist)
-CC.new$hum_dist <- factor(CC.new$hum_dist, levels = c("Very Low", "Medium", "Very High"))
-levels(CC.new$hum_dist)
-
-#Change timepoint information from A, B,C to year differences
-#CC.new$timepoint <- factor(CC.new$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
-
-#CC.new
-
-#Remove 2015-2017 timepoint
-CC.new.2.timepts <- subset (CC.new, timepoint == "A" | timepoint == "C") 
-CC.new.2.timepts
-CC.new
-
-CC.new.2.timepts$timepoint <- factor(CC.new.2.timepts$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
-
-
-#Change levels of sites to match disturbance level
-CC.new$site <- factor(CC.new$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
-
-
-#Make a subset for all data not including medium sites
-CC.new.1 <- CC.new[CC.new$hum_dist == "Very Low",]
-CC.new.2 <- CC.new[CC.new$hum_dist == "Very High",]
-
-#Merge both files
-CC.new.3 <- rbind(CC.new.1, CC.new.2)
-CC.new.3
-
-#Finally, make a dataframe that has deleted rows from the middle timepoint
-CC.new.4 <- CC.new.3[!grepl("2017-2019", CC.new.3$timepoint),]
-
-
-#Vaskess bay & BOW sites
-CC.new.v <- subset(CC.new, site == 5| site == 37) 
-CC.new.bow <- subset(CC.new, site == 15| site == 19)
-```
-
-```{r doms dig df help, include=FALSE}
+```{r Digitization sensetivity analysis with only a few sites, eval=FALSE, include=FALSE}
 #loading the data
-dig <- read_excel(here("Data", "MPQ.Digitization.Data.new.xlsx")) #this is a new dataframe, so to fix everything just change this
+dig <- read_excel(here("Data", "MPQ.Digitization.Data.new1.xlsx")) #this is a new dataframe, so to fix everything just change this
 
 #Turn the area into numeric
 dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
@@ -348,6 +222,9 @@ levels(dig$year.site.ppq)
 
 #### What I need to do:#### DOM HELP PLEASE
 #1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
+
+#Delete NA's from dataset
+
 
 # Summarize the total area of each morphology in Long format
 dig_sum <- dig %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(Area = sum(area))
@@ -455,7 +332,352 @@ dig_wide_removed_full[is.na(dig_wide_removed_full)] <- 0
 Morphology.extra.percent.plot <- ggplot(dig_sum_removed_full, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + labs(x="Year Site Quadrat", y="Percent Area (%)")   #+ theme_DOM() 
 Morphology.extra.percent.plot
 
-grid.arrange(Morphology.percent.plot,Morphology.extra.percent.plot, nrow=2)
+#grid.arrange(Morphology.percent.plot,Morphology.extra.percent.plot, nrow=2)
+
+##Export two wide tables so I can show % of each morphology at each plot for the sensitivity analysis
+write.csv(dig_wide_percent,"kevin\\Desktop\\Github\\Bruce_MPQ_Analysis\\Data\\dig_sum_extra.csv", row.names = FALSE)
+
+write.csv(dig_wide_percent,"kevin\\Desktop\\Github\\Bruce_MPQ_Analysis\\Data\\dig_sum.csv", row.names = FALSE)
+```
+
+```{r Digitization sensetivity test with all sites, include = FALSE}
+#loading the data
+dig <- read_excel(here("Data", "MPQ.Digitization.Data.NEW.xlsx")) #this is a new dataframe, so to fix everything just change this
+
+
+#Turn the area into numeric
+dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
+
+#Rename shape_area to area
+colnames(dig)[which(names(dig)=="SHAPE_Area")] <- "area"
+colnames(dig)[which(names(dig)=="Year")] <- "year"
+
+# Make a unique column for year.site.ppq
+dig$site.ppq <- paste(dig$site, dig$ppq, sep=".") 
+dig$year.site.ppq <- dig$site.ppq #renamed to make code work better (will need to change back once we get multiple years I imagine)
+
+#Convert year.site.ppq from a character to a factor
+dig$year.site.ppq <- as.factor(dig$year.site.ppq)
+
+
+#Levels of dig$sites (will need to change when uploading more files)
+unique(dig$year.site.ppq)
+str(dig$year.site.ppq)
+levels(dig$year.site.ppq)
+
+
+#Convert year.site.ppq from a character to a factor
+dig$year.site.ppq <- as.factor(dig$year.site.ppq)
+
+#Set the levels for year.site.ppq so that the x-axis of the plots makes sense
+levels(dig$year.site.ppq)
+dig$year.site.ppq <- factor(dig$year.site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1","34.2","34.3", "35.1","35.2","35.3", "5.1","5.2","5.3", "15.3", "19.1"))
+levels(dig$year.site.ppq)
+
+##Check levels
+#dig$year.site.ppq <- factor(dig$year.site.ppq, levels =c("27.3", "30.1", "32.1", "8.1", "34.1", "35.1", "19.1"))
+#levels(dig$year.site.ppq)
+
+
+#### What I need to do:#### DOM HELP PLEASE
+#1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
+
+#Erase all rows with an NA in it
+dig <- dig %>% drop_na(surface.rugosity) #Removed 447 rows (10,759 rows to 10,312)
+
+
+# Summarize the total area of each morphology in Long format
+dig_sum <- dig %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(Area = sum(area))
+
+# Wide format total area
+dig_wide <- tidyr::spread(dig_sum, Benthic_Morphology, Area)
+dig_wide[is.na(dig_wide)] <- 0
+
+#2. Calculate the % of each morphology at each plot & Graph the proportion of  each morphology present at each plot using stacked bar charts
+
+#creating a matrix with the total areas for each year site ppq combination
+total_area <- dig_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
+
+
+#loop that takes the total area for each year site ppq combination and puts it in a new column
+for (i in 1:length(dig_sum$year)) {
+
+  xx <- subset(total_area, year.site.ppq == dig_sum$year.site.ppq[i])
+  
+  dig_sum$Tot_Area[i] <- xx$tot_area[1]
+  
+}
+
+#calculates the percent area for each Benthic Substrate & puts it into percent
+dig_sum$Per_Area <- (dig_sum$Area / dig_sum$Tot_Area)*100 #remove *100 if you just want proportion
+
+
+#Plotting the percent area for each benthic substrate in each year site ppq combination
+Morphology.percent.plot <- ggplot(dig_sum, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) #+ labs(x="Site-Quadrat", y="Percent Area (%)") + scale_x_discrete(breaks = c("27.3", "30.1", "32.1", "8.1", "34.1", "35.1", "19.1"), labels = c("Site27 (PPQ3)", "Site30 (PPQ1)", "Site32 (PPQ1)", "Site8 (PPQ1)", "Site34 (PPQ1)", "Site35 (PPQ1)", "Site19 (PPQ1)")) + theme(axis.text.x= element_text(angle = 290)) #last two arguments are for axis labels (breaks are proportional to the later labels (ie- they come in the same order as that. If I add plots and change the levels, these will need to change))      + theme_DOM()
+Morphology.percent.plot
+
+
+
+
+#Put the percent cover dataframe into wide format
+dig_wide_percent <- tidyr::spread(dig_sum[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
+dig_wide_percent[is.na(dig_wide_percent)] <- 0
+
+
+#3. Create a new dataframe with same data from step 2, but convert all live_encrusting category tags to either dead_massive OR rubble (based on the one category left til the end of each plot) --> Via a 4-loop?
+
+#creating a data frame for the "extra" category for each year site ppq combination
+max_benthic <- as.data.frame(matrix(data=NA, nrow = length(unique(dig_sum$year.site.ppq)), ncol = 2))
+colnames(max_benthic) <- c("year.site.ppq", "max_benthic")
+
+max_benthic$year.site.ppq <- unique(dig_sum$year.site.ppq)
+
+#new data frame name for this new "extra" category calculation
+dig_sum_extra <- dig_sum
+
+#loop that pulls out the rubble and dead massize categorues for each year site ppq combination and decides which is larger and adds that to the max_benthic data frame for that year site ppq combination
+for (i in 1:length(max_benthic$year.site.ppq)) {
+
+  xx <- subset(dig_sum_extra, year.site.ppq == max_benthic$year.site.ppq[i] & (Benthic_Morphology == "Rubble" | Benthic_Morphology == "Dead_Massive"))
+  
+  yy <- subset(xx, Per_Area == max(xx$Per_Area))
+  
+  max_benthic$year.site.ppq[i] <- yy$year.site.ppq
+  max_benthic$max_benthic[i] <- yy$Benthic_Morphology
+  
+}
+
+#made an ID column for the max_benthic data frame
+max_benthic$ID <- paste(max_benthic$year.site.ppq, max_benthic$max_benthic, sep = "_", collapse = NULL)
+
+#subset only the columns I want
+#only doing the following analysis on percent area calculations
+dig_sum_extra <- dig_sum_extra[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")]
+
+#creating a new row in the long format for each sum "extra" category 
+for(i in 1:length(max_benthic$year.site.ppq)){
+
+  xx <- subset(dig_sum_extra, year.site.ppq == unique(dig_sum_extra$year.site.ppq)[i])
+  
+  max_benth <- subset(max_benthic, year.site.ppq == xx$year.site.ppq[1])
+  max_benth_var <- max_benth$max_benthic[1]
+  
+  combo_var <- paste(max_benth_var, "Live_Encrusting", sep = "_n_")
+  
+  template_row <- xx[1,]
+  template_row$Benthic_Morphology <- combo_var
+  
+  summ_vars <- subset(xx, Benthic_Morphology == "Live_Encrusting" | Benthic_Morphology == max_benth_var)
+  template_row$Per_Area <- sum(summ_vars$Per_Area)
+  
+  dig_sum_extra <- rbind(dig_sum_extra, template_row)
+  
+}
+
+#creatubg a ID column for the dig_sum_extra data frame
+dig_sum_extra$ID <- paste(dig_sum_extra$year.site.ppq, dig_sum_extra$Benthic_Morphology, sep = "_", collapse = NULL)
+
+#the "extra" categories to remove
+var_remove <- max_benthic$ID
+
+#removing the Live_Encrusting and "extra" categories
+dig_sum_removed <- subset(dig_sum_extra, Benthic_Morphology != "Live_Encrusting")
+dig_sum_removed_full <- dig_sum_removed[!(dig_sum_removed$ID %in% var_remove),]
+
+#turning it into long format if you want it
+dig_wide_removed_full <- tidyr::spread(dig_sum_removed_full[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
+dig_wide_removed_full[is.na(dig_wide_removed_full)] <- 0
+
+
+#4. Repeat Step 2 for the new dataframe constructed in step 3
+
+
+#Plotting the percent area for each benthic substrate in each year site ppq combination
+Morphology.extra.percent.plot <- ggplot(dig_sum_removed_full, aes(fill=Benthic_Morphology, y=Per_Area, x=year.site.ppq)) + geom_bar(stat = 'identity', position = 'stack') + labs(x="Year Site Quadrat", y="Percent Area (%)") +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))  #+ theme_DOM() 
+Morphology.extra.percent.plot
+
+
+
+##### ADD A Collumn to the dataframe for Living/Dead and assign a Living or Dead tag to each colony based on the morphology present- this way we can track % live coral cover through time. #####
+
+
+
+
+
+
+#grid.arrange(Morphology.percent.plot,Morphology.extra.percent.plot, nrow=2)
+
+##Export two wide tables so I can show % of each morphology at each plot for the sensitivity analysis
+#write.csv(dig_wide_percent,"kevin\\Desktop\\Github\\Bruce_MPQ_Analysis\\Data\\dig_sum_extra.csv", row.names = FALSE)
+
+#write.csv(dig_wide_percent,"kevin\\Desktop\\Github\\Bruce_MPQ_Analysis\\Data\\dig_sum.csv", row.names = FALSE)
+```
+
+
+
+
+```{r old cloud compare data can delete once happy with new code, eval=FALSE, warning=TRUE, include=FALSE}
+
+#Load CloudCompare data
+CC <- read.csv(here("Data", "MPQ_CloudCompare_Data.csv"))
+
+#Remove the extra collums in the cloudcompare data that aren't necessary
+CC <- subset(CC, select = c("hum_dist","timepoint", "site", "mpq", "volume.change" ))
+CC
+
+#Delete the extra rows in the dataframe with NA's
+CC <- CC[-c(72,73,74,75,76,77,78,79,80),]
+CC
+
+#Check structure of CC
+str(CC)   ###human_dist is a factor, which we need to change to a character
+
+#Change hum_dist and mpq to a character
+CC$hum_dist <- as.character(CC$hum_dist)
+CC$mpq <- as.character(CC$mpq)
+
+str(CC)
+
+#Assign levels to CC$hum_dist
+levels(CC$hum_dist)
+CC$hum_dist <- factor(CC$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(CC$hum_dist)
+
+#Change timepoint information from A, B,C to year differences
+CC$timepoint <- factor(CC$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+
+#Change levels of sites to match disturbance level
+CC$site <- factor(CC$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+
+#Make a subset for all data not including medium sites
+CC.1 <- CC[CC$hum_dist == "Very Low",]
+CC.2 <- CC[CC$hum_dist == "Very High",]
+
+#Merge both files
+CC.3 <- rbind(CC.1, CC.2)
+CC.3
+
+#Finally, make a dataframe that has deleted rows from the middle timepoint
+CC.4 <- CC.3[!grepl("2017-2019", CC.3$timepoint),]
+
+
+#Vaskess bay sites
+CC.v <- subset(CC, site == 5| site == 37) 
+CC.bow <- subset(CC, site == 15| site == 19)
+
+```
+
+```{r Clean CloudCompare Data, include=FALSE}
+###################################################
+##### NEW CLOUD COMPARE DATA WITH TRUE VALUES ####
+##################################################
+
+#Load New CloudCompare data
+CC.new <- read.csv(here("Data", "CloudCompare.Data.New.csv"))
+
+#Remove the extra collums in the cloudcompare data that aren't necessary
+CC.new <- subset(CC.new, select = c("Hum_Dist","Period", "Site", "MPQ", "Volume", "Added.Volume", "Removed.Volume" ))
+CC.new
+colnames(CC.new)
+
+#Change colnames for the collumns
+colnames(CC.new)[which(names(CC.new)=="Hum_Dist")] <- "hum_dist"
+colnames(CC.new)[which(names(CC.new)=="Period")] <- "timepoint"
+colnames(CC.new)[which(names(CC.new)=="MPQ")] <- "mpq"
+colnames(CC.new)[which(names(CC.new)=="Site")] <- "site"
+colnames(CC.new)[which(names(CC.new)=="Volume")] <- "volume.change"
+colnames(CC.new)[which(names(CC.new)=="Added.Volume")] <- "volume.added"
+colnames(CC.new)[which(names(CC.new)=="Removed.Volume")] <- "volume.removed"
+
+colnames(CC.new)
+
+#Change levels of sites to match disturbance level
+CC.new$site <- factor(CC.new$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+#Check structure of CC
+str(CC.new)   ###human_dist is a factor, which we need to change to a character
+
+#Change hum_dist and mpq to a character
+CC.new$hum_dist <- as.character(CC.new$hum_dist)
+CC.new$mpq <- as.character(CC.new$mpq)
+
+str(CC.new)
+
+#Assign levels to CC$hum_dist
+levels(CC.new$hum_dist)
+CC.new$hum_dist <- factor(CC.new$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(CC.new$hum_dist)
+
+
+#Change timepoint information from A, B,C to year differences
+CC.new$timepoint <- factor(CC.new$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+CC.new
+
+ggplot(CC.new, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+a1 <- aov(volume.change~timepoint, data = CC.new)
+#summary(a1)
+
+###########################################################################
+#### 2017-2019 TIMEPOINT ONLY HAS 3 MEASUREMENTS AT THIS POINT (SITE 37)###
+###########################################################################
+
+#Remove 2017-2019 timepoint#
+CC.new.2.timepts <- subset (CC.new, timepoint == "2015-2017" | timepoint == "2015-2019") 
+CC.new.2.timepts
+
+ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.694", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+#DID AN ANOVA BUT I THINK THIS IS THE WRONG TEST TO DO
+a2 <- aov(volume.change~timepoint, data = CC.new.2.timepts)
+summary(a2)
+
+
+
+#### USING NEW DATASET INCLUDING THE 2017-2019 TIMEPOINT####
+#Change levels of sites to match disturbance level
+CC.new.2.timepts$site <- factor(CC.new.2.timepts$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19","37"))
+CC.new.2.timepts
+
+ggplot(CC.new.2.timepts, aes(timepoint, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+
+#Make a subset for all data not including medium sites
+CC.new.1 <- CC.new.2.timepts[CC.new.2.timepts$hum_dist == "Very Low",]
+CC.new.2 <- CC.new.2.timepts[CC.new.2.timepts$hum_dist == "Very High",]
+
+#Merge both files
+CC.new.3 <- rbind(CC.new.1, CC.new.2)
+CC.new.3
+
+ggplot(CC.new.3, aes(timepoint, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+
+
+# #Finally, make a dataframe that has deleted rows from the middle timepoint
+# CC.new.4 <- CC.new.3[!grepl("B", CC.new.3$timepoint),]
+# 
+# CC.new.4$timepoint <- factor(CC.new.4$timepoint, levels =c("A", "C"), labels = c("2015-2017", "2015-2019"))
+# 
+# ggplot(CC.new.4, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+# 
+# 
+# 
+# #Unique collumn to do t=test
+# CC.new.4$timepoint.change <- paste(CC.4.new$timepoint, CC.4.new$volume.change, sep=".")
+
+
+
+#Vaskess bay & BOW sites
+CC.new.v <- subset(CC.new, site == 5| site == 37) 
+CC.new.bow <- subset(CC.new, site == 15| site == 19)
+
+str(CC.new.v)
+CC.new.v$site <- as.character(CC.new.v$site)
+CC.new.bow$site <- as.character(CC.new.bow$site)
+       
+ggplot(CC.new.v, aes(site, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+
+ggplot(CC.new.bow, aes(site, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
 
 ```
 
@@ -465,47 +687,87 @@ When looking at volumetric change by time point for all plots measured, we see t
 
 - Appears that 2015-2017 losses occur, which is similar to what Jenn's study found
 
+- 2017-2019 plot is only for Site 37, as it was the only site measured in Cloudcompare for those two timepoints (the rest were initially done algabraeically, but that proved to not provide accurate information for those timepoints)
+
 - While losses in 2015-2019 were experienced, greatest losses of volume appear to occur from 2015-2017, which is interesting as while collecting the data, I felt that these values could have been higher if that large matt of macro algae wasn't present in many of the 2017 plots.
 
 
-```{r CC 1, echo=FALSE}
-ggplot(CC, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+```{r CC by year, echo=FALSE}
+ggplot(CC.new, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.386", x= 2, y=0.4, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
 
-a1 <- aov(volume.change~timepoint, data = CC)
+a1 <- aov(volume.change~timepoint, data = CC.new)
 #summary(a1)
-
-#kruskal.test(volume.change~timepoint, data = CC) #p=0.4511
-
-
-
-
-###ADDED GRAPHS###
-CC.100 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+ geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
-
-#Volume added
-CC.101 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.added)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+ geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
-
-#Volume removed
-CC.102 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.removed)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+ geom_label(label= "p=0.56", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
-
-grid.arrange(CC.100,CC.101, CC.102, nrow=3)
-
-
-
-
-
-
-
 ```
+
 
 Statistical Results:
 
 - No significant differences between time points with a one-way ANOVA
 
-- No significant differences between time points with a Kruskal-Wallis test
+
+
+
+And when looking at it where we exclude the Site 37 data (the only data sampled at 2017-2019 timepoint):
+
+##### Overall volume change
+```{r overall plot for 2 timepoints, echo=FALSE}
+##This plot is for overall volume change
+CC.100 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.498", x= 1, y=0.55, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+CC.100
+a1.1 <- aov(volume.change~timepoint, data = CC.new.2.timepts)
+#summary(a1.1)
+```
+
+
+CloudCompare gives 3 values for each PPQ comparison: Overall volume change, volume added, and volume lost between the 2 timepoints. I was curious whether the magnitude of the volume lost was different between timepoints:
+
+
+###### Volume Added
+
+```{r Volume added plot, echo=FALSE}
+
+#This plot looks at Volume added 
+CC.101 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.added)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Added (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.155", x= 1, y=0.96, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+CC.101
+a1.2 <- aov(volume.added~timepoint, data = CC.new.2.timepts)
+#summary(a1.2)
+
+```
+
+
+##### Volume Lost
+
+```{r volume added plot, echo=FALSE}
+#This plot looks at Volume removed
+CC.102 <- ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.removed)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Lost (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.552", x= 1, y=0.8, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+CC.102
+a1.3 <- aov(volume.removed~timepoint, data = CC.new.2.timepts)
+#summary(a1.3)
+
+```
+
+
+#### Year- Medium Sites Removed
+
+If we remove the medium sites, nothing interesting appears between 2015-2017 and 2015-2019 timepoints
+
+
+```{r CC2 no medium sites, echo=FALSE}
+ggplot(CC.new.3, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+geom_label(label= "p=0.388", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
+
+#a5 <- aov(volume.change~timepoint, data = CC.new.3)
+#summary(a5)
+
+```
+
+
 
 
 ## Disturbance Level
+
 Now breaking it down by disturbance level, losses in very high and very low disturbance sites are noted (in both 2015-2017 and 2015-2019 time frames). 
 
 - Greatest losses of volume appear to occur from 2015-2017, which is interesting. While collecting the data, I felt that these values could have been higher if that large matt of macro algae wasn't present in many of the 2017 plots 
@@ -516,132 +778,117 @@ Interestingly, the medium disturbance sites experienced minimal losses in volume
 
 2. The mass algae bloom in 2017 might obscure how much loss occurred at these plots from 2015-2017, which is when I would expect the largest losses to occur (IE: there isn't enough time within that time point for new coral growth to offset the losses in other coral structure) 
 
-By doing an ANOVA between volume change & time point, I got a P value of 0.147
 
-Via a linear model with an interaction between time point and human disturbance, P = 0.4164 overall, with no coefficients having a significant p-value. 
 
-- However, from help by Dom, my Q-Q plot indicates the data isn't normally distributed so perhaps try a different distribution? 
+To examine it further, I first tested to see if there was any signifant differences between averaged volumetric change values by human disturbance level.
+
+There was a signficant difference between 1 of the groups. According to Tukey's test, Very High-Medium were significantly different, while the other combinations were not statistically different.
+
+```{r overall human dist ~ volume.change, include=FALSE}
+ggplot(CC.new, aes(hum_dist, volume.change)) + geom_boxplot() + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))+ geom_label(label= "p=0.0117", x= 1, y=0.5, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+#Anova1 <- aov(volume.change~hum_dist, data=CC.new)
+#summary(Anova1) #P=0.0117
+
+#TukeyHSD(Anova1)
+
+```
+
+
+
+Next, I attempted an ANOVA looking at volume change ~ timepoint + human disturbance, which again brought back a significant p-value. This was the significant difference between very high & medium sites again.
+
 
 ```{r Plot CC Data by Timepoint & disturbance, echo=FALSE}
-ggplot(CC, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2))
+ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2))
 
 
-#CC.2.anova <- aov(volume.change~timepoint + hum_dist, data = CC)
-#summary(CC.2.anova)
-
+#CC.2.anova <- aov(volume.change~timepoint + hum_dist, data = CC.new.2.timepts)
+#summary(CC.2.anova) #P value significant for hum_dist! (P=0.00837)
+#TukeyHSD(CC.2.anova)
 
 ```
 
-Here I broke down the volumetric changes by disturbance level differently, and I think this tells the story a bit better. 
 
-Very Low Sites: This seems accurate. These sites experienced losses in structure (primarily through disappearance of branching and plating corals). 
+Here I broke down the volumetric changes by disturbance level differently and I think this tells the story a bit better. 
 
-Medium Sites: Minimal losses experienced across the board. Refer above to see my hypotheses on why.
+- Very Low Sites: This seems accurate. These sites experienced losses in structure (primarily through disappearance of branching and plating corals). 
 
-Very High Sites: These sites are predominantly rubble, and therefore the "volume" of the plot at a specific year will be highly dependent on the rubble present. From visual inspection, there are few features that remain consistent throughout the years.
+- Medium Sites: Minimal losses experienced across the board. Refer above to see my hypotheses on why.
+
+- Very High Sites: These sites are predominantly rubble, and therefore the "volume" of the plot at a specific year will be highly dependent on the rubble present. From visual inspection, there are few features that remain consistent throughout the years.
+
 
 ```{r CC facetwrapped by disturbance level, echo=FALSE}
-ggplot(CC, aes(timepoint, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+ggplot(CC.new.2.timepts, aes(timepoint, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
 
 
-#a2 <- aov(volume.change~hum_dist, data = CC)
-#summary(a2)     
-#kruskal.test(volume.change~hum_dist, data = CC)  #p=0.1846
 
-
-```
-
-```{r dist anova 1, echo=FALSE}
-
-#a3 <- lm(CC$volume.change~CC$timepoint*CC$hum_dist)
-#summary(a3)
-
-##Linear model residual plots to show julia
-
-#par(mfrow=c(2,2))
-#plot(a3)
-
-##par(mfrow=c(1,1))
-
-
-#Comment: Not normally distributed, look at glm of some kind
-
-
-#hist(CC$volume.change)
-
-
+#anova2 <- aov(volume.change~hum_dist, data = CC.new)
+#summary(anova2)     #P value for hum_dist significant @ 0.0117
+#TukeyHSD(anova2)
 
 ```
+
+
+Statistically, there is a significant difference between very high & medium sites (unsure how this is possible yet there isn't one between very low & medium sites- I suspect the ANOVA is the wrong test to use for my data). 
+
 
 ## Vaskess Bay
 
-** I believed that this trend seen at medium sites might be similar in Vaskess bay as well, as sites 5 and 37 coral communities appear more similar to the medium sites than the other VL disturbance sites in the Bay of Wrecks (from my personal recollection- it will be interesting to see what the digitization tells us). 
-
-However, after graphing this, it highlighted:
-
-- Site 5, which is the only site sampled in 2015-2017, experienced an increase in volume  oddly enough.
-
-- In 2015-2019, it experienced the decrease that we expected to see.
-
-- From looking at the data, its Site 5 MPQ2 in particular that is causing this issue (as it increased in volume by 0.892 from 2015-2017)
+I believed that this trend seen at medium sites might be similar in Vaskess bay as well, as sites 5 and 37 coral communities visually appear  similar to the medium sites than the other VL disturbance sites in the Bay of Wrecks, based on the lack of plating coral species and dominance of more massive coral species (from my personal recollection- it will be interesting to see what the digitization tells us). 
 
 
 ```{r vaskess sites, echo=FALSE}
-ggplot(CC.v, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) +geom_label(label= "p=0.24", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+ggplot(CC.new.v, aes(x = site, y=volume.change, fill = timepoint)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+geom_label(label= "p=0.24", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
 
 
-a4 <- aov(volume.change~timepoint, data = CC.v)
-summary(a4)
-TukeyHSD(a4)
+#a4 <- aov(volume.change~timepoint, data = CC.new.v)
+#summary(a4)
+#TukeyHSD(a4)
+
+
+#a4.1 <- aov(volume.change~site, data = CC.new.v)
+#summary(a4.1)
+#TukeyHSD(a4.1)
+
 
 ```
 
-Statistical Results:
+However, after graphing this, it highlighted:
 
-- No significant differences between time points
+- Site 37 experienced a slight increase in volume from 2017-2019, however we lack an intiial assessment to see if it experineced losses as seen at site 5.
+
+- Site 5, which is the only site sampled in each timepoint (2015, 2017, and 2019), experienced losses across the board, and has continued to see a decrease as time progressed.
+
+- I conducted ANOVA's looking at volume change ~ site and volume change ~timepoint, which brought back significant differences for all combinations except the timepoint 2015-2017 & 2015-2019. However, I don't think its been done correct.
+
+
 
 
 ## Bay of Wrecks
 
-I did the same graph for only the Bay of Wrecks sites. It is less interesting as these are only available for 1 time point, but we can see the anticipated volume loss similar to what Jenn Magel found.
+I did the same only the Bay of Wrecks sites. It is less interesting as these are only available for 1 time point, but we can see the anticipated volume loss for both sites similar to what Jenn Magel found, with site 15 experieincing the largest declines.
 
 ```{r BOW, echo=FALSE}
-ggplot(CC.bow, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) 
+ggplot(CC.new.bow, aes(x = site, y=volume.change)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
+
+#a5.1 <- aov(volume.change~site, data = CC.new.bow)
+#summary(a5.1)
+#TukeyHSD(a5.1)
+
 
 ```
 
+- No significant difference between both BOW sites
 
-## Year- Medium Sites Removed
 
-If we remove the medium sites, these are the trends that are present at the year scale. 
 
-- Both 2015-2017 and 2015-2019 time points experienced more pronounced losses when medium sites are removed (unsure if significant)
-
-- The 2017-2019 time point shows a further increase, although I have reservations about it and am not sure where that is coming from. Since this time point was determined algebraically, I'm unsure whether it is as descriptive as it should be. 
-
-```{r CC2 no medium sites, echo=FALSE}
-ggplot(CC.3, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+geom_label(label= "p=0.388", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
-
-#a5 <- aov(volume.change~timepoint, data = CC.3)
-#summary(a5)
-
-```
-
-Statistical Results:
-
-- No significant differences between time points
 
 ## Site Level 
 
 ```{r CC DAta by site, echo=FALSE}
-
-ggplot(CC, aes(timepoint, volume.change, fill = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ theme(axis.text.x = element_text(angle = 20, vjust = 1.1, hjust=1))
-
-
-
-#CC.3.anova <- aov(volume.change~timepoint + hum_dist + site, data = CC)
-#summary(CC.3.anova)
-
+ggplot(CC.new, aes(timepoint, volume.change, fill = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ theme(axis.text.x = element_text(angle = 20, vjust = 1.1, hjust=1))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
 ```
 
 ## PPQ Level
@@ -649,26 +896,33 @@ ggplot(CC, aes(timepoint, volume.change, fill = timepoint)) + geom_boxplot() +fa
 To try to see if any specific plots could be skewing the data, I examined volumetric changes at the three time points based on the PPQ.
 
 ```{r CC Data by plot, echo=FALSE}
-ggplot(CC, aes(mpq, volume.change, colour = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
-
-
-
-#CC.4.anova <- aov(volume.change~timepoint + site + mpq + hum_dist, data = CC)
-#summary(CC.4.anova)
+ggplot(CC.new, aes(mpq, volume.change, colour = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
 
 ```
 
 
 From this plot, the following site/plot combinations jump out at me:
 
-- Site 30 MPQ 2, 3 - both illustrate plot volume increases as time progresses, which I attest to the large amounts of rubble that blow through the VH plots. MPQ 2 had a large boulder move between during 2015-2017, while the overhaul of all other rubble components at this site varied from year to year (but given the values, more and more settled)
+##### Site 30 MPQ 2 & 3
+- Site 30 MPQ 2, 3 - both experience volume increases over time, which I think is due to the large amounts of rubble that blow through the VH plots. 
+- MPQ 2 had a large boulder move between during 2015-2017, while the overhaul of all other rubble components at this site varied from year to year (but given the values, more settled as time progressed) 
+- MPQ 3- 1 big boulder moves in during 2015-2017 and stays, with sand patches filled in with rubble more as time progresses 
 
-- Site 34 MPQ 1 & Site 35 MPQ 1,3 - all show increases in volume. Unsure exactly why....
+##### Site 34 MPQ 1: 
+- In 2015-2017, large matts of macroalgae overtook the plot, which made up for the loss of all the soft corals and is what I think is driving the increase in volume we're seeing
+- In 2015-2019, there is minimal loss of existing structure throughout all timepoints (same dead branching species are present from 2015-2019), with the near-entriety of the macroalgae disappearing by 2019.
 
-- Site 5 MPQ 1, MPQ 2- Large increases in volume from 2015-2017 are seen in these plots. 
+##### Site 35 MPQ 1: 
+- In 2015-2017: The sandy patch filled in with rubble between these two timepoints, otherwise most structure stayed consistent.
+- 2015-2019: A corner filled in with some sand and macroalgae, but the remainder of the gained-volume appears to be due to growth of corals (mostly porites)
+
+##### Site 35 MPQ 3:
+- In 2015-2017: Increases due to large matts of macroalgae present, with minimal structrual loss noticed other than a couple coralheads. 
+- In 2015-2019: Loss of macroalgae is offset by rubble movement into the plot and coral growth of porities. I beleive a significant difference will be evident from 2017-2019 when we compare with the macroalgae and without.
 
 
-I need to look at these plots between the two years and see what could be driving these results we are seeing.
+
+
 
 
 
@@ -681,11 +935,11 @@ The complexity metrics are averaged at the year level, showing each metrics aver
 
 ### Surface Rugosity 
 
-- Surface rugosity exhibited decreases between 2015 and 2017 at both DEM scales, as expected due to Jenn's previously results
+- Surface rugosity exhibited decreases between 2015 and 2017 at both DEM scales (blue = 1cm | green = 8cm), as expected due to Jenn's previously results;  However, these losses didn't continue in 2019
 
-- However, these losses didn't continue in 2019
 
-- I hypothesize this is due to the following:
+
+##### I hypothesize this is due to the following:
 
 - The initial declines seen between 2015 and 2017 was due to the mass die-off and subsequent bio-erosion of the more complex coral (branching and plating) species. 
 
@@ -722,7 +976,7 @@ Statistical Results:
 
 
 
-### Terrain Ruggedness by year
+### Terrain Ruggedness
 
 - The changes between the years are more pronounced in the terrain ruggedness values than those of surface rugosity.
 
@@ -756,7 +1010,9 @@ Statistical Results:
 
 - At 1cm DEM, each time point is significantly different from one another [2015-2017 (P=3.0E-7), 2015-2019 (P=0.0272), 2017-2019 (P=0.00909)]
 
-- There is no significant difference between years and VRM values at 8cm DEM
+- That significant difference dissapears when looking at the 8cm DEM resolution 
+
+
 
 
 ### Slope
@@ -785,6 +1041,7 @@ a12<- aov(slope~year, data = mpq.8)
 
 
 ```
+
 
 Statistical Results:
 
@@ -893,6 +1150,8 @@ grid.arrange(p1, p2, nrow=2)
 
 ```
 
+
+
 ##### Planform Curvature Density Plots
 
 ```{r Plan Curv density plots, echo=FALSE}
@@ -905,9 +1164,10 @@ grid.arrange(p3, p4, nrow=2)
 
 
 ## Human Disturbance Gradient Level
+
 Investigates complexity metrics, at both 1cm and 8cm DEM resolutions, across the human disturbance gradient, which contains 3 levels (very high, medium, very low).
 
-All sites were included, including 15, 19, and 37 which were only sampled in 2 of the 3 years
+All sites were included, including 15, 19, and 37, which were only sampled in 2 of the 3 years
 
 
 ### Surface Rugosity
@@ -980,15 +1240,18 @@ For all metrics, I have 3 plots: 1 that includes both DEM scales, and then 2 sub
 
 ### Surface Rugosity 
 
-- In all sites, 2015-2017 shows decreases in SR
+- In all sites, 2015-2017 shows decreases in SR.
 
 - In the majority of sites, 2017-2019  indicate increases in SR, with most not quite to the levels seen in 2015
 
-- The sites that didn't experience this increase are:
 
-- Site 30 - Rubble transport is highly dependent 
 
--Site 8 - I'm unsure what is causing this. When we look at individual plots, we will be able to see if any of those are driving this trend
+The sites that didn't experience this increase are:
+
+- Site 30: Rubble transport is highly dependent 
+
+- Site 8: I'm unsure what is causing this. When we look at individual plots, we will be able to see if any of those are driving this trend
+
 
 ```{r SR by site by DEM, echo=FALSE}
 ggplot(mpq, aes(x = site, y=rug, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
@@ -1125,6 +1388,8 @@ ggplot(mpq.8, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site
 
 - A shift towards more positive values is clear throughout the years, although appears most pronounced in the VL sites
 
+- I hypothesize it is due to the loss of the large branching and plating structures found predominantly at the VL disturbance sites
+
 - By eyeballing it, the magnitude of the shift  in curvature values throughout time is highest in VL > VH > M
 
 - As previously stated, I believe this is due to erosion occurring on the structure surfaces, causing the outward projection to become more concave.
@@ -1159,25 +1424,40 @@ This is the initial digitiziation data collected from May 2020 - to the present.
 
 The issue came up whether to include encrusting coral that is growing on rubble. To see if it matters, Julia asked for a sensetivity analysis to be conducted on the data.
 
+
+### Sensitivity Analysis
+
 #### Site distributions with encrusting species as a separate category
-
-
 
 ```{r Dig encrusting included, echo=FALSE}
 Morphology.percent.plot
 
 ```
 
+- Very High sites are dominated by rubble; site 30 is an oddball, but that is expected.
+
+- Apart from the odd site, living coral is far higher in the M and VL sites than wihtin the VH Sites
+
+- Sadly it doesn't appear that the unique categories of collumnar, digitate, etc. seem to be any different among sites, but it is tough to tell in this graph
+
+- I'm trying to decide on a better way to show the results here and am blanking. Any recommendations would be greatly appreciated. (I am thinking of a proportion plot similar to this but simpler first: Live vs Dead structure....)
+
+```{r Table given percents, echo=FALSE, fig.align="center"}
+#table2 <- image_read("")
+
+#map4 <- image_read("Map/sites_sampled_updated.png")
+#map4
+
+```
   
 #### All encrusting corals are included into the one category forming the majority of cover in the plot
 
-The majority of cover in the plots tend to be either dead_massive structure or rubble.
+- The majority of cover in the plots tend to be either dead_massive structure or rubble.
+
+- Live_Encrusting appears to be such a minor player in the grand scheme of things the difference here isn't detectable to the eye
+
 
 ```{r Dig encrusting excluded, echo= FALSE}
-
 Morphology.extra.percent.plot
-
-grid.arrange(Morphology.percent.plot,Morphology.extra.percent.plot, nrow=2)
-
 
 ```
