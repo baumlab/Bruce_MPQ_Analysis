@@ -501,20 +501,26 @@ Morphology.extra.percent.plot <- ggplot(dig_sum_removed_full, aes(fill=Benthic_M
 Morphology.extra.percent.plot
 
 
+######### Getting SR Values to see if I can justify which morphologies are "most complex" #########
+str(dig)
+colnames(dig)
 
-##### ADD A Collumn to the dataframe for Living/Dead and assign a Living or Dead tag to each colony based on the morphology present- this way we can track % live coral cover through time. #####
+#Make a new SR dataframe
+dig_SR <- subset(dig, select = c("year", "hum_dist", "site", "ppq", "Benthic_Morphology", "area", "SArea", "surface.rugosity"))
+
+#Summarize all the Surface Rugosity values by morphology type
+#Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
+dig_SR_sum <- aggregate( surface.rugosity ~ Benthic_Morphology, dig_SR, mean )
+dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
+
+#plot the results found
+ggplot(dig_SR, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290)) + scale_y_continuous(limits=c(0,15)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
 
 
+#looking at the outliers (might need to delete these as they are mistakes)
+dig_ordered <- dig_SR[order(dig_SR[,8] ),]
+tail(dig_ordered, 10)
 
-
-
-
-#grid.arrange(Morphology.percent.plot,Morphology.extra.percent.plot, nrow=2)
-
-##Export two wide tables so I can show % of each morphology at each plot for the sensitivity analysis
-#write.csv(dig_wide_percent,"kevin\\Desktop\\Github\\Bruce_MPQ_Analysis\\Data\\dig_sum_extra.csv", row.names = FALSE)
-
-#write.csv(dig_wide_percent,"kevin\\Desktop\\Github\\Bruce_MPQ_Analysis\\Data\\dig_sum.csv", row.names = FALSE)
 ```
 
 
@@ -691,9 +697,9 @@ When looking at volumetric change by time point for all plots measured, we see t
 
 - Appears that 2015-2017 losses occur, which is similar to what Jenn's study found
 
-- 2017-2019 plot is only for Site 37, as it was the only site measured in Cloudcompare for those two timepoints (the rest were initially done algabraeically, but that proved to not provide accurate information for those timepoints)
+- 2017-2019 plot is only for Site 37, as it was the only site measured in Cloudcompare for those two timepoints (the rest were initially done algebraically, but that proved to not provide accurate information for those timepoints)
 
-- While losses in 2015-2019 were experienced, greatest losses of volume appear to occur from 2015-2017, which is interesting as while collecting the data, I felt that these values could have been higher if that large matt of macro algae wasn't present in many of the 2017 plots.
+- While losses in 2015-2019 were experienced, greatest losses of volume appear to occur from 2015-2017, which is interesting as while collecting the data, I felt that these values could have been higher if that large mat of macro algae wasn't present in many of the 2017 plots.
 
 
 ```{r CC by year, echo=FALSE}
@@ -751,6 +757,7 @@ CC.102
 a1.3 <- aov(volume.removed~timepoint, data = CC.new.2.timepts)
 #summary(a1.3)
 
+
 ```
 
 
@@ -774,7 +781,7 @@ ggplot(CC.new.3, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deeps
 
 Now breaking it down by disturbance level, losses in very high and very low disturbance sites are noted (in both 2015-2017 and 2015-2019 time frames). 
 
-- Greatest losses of volume appear to occur from 2015-2017, which is interesting. While collecting the data, I felt that these values could have been higher if that large matt of macro algae wasn't present in many of the 2017 plots 
+- Greatest losses of volume appear to occur from 2015-2017, which is interesting. While collecting the data, I felt that these values could have been higher if that large Matt of macro algae wasn't present in many of the 2017 plots 
 
 Interestingly, the medium disturbance sites experienced minimal losses in volume. This was seen in Jenn's study as well, and I hypothesize this lack of loss could be due to multiple causes:
 
@@ -784,9 +791,9 @@ Interestingly, the medium disturbance sites experienced minimal losses in volume
 
 
 
-To examine it further, I first tested to see if there was any signifant differences between averaged volumetric change values by human disturbance level.
+To examine it further, I first tested to see if there was any significant differences between averaged volumetric change values by human disturbance level.
 
-There was a signficant difference between 1 of the groups. According to Tukey's test, Very High-Medium were significantly different, while the other combinations were not statistically different.
+There was a significant difference between 1 of the groups. According to Tukey's test, Very High-Medium were significantly different, while the other combinations were not statistically different.
 
 ```{r overall human dist ~ volume.change, include=FALSE}
 ggplot(CC.new, aes(hum_dist, volume.change)) + geom_boxplot() + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))+ geom_label(label= "p=0.0117", x= 1, y=0.5, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
@@ -861,7 +868,7 @@ ggplot(CC.new.v, aes(x = site, y=volume.change, fill = timepoint)) + geom_boxplo
 
 However, after graphing this, it highlighted:
 
-- Site 37 experienced a slight increase in volume from 2017-2019, however we lack an intiial assessment to see if it experineced losses as seen at site 5.
+- Site 37 experienced a slight increase in volume from 2017-2019, however we lack an initial assessment to see if it experienced losses as seen at site 5.
 
 - Site 5, which is the only site sampled in each timepoint (2015, 2017, and 2019), experienced losses across the board, and has continued to see a decrease as time progressed.
 
@@ -872,7 +879,7 @@ However, after graphing this, it highlighted:
 
 ## Bay of Wrecks
 
-I did the same only the Bay of Wrecks sites. It is less interesting as these are only available for 1 time point, but we can see the anticipated volume loss for both sites similar to what Jenn Magel found, with site 15 experieincing the largest declines.
+I did the same only the Bay of Wrecks sites. It is less interesting as these are only available for 1 time point, but we can see the anticipated volume loss for both sites similar to what Jenn Magel found, with site 15 experiencing the largest declines.
 
 ```{r BOW, echo=FALSE}
 ggplot(CC.new.bow, aes(x = site, y=volume.change)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
@@ -913,16 +920,16 @@ From this plot, the following site/plot combinations jump out at me:
 - MPQ 3- 1 big boulder moves in during 2015-2017 and stays, with sand patches filled in with rubble more as time progresses 
 
 ##### Site 34 MPQ 1: 
-- In 2015-2017, large matts of macroalgae overtook the plot, which made up for the loss of all the soft corals and is what I think is driving the increase in volume we're seeing
-- In 2015-2019, there is minimal loss of existing structure throughout all timepoints (same dead branching species are present from 2015-2019), with the near-entriety of the macroalgae disappearing by 2019.
+- In 2015-2017, large mats of macro algae overtook the plot, which made up for the loss of all the soft corals and is what I think is driving the increase in volume we're seeing
+- In 2015-2019, there is minimal loss of existing structure throughout all timepoints (same dead branching species are present from 2015-2019), with the near-entirety of the macro algae disappearing by 2019.
 
 ##### Site 35 MPQ 1: 
 - In 2015-2017: The sandy patch filled in with rubble between these two timepoints, otherwise most structure stayed consistent.
-- 2015-2019: A corner filled in with some sand and macroalgae, but the remainder of the gained-volume appears to be due to growth of corals (mostly porites)
+- 2015-2019: A corner filled in with some sand and macro algae, but the remainder of the gained-volume appears to be due to growth of corals (mostly porites)
 
 ##### Site 35 MPQ 3:
-- In 2015-2017: Increases due to large matts of macroalgae present, with minimal structrual loss noticed other than a couple coralheads. 
-- In 2015-2019: Loss of macroalgae is offset by rubble movement into the plot and coral growth of porities. I beleive a significant difference will be evident from 2017-2019 when we compare with the macroalgae and without.
+- In 2015-2017: Increases due to large mats of macro algae present, with minimal structural loss noticed other than a couple coral heads. 
+- In 2015-2019: Loss of macro algae is offset by rubble movement into the plot and coral growth of porities. I believe a significant difference will be evident from 2017-2019 when we compare with the macro algae and without.
 
 
 
@@ -1014,7 +1021,7 @@ Statistical Results:
 
 - At 1cm DEM, each time point is significantly different from one another [2015-2017 (P=3.0E-7), 2015-2019 (P=0.0272), 2017-2019 (P=0.00909)]
 
-- That significant difference dissapears when looking at the 8cm DEM resolution 
+- That significant difference disapears  when looking at the 8cm DEM resolution 
 
 
 
@@ -1424,9 +1431,9 @@ ggplot(mpq.8, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~
 
 # Digitization 
 
-This is the initial digitiziation data collected from May 2020 - to the present. 
+This is the initial digitization data collected from May 2020 - to the present. 
 
-The issue came up whether to include encrusting coral that is growing on rubble. To see if it matters, Julia asked for a sensetivity analysis to be conducted on the data.
+The issue came up whether to include encrusting coral that is growing on rubble. To see if it matters, Julia asked for a sensitivity analysis to be conducted on the data.
 
 
 ### Sensitivity Analysis
@@ -1440,9 +1447,9 @@ Morphology.percent.plot
 
 - Very High sites are dominated by rubble; site 30 is an oddball, but that is expected.
 
-- Apart from the odd site, living coral is far higher in the M and VL sites than wihtin the VH Sites
+- Apart from the odd site, living coral is far higher in the M and VL sites than within the VH Sites
 
-- Sadly it doesn't appear that the unique categories of collumnar, digitate, etc. seem to be any different among sites, but it is tough to tell in this graph
+- Sadly it doesn't appear that the unique categories of columnar, digitate, etc. seem to be any different among sites, but it is tough to tell in this graph
 
 - I'm trying to decide on a better way to show the results here and am blanking. Any recommendations would be greatly appreciated. (I am thinking of a proportion plot similar to this but simpler first: Live vs Dead structure....)
 
@@ -1458,10 +1465,38 @@ Morphology.percent.plot
 
 - The majority of cover in the plots tend to be either dead_massive structure or rubble.
 
-- Live_Encrusting appears to be such a minor player in the grand scheme of things the difference here isn't detectable to the eye
+- Live_Encrusting appears to be such a minor player in the grand scheme of things, but it is tough to tell in its current format
+
+I think that the idea of encrusting coral on rubble not counting as encrusting material and is therefore simply rubble is a good way to move forward. The argument that it provides minimal structure there isn't strong in my opinion, especially since those rubble piles are so transient, the habitat provided from that structure is not secure or long-term.
 
 
 ```{r Dig encrusting excluded, echo= FALSE}
 Morphology.extra.percent.plot
+
+```
+
+
+
+
+### Surface Rugosity Values by morphology
+
+In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. **Note: I set the Y axis to 10 so that we could see the boxplot ranges more clearly, and in doing so made some outliers disappear.  
+
+
+```{r SR by morphology, echo=FALSE}
+
+ggplot(dig, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290))+ scale_y_continuous(limits=c(0,10)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+
+```
+
+From the plot, I would say that, while interesting, there is lots of variation. It will take me a bit to clean the data properly to get rid of the outliers. One way to do so could be to create a minimum 3D size the morphological structure needs to be in order to be eligible for the analysis. With the DEM cell size set to 1cm, I feel a 3D surface area less than 0.01 (IE: 1cm3) wouldn't contribute anything meaningful to the structure present. 
+
+With that said, we could even set it to something larger, that way ensuring more than 1 full DEM cell is located within the polygon. This could be something to discuss with John if we choose to check this out. 
+
+As a very fast and rough result for the average values, I got the following:
+
+```{r Dig sum table, echo=FALSE}
+dig_SR_ordered
 
 ```
