@@ -23,6 +23,7 @@ library(ggpmisc)
 library(knitr)
 library(magick)
 library(gridExtra)
+library(tidyverse)
 
 #Load in 2019 MPQ Data as a csv file
 mpq19 <- read.csv(here("Data", "2019_MPQ_Complexity_Data.csv"))

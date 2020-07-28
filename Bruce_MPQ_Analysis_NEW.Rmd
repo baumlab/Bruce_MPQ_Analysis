@@ -1467,7 +1467,7 @@ Morphology.percent.plot
 
 - Live_Encrusting appears to be such a minor player in the grand scheme of things, but it is tough to tell in its current format
 
-I think that the idea of encrusting coral on rubble not counting as encrusting material and is therefore simply rubble is a good way to move forward. The argument that it provides minimal structure there isn't strong in my opinion, especially since those rubble piles are so transient, the habitat provided from that structure is not secure or long-term.
+I think that the idea of encrusting coral on rubble not counting as encrusting material and is therefore simply rubble is a good way to move forward. The argument that it provides minimal structure there isn't strong in my opinion, especially since those rubble piles are so transient, the habitat provided from that structure is not secure or long-term. 
 
 
 ```{r Dig encrusting excluded, echo= FALSE}
