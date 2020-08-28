@@ -1622,7 +1622,7 @@ Morphology.extra.percent.plot
 
 ### Surface Rugosity Values by morphology
 
-In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. **Note: I set the Y axis to 10 so that we could see the boxplot ranges more clearly, and in doing so made some outliers disappear.  
+In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. **Note: I set the Y axis to 10 so that we could see the boxplot ranges more clearly, and in doing so made some outliers disappear.  Perhaps I should see VRM values for the top 3/5 morphologies as it appears that is the best metric to use for complexity....
 
 
 ```{r SR by morphology, echo=FALSE}
