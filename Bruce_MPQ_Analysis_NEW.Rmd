@@ -525,6 +525,13 @@ colnames(dig)
 
 #Make a new SR dataframe
 dig_SR <- subset(dig, select = c("year", "hum_dist", "site", "ppq", "Benthic_Morphology", "area", "SArea", "surface.rugosity"))
+<<<<<<< HEAD
+
+#Summarize all the Surface Rugosity values by morphology type
+#Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
+dig_SR_sum <- aggregate( surface.rugosity ~ Benthic_Morphology, dig_SR, mean )
+dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
+=======
 
 #Summarize all the Surface Rugosity values by morphology type
 #Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
@@ -533,12 +540,22 @@ dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
 
 #plot the results found
 ggplot(dig_SR, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290)) + scale_y_continuous(limits=c(0,15)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+>>>>>>> c1b8e95efae0c9cf2db7b8b93aa07cc4b22b48c1
 
+#plot the results found
+ggplot(dig_SR, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290)) + scale_y_continuous(limits=c(0,15)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
 
 #looking at the outliers (might need to delete these as they are mistakes)
 dig_ordered <- dig_SR[order(dig_SR[,8] ),]
 tail(dig_ordered, 10)
 
+<<<<<<< HEAD
+#looking at the outliers (might need to delete these as they are mistakes)
+dig_ordered <- dig_SR[order(dig_SR[,8] ),]
+tail(dig_ordered, 10)
+
+=======
+>>>>>>> c1b8e95efae0c9cf2db7b8b93aa07cc4b22b48c1
 ```
 
 ```{r old cloud compare data can delete once happy with new code, eval=FALSE, warning=TRUE, include=FALSE}
@@ -1622,12 +1639,22 @@ Morphology.extra.percent.plot
 
 ### Surface Rugosity Values by morphology
 
+
 In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. **Note: I set the Y axis to 10 so that we could see the boxplot ranges more clearly, and in doing so made some outliers disappear.  Perhaps I should see VRM values for the top 3/5 morphologies as it appears that is the best metric to use for complexity....
 
 
 ```{r SR by morphology, echo=FALSE}
 
 ggplot(dig, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290))+ scale_y_continuous(limits=c(0,10)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+``` 
+
+
+In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. 
+
+
+```{r SR by morphology}
+
+ggplot(dig, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
 
 
 ```
@@ -1638,12 +1665,14 @@ With that said, we could even set it to something larger, that way ensuring more
 
 As a very fast and rough result for the average values, I got the following:
 
+
 ```{r Dig sum table, echo=FALSE}
 dig_SR_ordered
 
 ```
 
 
+```{r Dig sum table, echo=FALSE}
+dig_SR_sum
 
-
-
+```
