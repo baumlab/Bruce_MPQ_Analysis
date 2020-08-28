@@ -89,9 +89,9 @@ mpq
 
 ```{r clean ArcMap complexity data, include=FALSE}
 #Load mpq data
-mpq <- read.csv(here("Data","ArcMap.Complexity.Data.Final.csv"))
+#mpq <- read.csv(here("Data","ArcMap.Complexity.Data.Final.csv"))
+mpq <- read.csv(here("Data","MPQ.Complexity.2015.2017.2019.allDEM.27Aug2020.csv"))
 mpq
-
 str(mpq)
 colnames(mpq)
 
@@ -126,8 +126,16 @@ str(mpq)
 
 #Change levels of hum_dist & site
 levels(mpq$hum_dist)
-mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "High", "Medium", "Low", "Very Low" ))
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
 mpq$site <- factor(mpq$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+##Drop rows where values = NA
+mpq %>% filter(!is.na(hum_dist))
+
+#See levels for mpq
+levels(mpq$hum_dist)
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
+
 
 #####Subset Data based on DEM Size ####
 #Make a subset for 1cm DEM 
@@ -138,6 +146,15 @@ mpq.1$site <- factor(mpq.1$site, levels = c("27", "30", "32", "8", "34", "35", "
 
 #Make Unique collumns for Site.plot
 mpq.1$site.ppq <- paste(mpq.1$site, mpq.1$ppq, sep=".")
+
+#Make a subset for 4cm DEM 
+mpq.4 <- mpq[mpq$DEM == 4,] 
+
+#Reorder sites so they fit in as VH --> M --> VL
+mpq.4$site <- factor(mpq.4$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+#Make Unique collumns for Site.plot
+mpq.4$site.ppq <- paste(mpq.4$site, mpq.4$ppq, sep=".")
 
 
 #Make a subset for 8cm DEM 
@@ -150,13 +167,20 @@ mpq.8$site <- factor(mpq.8$site, levels = c("27", "30", "32", "8", "34", "35", "
 mpq.8$site.ppq <- paste(mpq.8$site, mpq.8$ppq, sep=".")  
 
 #Change the levels of this dataframe so that the sites are arranged correctly
+#1cm DEM
 levels(mpq.1$site.plot)
 mpq.1$site.ppq <- factor(mpq.1$site.ppq, levels=c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
 levels(mpq.1$site.ppq)
 
-levels(mpq$hum_dist)
-mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "High", "Medium", "Low", "Very Low" ))
+#4cm DEM
+levels(mpq.4$site.plot)
+mpq.4$site.ppq <- factor(mpq.1$site.ppq, levels=c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
+levels(mpq.4$site.ppq)
 
+#8cm DEM
+levels(mpq.8$site.plot)
+mpq.8$site.ppq <- factor(mpq.8$site.ppq, levels=c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
+levels(mpq.8$site.ppq)
 
 
 ####Subset Data based on Human Disturbance Level####
@@ -173,11 +197,6 @@ mpq.vl <- mpq[mpq$hum_dist == "Very Low",]
 ####Make Unique collumns for Site.plot
 mpq.vh$site.plot <- paste(mpq.vh$site, mpq.vh$plot, sep=".")
 
-#Change the levels of this dataframe so that the sites are arranged correctly
-levels(mpq.8$site.ppq)
-mpq.8$site.ppq <- factor(mpq.8$site.ppq, levels=c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
-levels(mpq.8$site.ppq)
-
 #Subset plan and pro curv values to convert to proper Z units
 mpq.curv <- subset(mpq, select = c("pro.curv", "plan.curv", "DEM", "year"))
 
@@ -189,7 +208,6 @@ mpq.curv$plan.z <- "b"
 mpq.curv$pro.z <- mpq.curv[,"pro.curv"]/100
 mpq.curv$plan.z <- mpq.curv[,"plan.curv"]/100
 ```
-
 
 ```{r Digitization sensetivity analysis with only a few sites, eval=FALSE, include=FALSE}
 #loading the data
@@ -522,9 +540,6 @@ dig_ordered <- dig_SR[order(dig_SR[,8] ),]
 tail(dig_ordered, 10)
 
 ```
-
-
-
 
 ```{r old cloud compare data can delete once happy with new code, eval=FALSE, warning=TRUE, include=FALSE}
 
@@ -932,6 +947,47 @@ From this plot, the following site/plot combinations jump out at me:
 - In 2015-2019: Loss of macro algae is offset by rubble movement into the plot and coral growth of porities. I believe a significant difference will be evident from 2017-2019 when we compare with the macro algae and without.
 
 
+# ArcMap Complexity metrics PCoA
+
+Coming soon hopefully!!
+
+```{r PCoA, eval=FALSE, include=FALSE}
+mpq
+colnames(mpq)
+
+#See distributions of each complexity metric
+par(mfrow=c(3,2))
+hist(mpq$rug)
+hist(mpq$slope)
+hist(mpq$vrm)
+hist(mpq$pro.curv)
+hist(mpq$plan.curv)
+
+par(mfrow=c(1,1)) #change plotting back to a single plot per window
+
+#Look for covariance (similarities between variables)
+par(mfrow=c(2,2))
+plot(rug ~ slope, mpq)
+plot(rug ~ vrm, mpq)
+plot(rug ~ pro.curv, mpq)
+plot(rug ~ plan.curv, mpq)
+plot(slope ~ vrm, mpq)
+plot(slope ~ pro.curv, mpq)
+plot(slope ~ plan.curv, mpq)
+plot(vrm ~ pro.curv, mpq)
+plot(vrm ~ plan.curv, mpq)
+plot(pro.curv ~ plan.curv, mpq)
+
+#From this, it looks like there are covariance between the following
+plot(rug ~ slope, mpq)
+plot(pro.curv ~ plan.curv, mpq)
+plot(rug ~ vrm, mpq)   #MAYBE....
+
+
+
+
+
+```
 
 
 
@@ -959,21 +1015,33 @@ The complexity metrics are averaged at the year level, showing each metrics aver
 - The portions of the plot that did erode away between 2017-2019 were offset by both rubble settling in the plot area and/or the growth of the prevailing coral species in the plot area. 
 
 ```{r SR by year and by DEM, echo=FALSE}
-#ggplot(mpq, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=0.00394", x= 3, y=2.6, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+# ggplot(mpq, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 3)+ xlab("Year") + ylab("Surface Rugosity") #+ geom_label(label= "p=0.00394", x= 3, y=2.6, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+ geom_label(label= "p=0.0213", x= 2, y=2.7, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")+ geom_label(label= "p=0.455", x= 2, y=2.7, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
 
-SR1 <- ggplot(mpq.1, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=0.00394", x= 3, y=2.6, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+SR1 <- ggplot(mpq.1, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=3.94E-3", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") +
+  ylim(1, 3.0)
 
-SR2 <- ggplot(mpq.8, aes(x = year, y=rug)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=0.433", x= 2, y=1.5, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+SR2 <- ggplot(mpq.4, aes(x = year, y=rug)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + geom_label(label= "p=0.213", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")+
+  ylim(1, 3)+ ylab("") 
 
-grid.arrange(SR1, SR2, nrow=2)
 
-a7 <- aov(rug~year, data = mpq.1)
+SR3 <- ggplot(mpq.8, aes(x = year, y=rug)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + geom_label(label= "p=0.455", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")+
+  ylim(1, 3)+ ylab("") 
+
+
+grid.arrange(SR1, SR2, SR3, ncol=3)
+
+#a7 <- aov(rug~year, data = mpq.1)
 #summary(a7)
 #TukeyHSD(a7)
 
-a8 <- aov(rug~year, data = mpq.8)
+#a8 <- aov(rug~year, data = mpq.8)
 #summary(a8)
 #TukeyHSD(a8)
+
+#a99 <- aov(rug~year, data = mpq.4)
+#summary(a99)
+#TukeyHSD(a99)
+
 
 ```
 
@@ -983,7 +1051,7 @@ Statistical Results:
 
 - 2015 - 2017 are significantly different, as are 2015-2019; 2017 - 2019 are not significantly different
 
-- There is no significant difference between years and SR values at 8cm DEM
+- There is no significant difference between years and SR values at 4 and 8cm DEMs
 
 
 
@@ -998,19 +1066,33 @@ Statistical Results:
 ```{r TR by yr, echo=FALSE}
 #ggplot(mpq, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness")
 
-TR1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness") + geom_label(label= "p=5.83E-7", x= 2, y=0.1, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+TR1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness") + geom_label(label= "p=5.83E-7", x= 2, y=0.13, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(0, 0.14)
 
-TR2 <-ggplot(mpq.8, aes(x = year, y=vrm)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness") +geom_label(label= "p=0.306", x= 2, y=0.1, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+TR2 <- ggplot(mpq.4, aes(x = year, y=vrm)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") + geom_label(label= "p=0.0583", x= 2, y=0.13, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(0, 0.14)
 
 
-a9<- aov(vrm~year, data = mpq.1)
-#TukeyHSD(a9)
+TR3 <-ggplot(mpq.8, aes(x = year, y=vrm)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") +geom_label(label= "p=0.306", x= 2, y=0.13, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(0, 0.14)
 
-a10<- aov(vrm~year, data = mpq.8)
+grid.arrange(TR1, TR2, TR3, ncol=3)
+
+
+
+#a10<- aov(vrm~year, data = mpq.1)
+#summary(a10)
 #TukeyHSD(a10)
 
-
-grid.arrange(TR1, TR2, nrow=2)
+# a11<- aov(vrm~year, data = mpq.4)
+# summary(a11)
+#TukeyHSD(a11)
+# 
+# a12 <- aov(vrm~year, data = mpq.8)
+# summary(a12)
+# TukeyHSD(a12)
+# 
+# grid.arrange(TR1, TR2, nrow=2)
 
 #summary(a9)
 #summary(a10)
@@ -1020,6 +1102,8 @@ grid.arrange(TR1, TR2, nrow=2)
 Statistical Results:
 
 - At 1cm DEM, each time point is significantly different from one another [2015-2017 (P=3.0E-7), 2015-2019 (P=0.0272), 2017-2019 (P=0.00909)]
+
+- At 4cm, the difference between years is close to being significant overall. 2015-2017 and 2017-2019 are significantly different after a tukey's test, with 2015-2019 p value = 0.5026482
 
 - That significant difference disapears  when looking at the 8cm DEM resolution 
 
@@ -1034,20 +1118,33 @@ Statistical Results:
 ```{r Slope by yr, echo=FALSE}
 #ggplot(mpq, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope")
 
-S1 <- ggplot(mpq.1, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope") +geom_label(label= "p=0.0237", x= 3, y=47, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+S1 <- ggplot(mpq.1, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope") +geom_label(label= "p=0.0237", x= 3, y=48, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(10, 50)
 
-S2<- ggplot(mpq.8, aes(x = year, y=slope)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope") +geom_label(label= "p=0.586", x= 3, y=36, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+S2 <- ggplot(mpq.4, aes(x = year, y=slope)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") +geom_label(label= "p=0.477", x= 3, y=48, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(10, 50)
 
-grid.arrange(S1, S2, nrow=2)
+
+S3<- ggplot(mpq.8, aes(x = year, y=slope)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") +geom_label(label= "p=0.586", x= 3, y=48, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(10, 50)
+
+grid.arrange(S1, S2, S3,  ncol=3)
+
+# 
+# a13<- aov(slope~year, data = mpq.1)
+# a14<-aov(slope~year, data=mpq.4)
+# a15<- aov(slope~year, data = mpq.8)
+
+# summary(a13) #0.0237
+# summary(a14) #0.477
+# summary(a15) #0.665
+# 
+# TukeyHSD(a13) #2015-2017 sig different only
+# TukeyHSD(a14) #none sig
+# TukeyHSD(a15) #none sig
+# 
 
 
-a11<- aov(slope~year, data = mpq.1)
-a12<- aov(slope~year, data = mpq.8)
-
-#summary(a11)
-#summary(a12)
-
-#TukeyHSD(a12)
 #plot(TukeyHSD(a11))
 
 
@@ -1058,7 +1155,7 @@ Statistical Results:
 
 - At 1cm DEM, 2015 and 2017 are significantly different (P = 0.0199587), while 2017- 2019 (P=0.718) and 2015-2019 (P=0.1591954) are not significantly different.
 
-- There is no significant difference between years at 8cm DEM
+- There is no significant difference between years at 4cm and 8cm DEMs
 
 
 
@@ -1072,27 +1169,41 @@ Statistical Results:
 ```{r ProCurv surf rug by yr, echo=FALSE}
 #ggplot(mpq, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")
 
-Pro1 <- ggplot(mpq.1, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")+geom_label(label= "p=8.82E-5", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+Pro1 <- ggplot(mpq.1, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")+geom_label(label= "p=8.82E-5", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(500, -500)
 
-Pro2 <- ggplot(mpq.8, aes(x = year, y=pro.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")+geom_label(label= "p=0.125", x= 2, y=110, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+Pro2 <- ggplot(mpq.4, aes(x = year, y=pro.curv)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("P")+geom_label(label= "p=0.0163", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(500, -500)
 
 
-grid.arrange(Pro1, Pro2, nrow=2)
+Pro3 <- ggplot(mpq.8, aes(x = year, y=pro.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("")+geom_label(label= "p=0.137", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(500, -500)
 
 
-a13<- aov(pro.curv~year, data = mpq.1)
-#TukeyHSD(a13)
+grid.arrange(Pro1, Pro2, Pro3, ncol=3)
 
-a14<- aov(pro.curv~year, data = mpq.8)
-#TukeyHSD(a14)
-#summary(a13)
-#summary(a14)
+# 
+# a16<- aov(pro.curv~year, data = mpq.1)
+# a17<- aov(pro.curv~year, data = mpq.4)
+# a18<- aov(pro.curv~year, data = mpq.8)
+
+# summary(a16) #p=8.82E0-05
+# summary(a17) #0.0163
+# summary(a18) #0.137
+
+# TukeyHSD(a16) #2015-2017 and 2015-2019 sig different. 2017-2019 not
+# TukeyHSD(a17) # only 2015-2019 sig different
+# TukeyHSD(a18) #none sig different
+
+
 
 ```
 
 Statistical Results:
 
 - At 1cm DEM, 2015-2017 (P = 0.0199587) and 2015-2019 (P=0.0001) are significantly different, while 2017-2019 are not significantly different (0.4937).
+
+- At 4cm DEM, only 2015-2019 are significantly different (P=0.0125)
 
 - There is no significant difference between years at 8cm DEM
 
@@ -1109,28 +1220,34 @@ Statistical Results:
 ```{r PlanCurv surf rug by yr, echo=FALSE}
 #ggplot(mpq, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")
 
-Plan1 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")+geom_label(label= "p=8.65E-5", x= 2, y=380, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+Plan1 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")+geom_label(label= "p=8.65E-5", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") + ylim(500, -500)
 
-Plan2 <- ggplot(mpq.8, aes(x = year, y=plan.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")+geom_label(label= "p=0.0211", x= 2, y=100, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")
+Plan2 <- ggplot(mpq.4, aes(x = year, y=plan.curv)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("")+geom_label(label= "p=0.00872", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+ ylim(500, -500)
+
+Plan3 <- ggplot(mpq.8, aes(x = year, y=plan.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("")+geom_label(label= "p=0.0244", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+ ylim(500, -500)
 
 
-grid.arrange(Plan1, Plan2, nrow=2)
+grid.arrange(Plan1, Plan2, Plan3, ncol=3)
 
 
-a15<- aov(plan.curv~year, data = mpq.1)
-#TukeyHSD(a15)
+#a19<- aov(plan.curv~year, data = mpq.1)
+#a20<- aov(plan.curv~year, data = mpq.4)
+#a21<- aov(plan.curv~year, data = mpq.8)
 
-a16<- aov(plan.curv~year, data = mpq.8)
-#TukeyHSD(a16)
+#summary(a19) #8.65E-5
+#summary(a20) #0.00872
+#summary(a21) #0.0244
 
-#summary(a15)
-#summary(a16)
-
+#TukeyHSD(a19) #2015-2017 and 2015-2019 sig different
+#TukeyHSD(a20) #2015-2019 and 2017-2019 sig different
+#TukeyHSD(a21) #2017-2019 sig different (2015-2019 close)
 ```
 
 Statistical Results:
 
 - At 1cm DEM, 2015-2017 (P=0.0036) and 2015-2019 (P=9.3E-5) are significantly different, while 2017-2019 are not (0.3989)
+
+- At 4cm DEM, 2015-2019 (P=0.0078280) and 2017-2019 (P=0.0627797) are significantly different
 
 - At 8cm DEM, 2017-2019 (P=0.0303) is significantly different, while 2015-2019 (P=0.0501483) is close. 2015-2017 is not significantly different.
 
@@ -1158,6 +1275,10 @@ p1 <- ggplot(mpq, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.2)
 p2 <- ggplot(mpq, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
 
 grid.arrange(p1, p2, nrow=2)
+
+
+p1 <- ggplot(mpq, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.2)
+p2 <- ggplot(mpq, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
 
 ```
 
@@ -1265,9 +1386,11 @@ The sites that didn't experience this increase are:
 
 
 ```{r SR by site by DEM, echo=FALSE}
-ggplot(mpq, aes(x = site, y=rug, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+ggplot(mpq, aes(x = site, y=rug, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("All DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ggplot(mpq.1, aes(x = site, y=rug, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.4, aes(x = site, y=rug, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ggplot(mpq.8, aes(x = site, y=rug, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
@@ -1293,6 +1416,8 @@ ggplot(mpq, aes(x = site, y=vrm, fill = DEM)) +facet_wrap(~year, scales = "fixed
 
 ggplot(mpq.1, aes(x = site, y=vrm, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
+ggplot(mpq.4, aes(x = site, y=vrm, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
 ggplot(mpq.8, aes(x = site, y=vrm, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 
@@ -1312,6 +1437,8 @@ ggplot(mpq, aes(x = site, y=slope, fill = DEM)) +facet_wrap(~year, scales = "fix
 
 ggplot(mpq.1, aes(x = site, y=slope, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
+ggplot(mpq.4, aes(x = site, y=slope, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
 ggplot(mpq.8, aes(x = site, y=slope, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ```
@@ -1327,6 +1454,8 @@ ggplot(mpq, aes(x = site, y=pro.curv, fill = DEM)) +facet_wrap(~year, scales = "
 
 ggplot(mpq.1, aes(x = site, y=pro.curv, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
+ggplot(mpq.4, aes(x = site, y=pro.curv, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+                                                                                                                                                                                    
 ggplot(mpq.8, aes(x = site, y=pro.curv, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 
@@ -1343,6 +1472,8 @@ ggplot(mpq.8, aes(x = site, y=pro.curv, fill = year)) + ggtitle("8cm DEM scale")
 ggplot(mpq, aes(x = site, y=plan.curv, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ggplot(mpq.1, aes(x = site, y=plan.curv, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.4, aes(x = site, y=plan.curv, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
 ggplot(mpq.8, aes(x = site, y=plan.curv, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
 
@@ -1365,6 +1496,8 @@ Finally, I examined down the changes at each plot through time and by DEM scale.
 ```{r SR by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
+ggplot(mpq.4, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
 ggplot(mpq.8, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface Rugosity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
 
 #Compare plots side by side
@@ -1379,6 +1512,8 @@ ggplot(mpq.8, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, 
 ```{r TR by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
+ggplot(mpq.4, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
+
 ggplot(mpq.8, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
 
 
@@ -1390,6 +1525,8 @@ ggplot(mpq.8, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, 
 
 ```{r Slope by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.4, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
 
 ggplot(mpq.8, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
 
@@ -1408,6 +1545,9 @@ ggplot(mpq.8, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site
 ```{r ProCurv by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
 
+ggplot(mpq.4, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
+
+
 ggplot(mpq.8, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
 
 
@@ -1420,6 +1560,8 @@ ggplot(mpq.8, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~s
 
 ```{r PlanCurv surf by plot, echo=FALSE}
 ggplot(mpq.1, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.4, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
 
 ggplot(mpq.8, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
 
@@ -1500,3 +1642,8 @@ As a very fast and rough result for the average values, I got the following:
 dig_SR_ordered
 
 ```
+
+
+
+
+
