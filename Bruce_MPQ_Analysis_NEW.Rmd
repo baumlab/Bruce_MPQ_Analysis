@@ -87,6 +87,52 @@ mpq
 
 ```
 
+```{r MPQ Data from all 5 timepoints (3 sites), echo =FALSE}
+#Load the data
+mpq.5.tpts <- read.csv(here("Data","MPQ.Complexity.Data.5.tpts.csv"))
+
+#Change the collumn names
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="plot")] <- "ppq"
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="DEM.scale")] <- "DEM"
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="Complexity.Calculation")] <- "rug"
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="Avg..BTM_Slope")] <- "slope"
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="Avg_terrain_ruggedness..VRM."  )] <- "vrm"
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="profile.curvature")] <- "pro.curv"
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="planform.curvature")] <- "plan.curv"
+colnames(mpq.5.tpts)[which(names(mpq.5.tpts)=="average.curvature")] <- "curv"
+
+#Create new dataframe pulling over only collumms I need
+mpq.5.tps<- subset(mpq.5.tpts, select = c("year", "hum_dist","site", "ppq", "SHAPE_Area", "rug", "slope", "vrm", "DEM", "pro.curv", "plan.curv"))
+
+#Switch it back to mpq
+mpq.5.tpts <- mpq.5.tps
+str(mpq.5.tpts)
+
+#Change DEM, Site, Year,Plot all to character
+mpq.5.tpts$DEM <- as.character(mpq.5.tpts$DEM)
+mpq.5.tpts$site <- as.character(mpq.5.tpts$site)
+mpq.5.tpts$year <- as.character(mpq.5.tpts$year)
+mpq.5.tpts$ppq <- as.character(mpq.5.tpts$ppq)
+
+str(mpq.5.tpts)
+
+
+#Change levels of hum_dist & site
+levels(mpq.5.tpts$hum_dist)
+mpq.5.tpts$hum_dist <- factor(mpq.5.tpts$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
+mpq.5.tpts$site <- factor(mpq.5.tpts$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+##Drop rows where values = NA
+mpq.5.tpts %>% filter(!is.na(hum_dist))
+
+#See levels for mpq
+levels(mpq.5.tpts$hum_dist)
+mpq.5.tpts$hum_dist <- factor(mpq.5.tpts$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
+
+```
+
+
+
 ```{r clean ArcMap complexity data, include=FALSE}
 #Load mpq data
 #mpq <- read.csv(here("Data","ArcMap.Complexity.Data.Final.csv"))
@@ -366,7 +412,6 @@ write.csv(dig_wide_percent,"kevin\\Desktop\\Github\\Bruce_MPQ_Analysis\\Data\\di
 #loading the data
 dig <- read_excel(here("Data", "MPQ.Digitization.Data.27Jul2020.xlsx")) #this is a new dataframe, so to fix everything just change this
 
-
 #Turn the area into numeric
 dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
 
@@ -525,13 +570,13 @@ colnames(dig)
 
 #Make a new SR dataframe
 dig_SR <- subset(dig, select = c("year", "hum_dist", "site", "ppq", "Benthic_Morphology", "area", "SArea", "surface.rugosity"))
-<<<<<<< HEAD
+
 
 #Summarize all the Surface Rugosity values by morphology type
 #Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
 dig_SR_sum <- aggregate( surface.rugosity ~ Benthic_Morphology, dig_SR, mean )
 dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
-=======
+
 
 #Summarize all the Surface Rugosity values by morphology type
 #Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
@@ -540,7 +585,7 @@ dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
 
 #plot the results found
 ggplot(dig_SR, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290)) + scale_y_continuous(limits=c(0,15)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
->>>>>>> c1b8e95efae0c9cf2db7b8b93aa07cc4b22b48c1
+
 
 #plot the results found
 ggplot(dig_SR, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290)) + scale_y_continuous(limits=c(0,15)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
@@ -549,13 +594,12 @@ ggplot(dig_SR, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fil
 dig_ordered <- dig_SR[order(dig_SR[,8] ),]
 tail(dig_ordered, 10)
 
-<<<<<<< HEAD
+
 #looking at the outliers (might need to delete these as they are mistakes)
 dig_ordered <- dig_SR[order(dig_SR[,8] ),]
 tail(dig_ordered, 10)
 
-=======
->>>>>>> c1b8e95efae0c9cf2db7b8b93aa07cc4b22b48c1
+
 ```
 
 ```{r old cloud compare data can delete once happy with new code, eval=FALSE, warning=TRUE, include=FALSE}
@@ -1643,7 +1687,7 @@ Morphology.extra.percent.plot
 In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. **Note: I set the Y axis to 10 so that we could see the boxplot ranges more clearly, and in doing so made some outliers disappear.  Perhaps I should see VRM values for the top 3/5 morphologies as it appears that is the best metric to use for complexity....
 
 
-```{r SR by morphology, echo=FALSE}
+```{r SR by morphology1, echo=FALSE}
 
 ggplot(dig, aes(x=Benthic_Morphology, y=surface.rugosity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290))+ scale_y_continuous(limits=c(0,10)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
 ``` 
@@ -1666,7 +1710,7 @@ With that said, we could even set it to something larger, that way ensuring more
 As a very fast and rough result for the average values, I got the following:
 
 
-```{r Dig sum table, echo=FALSE}
+```{r Dig sum table1, echo=FALSE}
 dig_SR_ordered
 
 ```
@@ -1676,3 +1720,142 @@ dig_SR_ordered
 dig_SR_sum
 
 ```
+
+
+# ArcMap Complexity at 5 Timepoints (3 Sites)
+
+- Complexity Metrics quantified from all 5 timepoints (May 2015, March 2016a, November 2016b, July 2017, July 2019) from 3 sites, one from each human disturbance level:
+- VL: Site 5
+- M: Site 8
+- VH: Site 27
+
+## At the year level
+
+#### Surface Rugosity
+
+- High variability among the years meant that none years were significantly different from one another after an ANOVA
+
+```{r mpq complex 5 timepoints @ 3 sites, echo=FALSE}
+#Plot results
+ggplot(mpq.5.tpts, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=0.202", x= 4, y=2.3, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
+
+# a20 <- aov(rug~year, data = mpq.5.tpts)
+# summary(a20)
+#TukeyHSD(a20)
+
+
+
+```
+
+Statistical Results:
+- s
+
+
+#### Terrain Ruggedness
+
+- Similar high variability is seen to that in surface rugosity, however significant results are found after Anova/Tukey tests
+
+```{r vrm 5tpt, echo=FALSE}
+ggplot(mpq.5.tpts, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Terrain Ruggedness") + geom_label(label= "p=9.27E-4", x= 4, y=0.08, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
+
+# a21 <- aov(vrm~year, data = mpq.5.tpts)
+# summary(a21)
+# TukeyHSD(a21)
+```
+
+Statistical Results:
+- 
+
+
+
+```{r Profile Curvature 5ptp, echo=FALSE}
+ggplot(mpq.5.tpts, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Profile Curvature")
+
+# a22 <- aov(pro.curv~year, data = mpq.5.tpts)
+# summary(a22)
+# TukeyHSD(a22)
+```
+
+
+```{r procurv 5 tpts, echo=FALSE}
+
+
+ggplot(mpq.5.tpts, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Year") + ylab("Planform Curvature") #+ geom_label(label= "p=3.94E-3", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") +ylim(1, 3.0)
+
+# a23 <- aov(plan.curv~year, data = mpq.5.tpts)
+# summary(a23)
+# TukeyHSD(a23)
+
+```
+
+Statistical Results:
+- 
+
+
+
+# At the human disturbace/site level
+
+- As there is only 1 site per human disturbance of this dataframe, these plots are equivalent to those at the site level too
+
+#### Surface Rugosity
+- We see a visual difference in ithe values seen across the disturbance gradient, however the trends varied at each site depending on the complexity metric sampled
+
+```{r 5tpts by hum_dist, echo=FALSE}
+#By Human Disturbance
+ggplot(mpq.5.tpts, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + facet_wrap(~hum_dist, scales = "fixed", ncol= 3)+ theme_classic(base_size = 10) + xlab("Year") + ylab("Surface Rugosity") + geom_label(label= "p=4.33E-11", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") +ylim(1, 3.0)
+
+#a24 <- aov(rug~site, data = mpq.5.tpts)
+#summary(a24) #P=4.33E-11
+#TukeyHSD(a24) #all 3 are significantly different from one another
+
+```
+
+Statistical Results:
+- There is a significant difference between all sites 8-27, 5-27, and 5-8
+
+
+#### Terrain Ruggedness
+
+```{r vrm site 5tpts, echo=FALSE}
+ggplot(mpq.5.tpts, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + facet_wrap(~hum_dist, scales = "fixed", ncol= 3)+ theme_classic(base_size = 10) + xlab("Year") + ylab("Terrain Ruggedness") + geom_label(label= "p=1.25E-05", x= 3.5, y=0.09, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
+
+#a25 <-aov(vrm~site, data = mpq.5.tpts)
+#summary(a25) #P = 1.25E-05
+#TukeyHSD(a25) #Sites 5-8 not sig different, all other combos are
+```
+
+Statistical Results:
+- Significant differences are seen between sites 8-27 and 5-27
+- Site 5-8 are not significantly different (P=0.1795679)
+
+#### Profile Curvature
+
+```{r pro.curv site 5tps, echo=FALSE}
+ggplot(mpq.5.tpts, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + facet_wrap(~hum_dist, scales = "fixed", ncol= 3)+ theme_classic(base_size = 10) + xlab("Year") + ylab("Profile Curvature")+ geom_label(label= "p=2.06E-07", x= 3.5, y=400, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
+
+# a26 <-aov(pro.curv~site, data = mpq.5.tpts)
+# summary(a26) #P=2.06E-07
+# TukeyHSD(a26) #5-8 not sig different, all other combos are
+
+```
+
+Statistical Results:
+- Significant differences are seen between sites 8-27 and 5-27
+- Site 5-8 are not significantly different (P=0.0751558)
+
+
+#### Planform Curvature
+
+```{r plan.curv site 5tps, echo=FALSE}
+ggplot(mpq.5.tpts, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + facet_wrap(~hum_dist, scales = "fixed", ncol= 3)+ theme_classic(base_size = 10) + xlab("Year") + ylab("Planform Curvature")+ geom_label(label= "p=3.01E-07", x= 3.5, y=400, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
+
+# a27 <-aov(plan.curv~site, data = mpq.5.tpts)
+# summary(a27) #P=3.01E-07
+# TukeyHSD(a27) #5-8 not sig different, all other combos are
+
+```
+
+Statistical Results:
+- Significant differences are seen between sites 8-27 and 5-27
+- Site 5-8 are not significantly different (P=0.0751558)
+
