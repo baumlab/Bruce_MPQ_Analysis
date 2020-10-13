@@ -171,9 +171,9 @@ This document will take us through each of these metrics at various levels of de
 
 ## Volumetric Change at each of the three timepoints 
 
-- Plot inidcates volumetric change at the two timepoints sampled, with an "overall" change from 2015 - 2019 category added
+- Plot indicates volumetric change at the two timepoints sampled, with an "overall" change from 2015 - 2019 category added
 
-- Signficantly different volumetric change occured during the 2017-2019 timepoint from the other two plotted
+- Significantly different volumetric change occurred during the 2017-2019 timepoint from the other two plotted
 
 *Statistical Results:*
 
@@ -196,7 +196,7 @@ ggplot(CC, aes(timepoint, volume.change)) + geom_boxplot(fill="deepskyblue") + x
 
 - Significantly (T-test) difference in volumetric change between the 2015-2017 and 2017-2019 timepoints. 
 
-- Larger variation in the intial years of the study 
+- Larger variation in the initial years of the study 
 
 
 ```{r 2yr increment, echo=FALSE}
@@ -209,13 +209,13 @@ ggplot(CC.progress, aes(timepoint, volume.change)) + geom_boxplot(fill="deepskyb
 
 ## Volumetric Change ~ Human Disturbance 
 
-- Lowered volumetric loss in the latter timepoint occured in both Very Low and Very High disturbance levels
+- Lowered volumetric loss in the latter timepoint occurred in both Very Low and Very High disturbance levels
 
 - However, rubble transport is extremely high at the Very High sites, so this result needs to be taken with a grain of salt
 
 - Medium disturbance sites experienced very limited volumetric change at either timepoint
 
-- This is beleived to be the case due to a large storm in january 2015 destroying most of the more "complex" corals (primarily branching and foliose) and in removing those form the reef, left the less-complex, massive and submassive structure which is harder to erode and/or degrades slower
+- This is believed to be the case due to a large storm in January 2015 destroying most of the more "complex" corals (primarily branching and foliose) and in removing those form the reef, left the less-complex, massive and submassive structure which is harder to erode and/or degrades slower
 
 ```{r change ~ dist, echo=FALSE}
 ggplot(CC.progress, aes(timepoint, volume.change)) + geom_boxplot(fill="deepskyblue") +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Years") + ylab("Volumetric Change(m3)") +  geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 270, vjust = 1.1, hjust=1))#+ geom_label(label= "p=0.0748", x= 1, y=-1.0, label.size= 0.01, label.padding= unit(0.01, "lines"), fill= "grey", color="black") 
@@ -241,7 +241,7 @@ ggplot(CC.progress, aes(timepoint, volume.change)) + geom_boxplot(fill="deepskyb
 
 ## Vaskes Bay
 
-- Both site 5 and 37 are located in Vaskess bay is on the southern edge of the atoll (with the other VL sites in the BOW on a more north-eastern facing bay) 
+- Both site 5 and 37 are located in Vaskes bay is on the southern edge of the atoll (with the other VL sites in the BOW on a more north-eastern facing bay) 
 
 - Only site 5 was sampled in 2015, with site 37 first sampled was 2017
 
@@ -266,7 +266,7 @@ grid.arrange(cc.vask.1,cc.vask.2, nrow=2)
 
 - Plot size had been shown to vary over time in previous exploratory plots
 
-- This issue has been fixed now by copying  previous plot areas in ArcMap and importing them into subsequent years plots before orienting them on consistent stake and benthic topogrphy
+- This issue has been fixed now by copying  previous plot areas in ArcMap and importing them into subsequent years plots before orienting them on consistent stake and benthic topography
 
 
 ```{r plot size, echo=FALSE}
@@ -276,13 +276,13 @@ ggplot(mpq, aes(ppq, area_2d, colour = year)) + geom_boxplot() +facet_wrap(~site
 
 # 3 Complexity Metrics ~ Year {.tabset}
 
--Overarching theme for most metrics: After a large initial declines occured at the tail end/immediately following the mass mortality event (2016a) and then complexity stayed consistent through time
+-Overarching theme for most metrics: After a large initial declines occurred at the tail end/immediately following the mass mortality event (2016a) and then complexity stayed consistent through time
 
 - All statistical results in this section were computed via ANOVA and TukeyHSD tests (modelling to come)
 
 ## 3.1 Surface Complexity
 
-- Significant differences occured at the 1cm DEM, yet were lost in later DEM resolutions
+- Significant differences occurred at the 1cm DEM, yet were lost in later DEM resolutions
 
 - At the 1cm, the 2015 timepoint is significantly different from 2016a, 2016b, and 2017 timepoints
 
@@ -359,7 +359,7 @@ grid.arrange(Slope.1, Slope.2, Slope.3, ncol = 3)
 
 - Steep initial decline apparent between 2015 and 2016a timepoints, with 2019 appearing to rebound to similar 2015 levels at 1cm DEM. 
 
-- Above trend is less apparent and/or dissapears at larger DEM resolutions
+- Above trend is less apparent and/or disappears at larger DEM resolutions
 
 - At 1cm DEM, 2015 timepoint is significantly different from 2016a, 2016b, and 2017 (almost 2019 (P= 0.05397)). 2019 timepoint significantly different from 2016a, 2016b, and 2017.
 
@@ -397,9 +397,9 @@ grid.arrange(VRM.1, VRM.2, VRM.3, ncol = 3)
 
 ## 3.4 Profile Curvature
 
-- Trend of profile curvature shifting from more negative towards more positive values through time, indicating shifts in structure orientation to more inwardly concave (pos pro.curv values).
+- Trend of profile curvature shifting from more negative towards more positive values through time, indicating shifts in structure orientation to more inwardly concave (positive pro.curv values).
 
-- I hypothesis this is due to erosion, as profile curvature deals with the orientation at the point of maximum slope and therefore that is where I beleive the flow of water and erosional debris would be moving the strongest. 
+- I hypothesis this is due to erosion, as profile curvature deals with the orientation at the point of maximum slope and therefore that is where I believe the flow of water and eroded debris would be moving the strongest. 
 
 - Magnitude differs across resolutions, but the trend appears to stay consistent across DEM resolutions. 
 
@@ -439,7 +439,7 @@ grid.arrange(pro.curv.1, pro.curv.4, pro.curv.8, ncol = 3)
 
 - Similar to profile curvature, planform curvature values move towards more positive values as we progress through time, indicating the structure's orientation perpendicular to the maximum slope is becoming more outwardly convex. 
 
-- This could again be due to erosional forces, as these heavily erode the face of the maximum slope, thereby leaving lips or ridges directly perpendicular to the flow.
+- This could again be due to erosion forces, as these heavily erode the face of the maximum slope, thereby leaving lips or ridges directly perpendicular to the flow.
 
 - Again, this trend is present across DEM resolutions.
 
@@ -476,7 +476,7 @@ grid.arrange(plan.curv.1, plan.curv.4, plan.curv.8, ncol = 3)
 
 # 4. Complexity Metrics Across the Human Disturbance gradient {.tabset}
 
-- This section highlights variability across the disturbance gradient, with very low disturbance sites highing higher values across metrics than medium and very low disturbance sites (not statistically tested yet)
+- This section highlights variability across the disturbance gradient, with very low disturbance sites having higher values across metrics than medium and very low disturbance sites (not statistically tested yet)
 
 - Again, look for the steep decline between 2015 and 2016a timepoints before complexity "stagnates" for the remainder of the study (slight to moderate increases in 2019 are seen in some metrics)
 
@@ -502,7 +502,7 @@ ggplot(mpq, aes(x= year, y= slope, fill=hum_dist)) +  geom_boxplot() + xlab("Yea
 
 ## 4.3 VRM ~ Human Disturbance
 
-- Those intial losses at all disturbance levels are more pronounced with VRM than any other metric
+- Those initial losses at all disturbance levels are more pronounced with VRM than any other metric
 
 ```{r VRM~hum_dist, echo=FALSE}
 #2.3 VRM
@@ -537,13 +537,13 @@ ggplot(mpq, aes(x= year, y= plan.curv, fill=hum_dist)) +  geom_boxplot() + xlab(
 
 # 5. Complexity Metrics by geographic region {.tabset}
 
-- This section is to highlight differences betwen the regions that make up the Very Low disturbance level: Bay of Wrecks & Vaskes Bay.
+- This section is to highlight differences between the regions that make up the Very Low disturbance level: Bay of Wrecks & Vaskes Bay.
 
 - Overall, Bay of Wrecks was more structurally complex than the Vaskes Bay sites.
 
 - When looking at certain metrics (ex: VRM) it appears Vaskes Bay sites are more similar structurally to the Medium disturbance sites than to the BOW sites after the El Nino.
 
-- I beleive this is due to the different coral communities present at the two sites, so this will be worth looking at in more detail with the morphological digitization work. 
+- I believe this is due to the different coral communities present at the two sites, so this will be worth looking at in more detail with the morphological digitization work. 
 
 ## 5.1 Surface Complexity ~ Region
 ```{r SC ~ region, echo=FALSE}
