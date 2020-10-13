@@ -1,0 +1,53 @@
+---
+title: "1.3.Complexity_Modelling"
+author: "Kevin Bruce"
+date: "03/07/2020"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+
+``````{r Load Packages, include=FALSE}
+#Load in Packages
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+
+```
+
+```{r Load the data}
+mpq<- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_Data_Clean.csv")
+
+```
+
+```{r VRM Metric Modelling}
+mpq
+m.1 <- lm(vrm ~ year, data = mpq)
+summary(m.1)
+
+m.2 <- lm(vrm ~ hum_dist, data = mpq)
+summary(m.2)
+
+m.3 <- lm(vrm ~ year + hum_dist, data = mpq)
+summary(m.3)
+
+m.4 <- lm(vrm~year*hum_dist, data = mpq)
+summary(m.4)
+
+```

@@ -1,0 +1,1346 @@
+---
+title: "Bruce_MPQ_Analysis_NEW- Updated as of July 11, 2020"
+author: "Kevin Bruce"
+date: "03/07/2020"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+
+```{r Load Packages, include=FALSE}
+#Load in Packages
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+```
+
+
+# Introduction 
+Kiritimati Research Project- PPQ complexity analyses 2015 - 2019
+
+PPQ = Permanent Photoquadrat (16m2)
+
+This document is for the PPQ data collected on Kiritimati to look at complexity changes that occur on reefs following a mass mortality event.
+
+The plots below show a view of the data across different spatial and temporal scales. We will start by looking at the data broadly before zooming in to specific PPQ fluctuations over time. 
+
+It is important to note that Sites 15 and 19 (both within the Very Low disturbance category) were unable to be sampled in March 2016 & 2019 due to weather. Site 37 (VL4) was installed in 2017 and has been sampled in both 2017 and 2019. 
+
+```{r map, echo=FALSE, fig.height=11, fig.width=7, fig.align="center"}
+map <- image_read("Map/KI_map_sites_villages_inset_KB_MSc_CH1_MPQ.png")
+map
+
+```
+
+
+## Site data available
+Below is a table indicating the various sites around Kiritimati and how many MPQ's were sampled during each expedition
+
+```{r Table for Julia, echo=FALSE, fig.align="center"}
+map1 <- image_read("Map/sites_sampled_updated.png")
+map1
+
+```
+
+
+## There are 6 complexity metrics collected from each MPG
+1. Habitat Volumetric Change
+2. Surface complexity
+3. Terrain Ruggedness (VRM)
+4. Slope
+5. Profile Curvature
+6. Planform Curvature
+
+This document will take us through each of these metrics at various levels of detail. Starting broad, we'll eventually be looking at the individual plot's changes through out the years and across DEM scales (except Volumetric Change, which cannot be examined at different resolution scales).
+
+
+# Habitat Volumetric Change #
+
+Volumetric change between 2015-2017 and 2015-2019 was quantified in CloudCompare, with the change between 
+
+2017 - 2019 calculated algebraically from the equation below for all sites other than Site 37:
+
+
+#### 2017 - 2019 Change = (2015-2019 Change) - (2015-2017 Change)
+
+
+## Year Level
+
+When looking at volumetric change by time point for all plots measured, we see the following:
+
+- Appears that 2015-2017 losses occur, which is similar to what Jenn's study found
+
+- 2017-2019 plot is only for Site 37, as it was the only site measured in Cloudcompare for those two timepoints (the rest were initially done algebraically, but that proved to not provide accurate information for those timepoints)
+
+- While losses in 2015-2019 were experienced, greatest losses of volume appear to occur from 2015-2017, which is interesting as while collecting the data, I felt that these values could have been higher if that large mat of macro algae wasn't present in many of the 2017 plots.
+
+
+```{r CC by year, echo=FALSE}
+ggplot(CC.progress, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.005", x= 2, y=0.4, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+# a1 <- aov(volume.change~timepoint, data = CC.progress)
+# summary(a1)
+# TukeyHSD(a1)
+
+
+
+
+
+
+
+
+
+```
+
+
+Statistical Results:
+
+- No significant differences between time points with a one-way ANOVA
+
+- Volume was lost at each timepoint of 2015-2019 and 2015-2017, however not 2017-2019. 
+
+
+
+
+
+##### Overall volume change
+```{r overall plot for 2 timepoints, echo=FALSE}
+ggplot(CC.progress, aes(x = timepoint, y=volume.change)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+geom_label(label= "p=0.388", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
+
+# a5 <- aov(volume.change~timepoint, data = CC.progress)
+# summary(a5)
+# TukeyHSD(a5)
+```
+
+
+
+```{r CloudCompare Plots, include= FALSE}
+###############################
+#Plot of each 2-yr progression#
+###############################
+
+#Plotted by Region
+ggplot(CC.progress, aes(x= timepoint, y= volume.change, fill=region)) +  geom_boxplot() + geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5)) + geom_label(label= "p=0.0106", x= 1, y=0.6, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") 
+
+#a1.11 <- aov(volume.change~region, data=CC.progress)
+#summary(a1.11)
+#TukeyHSD(a1.11)
+
+
+#Plotted by human disturbance:
+ggplot(CC.progress, aes(x= timepoint, y= volume.change, fill=hum_dist)) +  geom_boxplot() + geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ geom_label(label= "p=0.0748", x= 1, y=0.6, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") 
+
+# a1.12 <- aov(volume.change~hum_dist, data=CC.progress)
+# summary(a1.12)
+# TukeyHSD(a1.12)
+
+
+
+#########################
+#Plots of only 2015-2019#
+#########################
+
+#Plotted by human disturbance:
+ggplot(CC.all, aes(x= timepoint, y= volume.change, fill=hum_dist)) +  geom_boxplot() + geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ geom_label(label= "p=0.12", x= 1, y=-1.5, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") 
+
+# a1.13 <- aov(volume.change~hum_dist, data=CC.all)
+# summary(a1.13)
+# TukeyHSD(a1.13)
+```
+
+
+
+
+## Disturbance Level
+
+Now breaking it down by disturbance level, losses in very high and very low disturbance sites are noted (in both 2015-2017 and 2015-2019 time frames). 
+
+- Greatest losses of volume appear to occur from 2015-2017, which is interesting. While collecting the data, I felt that these values could have been higher if that large Matt of macro algae wasn't present in many of the 2017 plots 
+
+Interestingly, the medium disturbance sites experienced minimal losses in volume. This was seen in Jenn's study as well, and I hypothesize this lack of loss could be due to multiple causes:
+
+1. These plots are well cemented together and have minimal coral species that are quickly eroded away once they die (Ex: Branching/Plating species). 
+
+2. The mass algae bloom in 2017 might obscure how much loss occurred at these plots from 2015-2017, which is when I would expect the largest losses to occur (IE: there isn't enough time within that time point for new coral growth to offset the losses in other coral structure) 
+
+
+
+To examine it further, I first tested to see if there was any significant differences between averaged volumetric change values by human disturbance level.
+
+There was a significant difference between 1 of the groups. According to Tukey's test, Very High-Medium were significantly different, while the other combinations were not statistically different.
+
+```{r overall human dist ~ volume.change, include=FALSE}
+ggplot(CC.new, aes(hum_dist, volume.change)) + geom_boxplot() + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))+ geom_label(label= "p=0.0117", x= 1, y=0.5, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+#Anova1 <- aov(volume.change~hum_dist, data=CC.new)
+#summary(Anova1) #P=0.0117
+
+#TukeyHSD(Anova1)
+
+```
+
+
+
+Next, I attempted an ANOVA looking at volume change ~ timepoint + human disturbance, which again brought back a significant p-value. This was the significant difference between very high & medium sites again.
+
+
+```{r Plot CC Data by Timepoint & disturbance, echo=FALSE}
+ggplot(CC.new.2.timepts, aes(x = timepoint, y=volume.change, fill = hum_dist)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Timepoint") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2))
+
+
+#CC.2.anova <- aov(volume.change~timepoint + hum_dist, data = CC.new.2.timepts)
+#summary(CC.2.anova) #P value significant for hum_dist! (P=0.00837)
+#TukeyHSD(CC.2.anova)
+
+```
+
+
+Here I broke down the volumetric changes by disturbance level differently and I think this tells the story a bit better. 
+
+- Very Low Sites: This seems accurate. These sites experienced losses in structure (primarily through disappearance of branching and plating corals). 
+
+- Medium Sites: Minimal losses experienced across the board. Refer above to see my hypotheses on why.
+
+- Very High Sites: These sites are predominantly rubble, and therefore the "volume" of the plot at a specific year will be highly dependent on the rubble present. From visual inspection, there are few features that remain consistent throughout the years.
+
+
+```{r CC facetwrapped by disturbance level, echo=FALSE}
+ggplot(CC.new.2.timepts, aes(timepoint, volume.change)) + geom_boxplot() +facet_wrap(~hum_dist, scales = "fixed", ncol= 3) + xlab("Human Disturbance Level") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ theme(axis.text.x = element_text(angle = 45, vjust = 1.1, hjust=1))
+
+
+
+#anova2 <- aov(volume.change~hum_dist, data = CC.new)
+#summary(anova2)     #P value for hum_dist significant @ 0.0117
+#TukeyHSD(anova2)
+
+```
+
+
+Statistically, there is a significant difference between very high & medium sites (unsure how this is possible yet there isn't one between very low & medium sites- I suspect the ANOVA is the wrong test to use for my data). 
+
+
+## Vaskes Bay
+
+I believed that this trend seen at medium sites might be similar in Vaskess bay as well, as sites 5 and 37 coral communities visually appear  similar to the medium sites than the other VL disturbance sites in the Bay of Wrecks, based on the lack of plating coral species and dominance of more massive coral species (from my personal recollection- it will be interesting to see what the digitization tells us). 
+
+
+```{r vaskes sites, echo=FALSE}
+ggplot(CC.new.v, aes(x = site, y=volume.change, fill = timepoint)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) #+geom_label(label= "p=0.24", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+
+#a4 <- aov(volume.change~timepoint, data = CC.new.v)
+#summary(a4)
+#TukeyHSD(a4)
+
+
+#a4.1 <- aov(volume.change~site, data = CC.new.v)
+#summary(a4.1)
+#TukeyHSD(a4.1)
+
+
+```
+
+However, after graphing this, it highlighted:
+
+- Site 37 experienced a slight increase in volume from 2017-2019, however we lack an initial assessment to see if it experienced losses as seen at site 5.
+
+- Site 5, which is the only site sampled in each timepoint (2015, 2017, and 2019), experienced losses across the board, and has continued to see a decrease as time progressed.
+
+- I conducted ANOVA's looking at volume change ~ site and volume change ~timepoint, which brought back significant differences for all combinations except the timepoint 2015-2017 & 2015-2019. However, I don't think its been done correct.
+
+
+
+
+## Bay of Wrecks
+
+I did the same only the Bay of Wrecks sites. It is less interesting as these are only available for 1 time point, but we can see the anticipated volume loss for both sites similar to what Jenn Magel found, with site 15 experiencing the largest declines.
+
+```{r BOW, echo=FALSE}
+ggplot(CC.new.bow, aes(x = site, y=volume.change)) + geom_boxplot() + theme_classic(base_size = 14) + xlab("Site") + ylab("Volumetric Change(m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2)+ scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
+
+#a5.1 <- aov(volume.change~site, data = CC.new.bow)
+#summary(a5.1)
+#TukeyHSD(a5.1)
+
+
+```
+
+- No significant difference between both BOW sites
+
+
+
+
+## Site Level 
+
+```{r CC DAta by site, echo=FALSE}
+ggplot(CC.new, aes(timepoint, volume.change, fill = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ theme(axis.text.x = element_text(angle = 20, vjust = 1.1, hjust=1))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
+```
+
+## PPQ Level
+
+To try to see if any specific plots could be skewing the data, I examined volumetric changes at the three time points based on the PPQ.
+
+```{r CC Data by plot, echo=FALSE}
+ggplot(CC.new, aes(mpq, volume.change, colour = timepoint)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Volumetric Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) 
+
+```
+
+
+From this plot, the following site/plot combinations jump out at me:
+
+##### Site 30 MPQ 2 & 3
+- Site 30 MPQ 2, 3 - both experience volume increases over time, which I think is due to the large amounts of rubble that blow through the VH plots. 
+- MPQ 2 had a large boulder move between during 2015-2017, while the overhaul of all other rubble components at this site varied from year to year (but given the values, more settled as time progressed) 
+- MPQ 3- 1 big boulder moves in during 2015-2017 and stays, with sand patches filled in with rubble more as time progresses 
+
+##### Site 34 MPQ 1: 
+- In 2015-2017, large mats of macro algae overtook the plot, which made up for the loss of all the soft corals and is what I think is driving the increase in volume we're seeing
+- In 2015-2019, there is minimal loss of existing structure throughout all timepoints (same dead branching species are present from 2015-2019), with the near-entirety of the macro algae disappearing by 2019.
+
+##### Site 35 MPQ 1: 
+- In 2015-2017: The sandy patch filled in with rubble between these two timepoints, otherwise most structure stayed consistent.
+- 2015-2019: A corner filled in with some sand and macro algae, but the remainder of the gained-volume appears to be due to growth of corals (mostly porites)
+
+##### Site 35 MPQ 3:
+- In 2015-2017: Increases due to large mats of macro algae present, with minimal structural loss noticed other than a couple coral heads. 
+- In 2015-2019: Loss of macro algae is offset by rubble movement into the plot and coral growth of porities. I believe a significant difference will be evident from 2017-2019 when we compare with the macro algae and without.
+
+
+##########END VOLUME ANALYSIS########
+
+
+```{r NMDS, eval=FALSE, include=FALSE}
+#Load data frame (may need to load as an excel spreadsheet, and if that is the case, I need to re-order so that the Site collumn is first)
+mpq.nmds <- read.csv("", row.names=1)
+
+
+##################### Intitial plots of distirbution & coviariate checks##########
+#See distributions of each complexity metric
+par(mfrow=c(3,2))
+hist(mpq$rug)
+hist(mpq$slope)
+hist(mpq$vrm)
+hist(mpq$pro.curv)
+hist(mpq$plan.curv)
+hist(mpq$SArea)
+
+par(mfrow=c(1,1)) #change plotting back to a single plot per window
+
+#Look for covariance (similarities between variables)
+par(mfrow=c(2,2))
+plot(rug ~ slope, mpq)
+plot(rug ~ vrm, mpq)
+plot(rug ~ pro.curv, mpq)
+plot(rug ~ plan.curv, mpq)
+plot(slope ~ vrm, mpq)
+plot(slope ~ pro.curv, mpq)
+plot(slope ~ plan.curv, mpq)
+plot(vrm ~ pro.curv, mpq)
+plot(vrm ~ plan.curv, mpq)
+plot(pro.curv ~ plan.curv, mpq)
+
+#From this, it looks like there are covariance between the following
+plot(rug ~ slope, mpq)
+plot(pro.curv ~ plan.curv, mpq)
+plot(rug ~ vrm, mpq)   #MAYBE....
+
+
+#########################################
+
+#Split dataframe into 3 based on DEM
+mpq.nmds.1cm <- mpq[mpq$DEM == 1,] 
+mpq.nmds.4cm <- mpq[mpq$DEM == 4,]
+mpq.nmds.8cm <- mpq[mpq$DEM == 8,]
+
+
+
+
+
+
+
+
+
+```
+
+##########################
+# ArcMap Complexity Metrics
+
+- Plots include all plots sampled unless otherwise stated (therefore, some sites weren't sampled at every timepoint- ex: Sites 15,19 in 2019, Site 37 in 2015). 
+- Metrics were sampled at 5 separate timepoints (2015,2016a (March), 2016b (November), 2017,2019)
+
+
+## Year Level
+All metrics are averaged by the year level, averaging each metric's value around the atoll at that time 
+
+
+### Surface Complexity 
+
+- 1cm DEM: Surface complexity exhibited decreases, with the highest values occuring in 2015. This is statistically tested via an ANOVA, with a Tukey test confirming significant differences between 2015-2017 and 2015-2019.
+
+- 4cm DEM: The significant difference between years dissapears at this resolution scale, with the difference between 2015 and the other 2 timepoints. 
+
+- 8cm DEM:
+
+
+
+##### I hypothesize this is due to the following:
+
+- The initial declines seen between 2015 and 2017 was due to the mass die-off and subsequent bio-erosion of the more complex coral (branching and plating) species. 
+
+- However, I observed that many of these species had eroded away by 2017, thereby not leaving behind much else to erode away in large amounts.
+
+- The portions of the plot that did erode away between 2017-2019 were offset by both rubble settling in the plot area and/or the growth of the prevailing coral species in the plot area. 
+
+```{r SR by year and by DEM, echo=FALSE}
+# ggplot(mpq, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 3)+ xlab("Year") + ylab("Surface Rugosity") #+ geom_label(label= "p=0.00394", x= 3, y=2.6, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+ geom_label(label= "p=0.0213", x= 2, y=2.7, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")+ geom_label(label= "p=0.455", x= 2, y=2.7, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
+
+SR1 <- ggplot(mpq.1, aes(x = year, y=rug)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Surface complexity") + geom_label(label= "p=8.35E-4", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")
+
+SR2 <- ggplot(mpq.4, aes(x = year, y=rug)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + geom_label(label= "p=0.331", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")+
+  ylim(1, 3)+ ylab("")
+
+
+SR3 <- ggplot(mpq.8, aes(x = year, y=rug)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + geom_label(label= "p=0.675", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")+
+  ylim(1, 3)+ ylab("") 
+
+
+grid.arrange(SR1, SR2, SR3, ncol=3)
+
+
+# a7 <- aov(rug~year, data = mpq.1)
+# summary(a7)
+# TukeyHSD(a7)
+# 
+# a99 <- aov(rug~year, data = mpq.4)
+# summary(a99)
+# TukeyHSD(a99)
+# 
+# a8 <- aov(rug~year, data = mpq.8)
+# summary(a8)
+# TukeyHSD(a8)
+
+```
+
+Statistical Results:
+
+- There is a significant difference between years and SR values at 1cm DEM
+
+- 2015 - 2017 are significantly different, as are 2015-2019; 2017 - 2019 are not significantly different
+
+- There is no significant difference between years and SR values at 4 and 8cm DEMs
+
+
+```{r Region differences by }
+ggplot(mpq.1, aes(x = region, y=rug)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~year, scales = "fixed", ncol= 2)+ xlab("Year") + geom_label(label= "p=0.455", x= 2, y=2.9, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black")+ ylim(1, 3)+ ylab("") 
+
+ggplot(mpq.4, aes(x = region, y=rug)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10)
+
+ggplot(mpq.8, aes(x = region, y=rug)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10)
+```
+
+
+### Terrain Ruggedness
+
+- The changes between the years are more pronounced in the terrain ruggedness values than those of surface complexity.
+
+- As this metric is more sensitive than surface complexity to fine-scale complexity changes, I believe the larger increase we see from 2017-2019 is due to the amount of ruble increasing in the plots.
+
+- Additionally, I believe the values would actually be lower in the 2017 plots, however the presence of large amounts of macro algae in many of the plots hid this.
+
+```{r TR by yr, echo=FALSE}
+#ggplot(mpq, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness")
+
+TR1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Terrain Ruggedness") + geom_label(label= "p=7.41E-11", x= 2, y=0.13, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(0, 0.14)
+
+TR2 <- ggplot(mpq.4, aes(x = year, y=vrm)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") + geom_label(label= "p=0.0863", x= 2, y=0.13, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(0, 0.14)
+
+
+TR3 <-ggplot(mpq.8, aes(x = year, y=vrm)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") +geom_label(label= "p=0.461", x= 2, y=0.13, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(0, 0.14)
+
+grid.arrange(TR1, TR2, TR3, ncol=3)
+
+
+# 
+# a10<- aov(vrm~year, data = mpq.1)
+# summary(a10)
+# TukeyHSD(a10)
+# 
+# a11<- aov(vrm~year, data = mpq.4)
+# summary(a11)
+# TukeyHSD(a11)
+#  
+# a12 <- aov(vrm~year, data = mpq.8)
+# summary(a12)
+# TukeyHSD(a12)
+# 
+# grid.arrange(TR1, TR2, nrow=2)
+
+#summary(a9)
+#summary(a10)
+
+```
+
+Statistical Results:
+
+- At 1cm DEM, each time point is significantly different from one another [2015-2017 (P=3.0E-7), 2015-2019 (P=0.0272), 2017-2019 (P=0.00909)]
+
+- At 4cm, the difference between years is close to being significant overall. 2015-2017 and 2017-2019 are significantly different after a tukey's test, with 2015-2019 p value = 0.5026482
+
+- That significant difference disapears  when looking at the 8cm DEM resolution 
+
+
+
+
+### Slope
+- Slope at 1cm DEM resolution exhibits a similar trend to that of TR, in that a decrease is experienced from 2015-2017, with a similar value to 2017 in 2019.
+
+- At 8cm DEM, the trend was different. There was minimal progressive losses in slope from 2015-2019. Unsure what could have caused this
+
+```{r Slope by yr, echo=FALSE}
+#ggplot(mpq, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope")
+
+S1 <- ggplot(mpq.1, aes(x = year, y=slope)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Slope") +geom_label(label= "p=0.0108", x= 3, y=48, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(10, 50)
+
+S2 <- ggplot(mpq.4, aes(x = year, y=slope)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") +geom_label(label= "p=0.66", x= 3, y=48, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(10, 50)
+
+
+S3<- ggplot(mpq.8, aes(x = year, y=slope)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("") +geom_label(label= "p=0.854", x= 3, y=48, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(10, 50)
+
+grid.arrange(S1, S2, S3,  ncol=3)
+
+#
+# a13<- aov(slope~year, data = mpq.1)
+# a14<-aov(slope~year, data=mpq.4)
+# a15<- aov(slope~year, data = mpq.8)
+# 
+# summary(a13) #0.0237
+# summary(a14) #0.477
+# summary(a15) #0.665
+# #
+# TukeyHSD(a13) #2015-2017 sig different only
+# TukeyHSD(a14) #none sig
+# TukeyHSD(a15) #none sig
+#
+
+
+#plot(TukeyHSD(a11))
+
+
+```
+
+
+Statistical Results:
+
+- At 1cm DEM, 2015 and 2017 are significantly different (P = 0.0199587), while 2017- 2019 (P=0.718) and 2015-2019 (P=0.1591954) are not significantly different.
+
+- There is no significant difference between years at 4cm and 8cm DEMs
+
+
+
+
+### Profile Curvature
+
+- The range of values is largest in 2015, with the variability the lowest in 2017 of the 3 time points, especially at the 1cm DEM scale; at 8cm, 2015 and 2019 variability appear to be quite similar. 
+
+- There is a shift from more negative values to more positive ones as we progress throughout time, indicating changes of structure shape in the direction of the maximum slope from outwardly convex to inwardly concave; to me this indicates erosion is occurring, eating away at that surface as the water flows over it. 
+
+```{r ProCurv surf rug by yr, echo=FALSE}
+#ggplot(mpq, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")
+
+Pro1 <- ggplot(mpq.1, aes(x = year, y=pro.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Profile Curvature")+geom_label(label= "p=5.33E-6", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") +
+  ylim(500, -500)
+
+Pro2 <- ggplot(mpq.4, aes(x = year, y=pro.curv)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("")+geom_label(label= "p=0.0316", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(500, -500)
+
+
+Pro3 <- ggplot(mpq.8, aes(x = year, y=pro.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("")+geom_label(label= "p=0.233", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+
+  ylim(500, -500)
+
+
+grid.arrange(Pro1, Pro2, Pro3, ncol=3)
+
+ 
+# a16<- aov(pro.curv~year, data = mpq.1)
+# a17<- aov(pro.curv~year, data = mpq.4)
+# a18<- aov(pro.curv~year, data = mpq.8)
+# 
+# summary(a16) #p=8.82E0-05
+# summary(a17) #0.0163
+# summary(a18) #0.137
+# 
+# TukeyHSD(a16) #2015-2017 and 2015-2019 sig different. 2017-2019 not
+# TukeyHSD(a17) # only 2015-2019 sig different
+# TukeyHSD(a18) #none sig different
+
+
+
+```
+
+Statistical Results:
+
+- At 1cm DEM, 2015-2017 (P = 0.0199587) and 2015-2019 (P=0.0001) are significantly different, while 2017-2019 are not significantly different (0.4937).
+
+- At 4cm DEM, only 2015-2019 are significantly different (P=0.0125)
+
+- There is no significant difference between years at 8cm DEM
+
+
+
+### Planform Curvature
+
+- Similar trends seen here to those seen in profile curvature in terms of variability and shift from negative to positive values 
+
+- The shift indicates that the structure is transitioning from concave (negative) to more convex (positive) features perpendicular to the maximum slope of the surface. 
+
+- I believe this is still due to erosion. As water flows along the surface of maximum slope (eroding away that part causing the values we see in the profile curvature), the concave feature is being cut out of the structure in that direction, but in doing so, ridges are created on the edges of eroded surface, which I believe are what are causing these planform values seen.
+
+```{r PlanCurv surf rug by yr, echo=FALSE}
+#ggplot(mpq, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")
+
+Plan1 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("Planform Curvature")+geom_label(label= "p=5.21E-6", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black") + ylim(500, -500)
+
+Plan2 <- ggplot(mpq.4, aes(x = year, y=plan.curv)) + geom_boxplot(fill="red") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("")+geom_label(label= "p=0.0187", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+ ylim(500, -500)
+
+Plan3 <- ggplot(mpq.8, aes(x = year, y=plan.curv)) + geom_boxplot(fill="forestgreen") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("")+geom_label(label= "p=0.0394", x= 2, y=400, label.size= 0.2, label.padding= unit(0.2, "lines"), fill= "grey", color="black")+ ylim(500, -500)
+
+
+grid.arrange(Plan1, Plan2, Plan3, ncol=3)
+
+
+a19<- aov(plan.curv~year, data = mpq.1)
+a20<- aov(plan.curv~year, data = mpq.4)
+a21<- aov(plan.curv~year, data = mpq.8)
+
+summary(a19) #8.65E-5
+summary(a20) #0.00872
+summary(a21) #0.0244
+
+TukeyHSD(a19) #2015-2017 and 2015-2019 sig different
+TukeyHSD(a20) #2015-2019 and 2017-2019 sig different
+TukeyHSD(a21) #2017-2019 sig different (2015-2019 close)
+```
+
+Statistical Results:
+
+- At 1cm DEM, 2015-2017 (P=0.0036) and 2015-2019 (P=9.3E-5) are significantly different, while 2017-2019 are not (0.3989)
+
+- At 4cm DEM, 2015-2019 (P=0.0078280) and 2017-2019 (P=0.0627797) are significantly different
+
+- At 8cm DEM, 2017-2019 (P=0.0303) is significantly different, while 2015-2019 (P=0.0501483) is close. 2015-2017 is not significantly different.
+
+
+### Curvature variation
+
+- This is a plot that I have borrowed from Kailey's Hurricane Walaka paper that shows how the dispersion of the two curvature value's density changed after the disturbance event or, in our case, throughout time.
+
+- In this paper, a monitored plot endured a major disturbance event (storm), which caused the range of the curvature density values to shrink, with larger spikes around 0.
+
+- We see this spike in our data in 2017, however in 2019 the spike decreased to levels below that of 2015. There is a noticeable shift from more negative values to more positive values though post-mortality event. 
+
+This shift to more positive values for both curvature values indicate:
+
+1. Profile Curvature: The structure is transitioning from outwardly convex to inwardly concave features, which indicates erosion is occurring. 
+
+2. Planform Curvature: Structure transitioning from negative (concave) features to more positive (convex) values, perpendicular to the maximum slope of the surface. 
+
+- I believe that the planform curvature value is still due to erosion. As water flows along the surface of maximum slope (eroding away that part causing the values we see in the profile curvature), the concave feature is being cut out of the structure in that direction, but in doing so, ridges are created on the edges of eroded surface, which I believe are what are causing these planform values seen.
+ 
+##### Profile Curvature Density Plots
+
+```{r Curv density plots, echo=FALSE}
+p1 <- ggplot(mpq, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.2)
+p2 <- ggplot(mpq, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+grid.arrange(p1, p2, nrow=2)
+
+
+p1 <- ggplot(mpq, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.2)
+p2 <- ggplot(mpq, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+```
+
+
+
+##### Planform Curvature Density Plots
+
+```{r Plan Curv density plots, echo=FALSE}
+p3 <- ggplot(mpq, aes(x=plan.curv, fill=year)) + geom_density(alpha=0.2)
+p4 <- ggplot(mpq, aes(x=plan.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+grid.arrange(p3, p4, nrow=2)
+
+```
+
+
+## Human Disturbance Gradient Level
+
+Investigates complexity metrics, at both 1cm and 8cm DEM resolutions, across the human disturbance gradient, which contains 3 levels (very high, medium, very low).
+
+All sites were included, including 15, 19, and 37, which were only sampled in 2 of the 3 years
+
+
+### Surface complexity
+
+- Early trends appear similar to what Jenn found (VL disturbance sites have higher SR than VH sites)
+
+- Losses appear to occur at all levels from 2015-2017, however at the medium disturbance sites, this loss is less pronounced, with some plots appearing to experience an increase
+
+- 2019 values almost all show some form of increase in SR from the lowest of lows in 2017. 
+
+```{r SR by disturbance gradient, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=rug, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+
+```
+
+### Terrain Ruggedness
+
+- More pronounced differences between the disturbance levels are seen here, especially in 2015 at the 1cm DEM scale
+
+- At the 8cm DEM scale, while there are less differences between disturbance levels, a more step-wise pattern is shown between the disturbance levels from lowest values at VH sites to largest values at VL sites
+
+- At 1cm DEM, VH sites have similar values at 2015 and 2019; I believe this is due to rubble transport moving in and out of the plots, making the time at which we sample the plot highly dependent on how prevalent the storms were that year in transporting rubble to and from the plot area
+
+- The increase in TR at the VL sites from 2017 - 2019 is interesting. Unsure what could be causing that.
+```{r TR hum_dist, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=vrm, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+
+```
+
+### Slope
+
+- At 1cm DEM, slope decrease in a step-wise pattern at VH and M sites; VL sites experienced an increase from 2017-2019
+
+- The trend is similar at 8cm DEM, however the increase in 2019 TR values is less and the M sites plots indicate that the highest slopes were seen during the 2017 time point. 
+
+
+```{r Slope, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=slope, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+
+```
+
+
+### Profile Curvature
+
+- At 1cm DEM, all sites experience a similar trend where the profile curvature values shift towards larger, more positive values; this indicates a change in structure shape already discussed
+
+- The very low values seen in in 2015 at the VL sites I attest to the presence of those large plating species that almost entirely disappeared by 2017; interestingly this trend disappears at the 8cm DEM
+
+```{r ProCurv, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=pro.curv, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+```
+
+
+### Planform Curvature
+
+-Similar trends seen here to those seen in Profile Curvature; refer to plot above for hypotheses on why we are seeing these trends. 
+
+```{r PlanCurv, echo=FALSE}
+ggplot(mpq, aes(x = hum_dist, y=plan.curv, fill = year)) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Human Disturbance Level") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))+facet_wrap(~DEM, scales = "fixed", ncol= 2)
+```
+
+
+
+## Site Level
+Investigating metrics at the site level, while separating year and DEM scale resolution to investigate trends further.
+
+Again, all sites sampled are included, even if only sampled in 2 of the 3 time points.
+
+For all metrics, I have 3 plots: 1 that includes both DEM scales, and then 2 subsequent plots, 1 for each of the DEM scales.
+
+### Surface complexity 
+
+- In all sites, 2015-2017 shows decreases in SR.
+
+- In the majority of sites, 2017-2019  indicate increases in SR, with most not quite to the levels seen in 2015
+
+
+
+The sites that didn't experience this increase are:
+
+- Site 30: Rubble transport is highly dependent 
+
+- Site 8: I'm unsure what is causing this. When we look at individual plots, we will be able to see if any of those are driving this trend
+
+
+```{r SR by site by DEM, echo=FALSE}
+ggplot(mpq, aes(x = site, y=rug, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("All DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.1, aes(x = site, y=rug, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.4, aes(x = site, y=rug, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=rug, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+#ggplot(mpq.1, aes(x = Site, y=surface.rugosity, fill = Year)) + ggtitle("1cm DEM") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+#ggplot(mpq.8, aes(x = Site, y=surface.rugosity, fill = Year)) + ggtitle("8cm DEM") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+#Compare plots side by side
+#grid.arrange(p1, p2, ncol=2)
+
+
+
+```
+
+### Terrain Ruggedness
+
+- Similar trends here as seen in surface complexity
+
+- I really don't know what is causing 2019 values to be the same or even higher than 2015 values; its interesting though. The differences are more pronounced in the 1cm DEM resolution, but are still present in the 8cm scale too.
+
+```{r TR by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=vrm, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.1, aes(x = site, y=vrm, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.4, aes(x = site, y=vrm, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=vrm, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+```
+
+### Slope
+
+- Similar trends present as the previous 2 metrics
+
+- I'm curious to see if it could be due to the structure being broken down into more "pieces" of rubble, thereby providing more surfaces with sharper surfaces, and therefore increased slopes? 
+
+- That hypothesis wouldn't explain why 2015 values are mostly higher, but maybe sharper rubble doesn't make up for living, complex corals?
+
+```{r Slope surf rug by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=slope, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+ggplot(mpq.1, aes(x = site, y=slope, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.4, aes(x = site, y=slope, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=slope, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+```
+
+### Profile Curvature
+
+- This illustrates how profile curvature values are highest in 2019 almost across the board, and that 2015 exhibited some of the more negative values, especially at the VH disturbance sites
+
+- As mentioned before, this describes how the surface of the structure is changing from outwardly convex to more inwardly concave structure, which I hypothesize is due to erosion
+
+```{r ProCurv surf rug by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=pro.curv, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.1, aes(x = site, y=pro.curv, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.4, aes(x = site, y=pro.curv, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+                                                                                                                                                                                    
+ggplot(mpq.8, aes(x = site, y=pro.curv, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+```
+
+### Planform Curvature
+
+- Similar trends present to those seen with profile curvature
+
+- The overall shape of the structure has transformed from more negative (concave) to more positive (convex) values, however these changes are perpendicular to the maximum slope of the surface. 
+
+
+```{r PlanCurv surf rug by site, echo=FALSE}
+ggplot(mpq, aes(x = site, y=plan.curv, fill = DEM)) +facet_wrap(~year, scales = "fixed", ncol= 3) + ggtitle("Both DEM scales") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.1, aes(x = site, y=plan.curv, fill = year)) + ggtitle("1cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.4, aes(x = site, y=plan.curv, fill = year)) + ggtitle("4cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+ggplot(mpq.8, aes(x = site, y=plan.curv, fill = year)) + ggtitle("8cm DEM scale") + geom_boxplot()+ theme_classic(base_size = 14) + xlab("Site") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22))
+
+
+```
+
+
+## Plot Level
+Finally, I examined down the changes at each plot through time and by DEM scale. These sites are clustered  together based on their human disturbance level (VH --> M --> VL). 
+
+### Surface complexity 
+
+- All the plots at site 27, 32 exhibit the same trend at 1cm DEM, where 2019 SR is higher than any other year; I believe this is due to the fact that the rubble transport is so variable by year that its just luck of the draw what ends up in the plot area
+
+- I looked at Site 34 MPQ 3 at the three time points, and have a new hypothesis: The large macro algae bloom seen in 2017 made the coral features (now mostly dead), less pronounced from the seafloor, and therefore less complex. I'm not sure why that is being picked up at the DEM scale of 8cm however....
+
+- VL sites all had complexity values return to pre-mortality event mostly, or at least very close. 2017 was by far the lowest valued year for all the plots.
+
+
+```{r SR by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.4, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.8, aes(ppq, rug, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Surface complexity")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+#Compare plots side by side
+#grid.arrange(p1, p2, ncol=2)
+
+```
+
+### Terrain Ruggedness
+
+- Similar trends to what were seen with SR; refer to there for hypotheses/description
+
+```{r TR by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.4, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
+
+ggplot(mpq.8, aes(ppq, vrm, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Terrain Ruggedness")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+
+```
+
+### Slope
+
+- Again, very similar trends to SR and VRM; refer to those sections for hypotheses
+
+```{r Slope by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.4, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
+
+ggplot(mpq.8, aes(ppq, slope, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Slope")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+```
+
+### Profile Curvature
+
+- A shift towards more positive values is clear throughout the years, although appears most pronounced in the VL sites
+
+- I hypothesize it is due to the loss of the large branching and plating structures found predominantly at the VL disturbance sites
+
+- By eyeballing it, the magnitude of the shift  in curvature values throughout time is highest in VL > VH > M
+
+- As previously stated, I believe this is due to erosion occurring on the structure surfaces, causing the outward projection to become more concave.
+
+```{r ProCurv by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.4, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
+
+
+ggplot(mpq.8, aes(ppq, pro.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Profile Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+
+```
+
+
+### Planform Curvature
+
+- Similar trends to that of Profile Curvature; refer to there for hypotheses
+
+```{r PlanCurv surf by plot, echo=FALSE}
+ggplot(mpq.1, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM")
+
+ggplot(mpq.4, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
+
+ggplot(mpq.8, aes(ppq, plan.curv, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Planform Curvature")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+
+```
+
+
+## Plot Area
+This is to ensure that the plot area is the same throughout all 5 timepoints for each specific plot.
+
+```{r 2D plot area through time, echo=FALSE}
+ggplot(mpq.1, aes(ppq, SHAPE_Area, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Plot 2d Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("1cm DEM") 
+
+ggplot(mpq.4, aes(ppq, SHAPE_Area, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Plot 2d Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("4cm DEM")
+
+ggplot(mpq.8, aes(ppq, SHAPE_Area, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Plot 2d Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ggtitle("8cm DEM")
+
+
+```
+
+
+
+
+
+# Digitization 
+
+This is the initial digitization data collected from May 2020 - to the present. 
+
+The issue came up whether to include encrusting coral that is growing on rubble. To see if it matters, Julia asked for a sensitivity analysis to be conducted on the data.
+
+
+### Sensitivity Analysis
+
+#### Site distributions with encrusting species as a separate category
+
+```{r Dig encrusting included, echo=FALSE}
+Morphology.percent.plot
+
+```
+
+- Very High sites are dominated by rubble; site 30 is an oddball, but that is expected.
+
+- Apart from the odd site, living coral is far higher in the M and VL sites than within the VH Sites
+
+- Sadly it doesn't appear that the unique categories of columnar, digitate, etc. seem to be any different among sites, but it is tough to tell in this graph
+
+- I'm trying to decide on a better way to show the results here and am blanking. Any recommendations would be greatly appreciated. (I am thinking of a proportion plot similar to this but simpler first: Live vs Dead structure....)
+
+```{r Table given percents, echo=FALSE, fig.align="center"}
+#table2 <- image_read("")
+
+#map4 <- image_read("Map/sites_sampled_updated.png")
+#map4
+
+```
+  
+#### All encrusting corals are included into the one category forming the majority of cover in the plot
+
+- The majority of cover in the plots tend to be either dead_massive structure or rubble.
+
+- Live_Encrusting appears to be such a minor player in the grand scheme of things, but it is tough to tell in its current format
+
+I think that the idea of encrusting coral on rubble not counting as encrusting material and is therefore simply rubble is a good way to move forward. The argument that it provides minimal structure there isn't strong in my opinion, especially since those rubble piles are so transient, the habitat provided from that structure is not secure or long-term. 
+
+
+```{r Dig encrusting excluded, echo= FALSE}
+Morphology.extra.percent.plot
+
+```
+
+
+
+
+### Surface complexity Values by morphology
+
+
+In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. **Note: I set the Y axis to 10 so that we could see the boxplot ranges more clearly, and in doing so made some outliers disappear.  Perhaps I should see VRM values for the top 3/5 morphologies as it appears that is the best metric to use for complexity....
+
+
+```{r SR by morphology1, echo=FALSE}
+
+ggplot(dig, aes(x=Benthic_Morphology, y=surface.complexity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290))+ scale_y_continuous(limits=c(0,10)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+``` 
+
+
+In the literature, I have noticed that its been stated by a couple papers that branching corals are "the most complex", however they never back it up with actual values or facts. I'll want to do some more literature searching before I definitely say this is a true knowledge gap, but I wanted to see if my data could give us that type of answer. 
+
+
+```{r SR by morphology}
+
+ggplot(dig, aes(x=Benthic_Morphology, y=surface.complexity)) + geom_boxplot(fill="deepskyblue")+ theme(axis.text.x= element_text(angle = 290)) #+ theme_classic(base_size = 10) + xlab("Timepoint") + ylab("Volume Change (m3)")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=14))+ theme(plot.title = element_text(size=22))+ geom_hline(yintercept = 0, linetype="dashed", color="red", size=0.2) + scale_y_continuous(breaks=seq(-2.5,1,0.2)) + geom_label(label= "p=0.522", x= 3, y=0.9, label.size= 0.5, label.padding= unit(0.5, "lines"), fill= "grey", color="black")
+
+
+```
+
+From the plot, I would say that, while interesting, there is lots of variation. It will take me a bit to clean the data properly to get rid of the outliers. One way to do so could be to create a minimum 3D size the morphological structure needs to be in order to be eligible for the analysis. With the DEM cell size set to 1cm, I feel a 3D surface area less than 0.01 (IE: 1cm3) wouldn't contribute anything meaningful to the structure present. 
+
+With that said, we could even set it to something larger, that way ensuring more than 1 full DEM cell is located within the polygon. This could be something to discuss with John if we choose to check this out. 
+
+As a very fast and rough result for the average values, I got the following:
+
+
+```{r Dig sum table1, echo=FALSE}
+dig_SR_ordered
+
+```
+
+
+```{r Dig sum table, echo=FALSE}
+dig_SR_sum
+
+```
+
+
+
+```{r NMDS2, eval=FALSE, include=FALSE}
+#################################################################
+############ Full example NMDS code with annotations ############
+#################################################################
+
+
+# Non-metric multidimensional scaling (NMDS) is one tool commonly used to 
+# examine community composition
+
+# Let's lay some conceptual groundwork
+# Consider a single axis of abundance representing a single species:
+plot(0:10,0:10,type="n",axes=F,xlab="Abundance of Species 1",ylab="")
+axis(1)
+# We can plot each community on that axis depending on the abundance of 
+# species 1 within it
+points(5,0); text(5.5,0.5,labels="community A")
+points(3,0); text(3.2,0.5,labels="community B")
+points(0,0); text(0.8,0.5,labels="community C")
+
+# Now consider a second axis of abundance representing a different species
+# Communities can be plotted along both axes depending on the abundance of
+# species within it
+plot(0:10,0:10,type="n",xlab="Abundance of Species 1",
+     ylab="Abundance of Species 2")
+points(5,5); text(5,4.5,labels="community A")
+points(3,3); text(3,3.5,labels="community B")
+points(0,5); text(0.8,5.5,labels="community C")
+
+# Now consider a THIRD axis of abundance representing yet another species
+# (For this we're going to need to load another package)
+# install.packages("scatterplot3d")
+library(scatterplot3d)
+d=scatterplot3d(0:10,0:10,0:10,type="n",xlab="Abundance of Species 1",
+                ylab="Abundance of Species 2",
+                zlab="Abundance of Species 3"); d
+d$points3d(5,5,0); text(d$xyz.convert(5,5,0.5),labels="community A")
+d$points3d(3,3,3); text(d$xyz.convert(3,3,3.5),labels="community B")
+d$points3d(0,5,5); text(d$xyz.convert(0,5,5.5),labels="community C")
+
+# Now consider as many axes as there are species S (obviously we cannot 
+# visualize this beyond 3 dimensions)
+# Hopefully your head didn't explode
+
+# The goal of NMDS is to represent the original position of communities in
+# multidimensional space as accurately as possible using a reduced number 
+# of dimensions that can be easily plotted and visualized 
+
+# NMDS does not use the absolute abundances of species in communities, but
+# rather their RANK ORDER!
+# The use of ranks omits some of the issues associated with using absolute
+# distance (e.g., sensitivity to transformation), and as a result is much 
+# more flexible technique that accepts a variety of types of data
+# (It is also where the "non-metric" part of the name comes from)
+
+# The NMDS procedure is iterative and takes place over several steps:
+# (1) Define the original positions of communities in multidimensional 
+# space 
+# (2) Specify the number m of reduced dimensions (typically 2)
+# (3) Construct an initial configuration of the samples in 2-dimensions
+# (4) Regress distances in this initial configuration against the observed 
+# (measured) distances
+# (5) Determine the stress (disagreement between 2-D configuration and 
+# predicted values from regression)
+# If the 2-D configuration perfectly preserves the original rank 
+# orders, then a plot ofone against the other must be monotonically 
+# increasing. The extent to which the points on the 2-D configuration
+# differ from this monotonically increasing line determines the
+# degree of stress (see Shepard plot)
+# (6) If stress is high, reposition the points in m dimensions in the 
+#direction of decreasing stress, and repeat until stress is below 
+#some threshold 
+
+# Generally, stress < 0.05 provides an excellent represention in reduced 
+# dimensions, < 0.1 is great, < 0.2 is good, and stress > 0.3 provides a 
+# poor representation
+
+# NOTE: The final configuration may differ depending on the initial 
+# configuration (which is often random) and the number of iterations, so
+# it is advisable to run the NMDS multiple times and compare the 
+# interpretation from the lowest stress solutions
+
+# To begin, NMDS requires a distance matrix, or a matrix of 
+# dissimilarities
+# Raw Euclidean distances are not ideal for this purpose: they are 
+# sensitive to totalabundances, so may treat sites with a similar number
+# of species as more similar, even though the identities of the species
+# are different
+# They are also sensitive to species absences, so may treat sites with
+# the same number of absent species as more similar
+
+# Consequently, ecologists use the Bray-Curtis dissimilarity calculation, 
+# which has many ideal properties:
+# It is invariant to changes in units
+# It is unaffected by additions/removals of species that are not 
+# present in two communities
+# It is unaffected by the addition of a new community
+# It can recognize differences in total abudnances when relative 
+# abundances are the same
+
+# To run the NMDS, we will use the function `metaMDS` from the vegan 
+# package
+#install.packages("vegan")
+library(vegan)
+# `metaMDS` requires a community-by-species matrix
+# Let's create that matrix with some randomly sampled data
+set.seed(2)
+community_matrix=matrix(sample(1:100,300,replace=T),nrow=10,
+                        dimnames=list(paste("community",1:10,sep=""),
+                                      paste("sp",1:30,sep="")))
+
+# The function `metaMDS` will take care of most of the distance calculations, iterative fitting, etc. We need simply to supply:
+example_NMDS=metaMDS(community_matrix, # Our community-by-species matrix
+                     k=2) # The number of reduced dimensions
+# You should see each iteration of the NMDS until a solution is reached
+# (i.e., stress was minimized after some number of reconfigurations of 
+# the points in 2 dimensions). You can increase the number of default 
+# iterations using the argument "trymax=##"
+example_NMDS=metaMDS(community_matrix,k=2,trymax=100)
+
+# And we can look at the NMDS object
+example_NMDS # metaMDS has automatically applied a square root 
+# transformation and calculated the Bray-Curtis distances for our 
+# community-by-site matrix
+# Let's examine a Shepard plot, which shows scatter around the regression
+# between the interpoint distances in the final configuration (distances 
+# between each pair of communities) against their original dissimilarities
+stressplot(example_NMDS)
+# Large scatter around the line suggests that original dissimilarities are
+# not well preserved in the reduced number of dimensions
+
+#Now we can plot the NMDS
+plot(example_NMDS)
+# It shows us both the communities ("sites", open circles) and species 
+# (red crosses), but we  don't know which are which!
+
+# We can use the functions `ordiplot` and `orditorp` to add text to the 
+# plot in place of points
+ordiplot(example_NMDS,type="n")
+orditorp(example_NMDS,display="species",col="red",air=0.01)
+orditorp(example_NMDS,display="sites",cex=1.25,air=0.01)
+
+# There are some additional functions that might of interest
+# Let's suppose that communities 1-5 had some treatment applied, and 
+# communities 6-10 a different treatment
+# We can draw convex hulls connecting the vertices of the points made by
+# these communities on the plot
+# First, let's create a vector of treatment values:
+treat=c(rep("Treatment1",5),rep("Treatment2",5))
+ordiplot(example_NMDS,type="n")
+ordihull(example_NMDS,groups=treat,draw="polygon",col="grey90",
+         label=FALSE)
+orditorp(example_NMDS,display="species",col="red",air=0.01)
+orditorp(example_NMDS,display="sites",col=c(rep("green",5),rep("blue",5)),
+         air=0.01,cex=1.25)
+# I find this an intuitive way to understand how communities and species 
+# cluster based on treatments
+# One can also plot ellipses and "spider graphs" using the functions 
+# `ordiellipse` and `orderspider` which emphasize the centroid of the 
+# communities in each treatment
+
+# Another alternative is to plot a minimum spanning tree (from the 
+# function `hclust`), which clusters communities based on their original 
+# dissimilarities and projects the dendrogram onto the 2-D plot
+ordiplot(example_NMDS,type="n")
+orditorp(example_NMDS,display="species",col="red",air=0.01)
+orditorp(example_NMDS,display="sites",col=c(rep("green",5),rep("blue",5)),
+         air=0.01,cex=1.25)
+ordicluster(example_NMDS,hclust(vegdist(community_matrix,"bray"))) 
+# Note that clustering is based on Bray-Curtis distances
+# This is one method suggested to check the 2-D plot for accuracy
+
+# You could also plot the convex hulls, ellipses, spider plots, etc. colored based on the treatments
+# First, create a vector of color values corresponding of the same length as the vector of treatment values
+colors=c(rep("red",5),rep("blue",5))
+ordiplot(example_NMDS,type="n")
+#Plot convex hulls with colors baesd on treatment
+for(i in unique(treat)) {
+  ordihull(example_NMDS$point[grep(i,treat),],draw="polygon",groups=treat[treat==i],col=colors[grep(i,treat)],label=F) } 
+orditorp(example_NMDS,display="species",col="red",air=0.01)
+orditorp(example_NMDS,display="sites",col=c(rep("green",5),rep("blue",5)),
+         air=0.01,cex=1.25)
+
+# If the treatment is a continuous variable, consider mapping contour 
+# lines onto the plot
+# For this example, consider the treatments were applied along an 
+# elevational gradient
+# We can define random elevations for previous example
+elevation=runif(10,0.5,1.5)
+# And use the function ordisurf to plot contour lines
+ordisurf(example_NMDS,elevation,main="",col="forestgreen")
+# Finally, we want to display species on plot
+orditorp(example_NMDS,display="species",col="grey30",air=0.1,cex=1)
+
+########## Prep dataframes for NMDS#######
+colnames(mpq.1)
+
+mpq.1.nmds <- subset(mpq.1, select=c("SArea", "rug", "slope", "vrm", "curv", "pro.curv", "plan.curv"))
+
+#Export nmds dataframe
+write.csv(mpq.1.nmds, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/mpq.1.nmds", row.names= TRUE)
+
+
+###Now to attempt the NMDS
+#Import exported file
+nmds.mpq.1 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/mpq.1.nmds", row.names = 1)
+
+library(vegan)
+
+str(nmds.mpq.1)
+
+#Save as a matrix
+#nmds.mpq.1 <- as.matrix(nmds.mpq.1)
+
+#Start process
+nmds.1.mpq <- metaMDS(nmds.mpq.1, distance = "bray")
+nmds.1.mpq
+mpq.bray <- vegdist(nmds.mpq.1)
+nmds.1.mpq$stress
+plot(nmds.mpq.1, type = "t", main=paste("NMDS/Bray-Stress=", round(nmds.1.mpq$stress,3)))
+
+
+
+
+wdig.15.nmds <- metaMDS(dig.wide.15.matrix, distance = "bray")
+wdig.15.nmds
+wdig.bray <- vegdist(dig.wide.15.matrix)
+wdig.15.nmds$stress
+plot(dig.wide.15.matrix, type = "t", main=paste("NMDS/Bray-Stress=", round(wdig.15.nmds$stress,3))) 
+
+
+
+
+
+
+
+
+
+dig
+
+colnames(dig_wide)
+dig_wide.15 <- subset(dig_wide, year == 2015) 
+dig_wide.15 <- subset(dig_wide, select=c("site", "Dead_Branching", "Dead_Massive", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_SoftCoral", "Dead_Tabulate", "Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Enrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "Macroalgae", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Rubble", "Sand", "SoftCoral_Nodular", "SoftCoral_Plating"))
+
+#Convert dataframe into a numeric matrix
+dig.wide.15.matrix <- data.matrix(dig_wide.15)
+
+#Start the NMDS Process
+wdig.15.nmds <- metaMDS(dig.wide.15.matrix, distance = "bray")
+
+wdig.15.nmds
+wdig.bray <- vegdist(dig.wide.15.matrix)
+wdig.15.nmds$stress
+plot(dig.wide.15.matrix, type = "t", main=paste("NMDS/Bray-Stress=", round(wdig.15.nmds$stress,3))) #Doesn't like type = "t"
+
+stressplot(wdig.15.nmds, main= "Shepard Plot")
+gof = goodness(dig.wide.15.matrix)
+plot(wdig.15.nmds, type="t", main = "Goodness of fit")
+
+#Create clustering results
+wdig.bray.ward <- hclust(wdig.bray, "ward")
+
+grp.lev <- levels(factor())
+
+#Add the clustering results to NMDS
+
+```
+

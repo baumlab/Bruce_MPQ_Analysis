@@ -1,0 +1,623 @@
+---
+title: "1.1.MPQ.Data.Cleaning"
+author: "Kevin Bruce"
+date: "11/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# One code chunk for each "type" of data
+
+## Cloud Compare Volumetric Analysis
+
+```{r Clean CloudCompare Data, include=FALSE}
+###################################################
+##### NEW CLOUD COMPARE DATA WITH TRUE VALUES ####
+##################################################
+
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+
+#Load CloudCompare data
+CC.new <- read.csv("BaumLab_CloudCompare_Final.csv")
+
+#Change colnames for the collumns
+colnames(CC.new)[which(names(CC.new)=="Hum_Dist")] <- "hum_dist"
+colnames(CC.new)[which(names(CC.new)=="Period")] <- "timepoint"
+colnames(CC.new)[which(names(CC.new)=="MPQ")] <- "mpq"
+colnames(CC.new)[which(names(CC.new)=="Site")] <- "site"
+colnames(CC.new)[which(names(CC.new)=="Volume")] <- "volume.change"
+colnames(CC.new)[which(names(CC.new)=="Added.Volume")] <- "volume.added"
+colnames(CC.new)[which(names(CC.new)=="Removed.Volume")] <- "volume.removed"
+
+colnames(CC.new)
+
+
+#For loop time! Make for looks to add values for human disturbance, publication site name, and region
+#Add according values to human dist collumn
+for(i in c(1:nrow(CC.new))) {
+  if(CC.new$site[i]=="5") {
+    CC.new$hum_dist[i] <- "Very Low"
+  } else if(CC.new$site[i]=="19") {
+    CC.new$hum_dist[i] <- "Very Low"
+  } else if(CC.new$site[i]=="15") {
+    CC.new$hum_dist[i] <- "Very Low"
+  } else if(CC.new$site[i]=="8") {
+    CC.new$hum_dist[i] <- "Medium"
+  } else if(CC.new$site[i]=="34") {
+    CC.new$hum_dist[i] <- "Medium"
+  } else if(CC.new$site[i]=="35") {
+   CC.new$hum_dist[i] <- "Medium"
+  } else if(CC.new$site[i]=="27") {
+   CC.new$hum_dist[i] <- "Very High"
+  } else if(CC.new$site[i]=="30") {
+   CC.new$hum_dist[i] <- "Very High"
+  } else if(CC.new$site[i]=="32") {
+    CC.new$hum_dist[i] <- "Very High"
+  } else if(CC.new$site[i]=="37") {
+    CC.new$hum_dist[i] <- "Very Low"
+  }}
+
+#2. Create a collumn for region & fill it with values
+CC.new$region <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(CC.new))) {
+  if(CC.new$site[i]=="5") {
+    CC.new$region[i] <- "Vaskes"
+  } else if(CC.new$site[i]=="19") {
+    CC.new$region[i] <- "BOW"
+  } else if(CC.new$site[i]=="15") {
+    CC.new$region[i] <- "BOW"
+  } else if(CC.new$site[i]=="8") {
+    CC.new$region[i] <- "S.Lagoon"
+  } else if(CC.new$site[i]=="34") {
+    CC.new$region[i] <- "S.Lagoon"
+  } else if(CC.new$site[i]=="35") {
+   CC.new$region[i] <- "S.Lagoon"
+  } else if(CC.new$site[i]=="27") {
+   CC.new$region[i] <- "N.Lagoon"
+  } else if(CC.new$site[i]=="30") {
+   CC.new$region[i] <- "N.Lagoon"
+  } else if(CC.new$site[i]=="32") {
+    CC.new$region[i] <- "N.Lagoon"
+  } else if(CC.new$site[i]=="37") {
+    CC.new$region[i] <- "Vaskes"
+  }}
+
+#3 Assign publication name to site
+CC.new$pub.site <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(CC.new))) {
+  if(CC.new$site[i]=="5") {
+    CC.new$pub.site[i] <- "VL3"
+  } else if(CC.new$site[i]=="19") {
+    CC.new$pub.site[i] <- "VL2"
+  } else if(CC.new$site[i]=="15") {
+    CC.new$pub.site[i] <- "VL1"
+  } else if(CC.new$site[i]=="8") {
+    CC.new$pub.site[i] <- "M1"
+  } else if(CC.new$site[i]=="34") {
+    CC.new$pub.site[i] <- "M3"
+  } else if(CC.new$site[i]=="35") {
+   CC.new$pub.site[i] <- "M2"
+  } else if(CC.new$site[i]=="27") {
+   CC.new$pub.site[i] <- "VH1"
+  } else if(CC.new$site[i]=="30") {
+   CC.new$pub.site[i] <- "VH3"
+  } else if(CC.new$site[i]=="32") {
+    CC.new$pub.site[i] <- "VH2"
+  } else if(CC.new$site[i]=="37") {
+    CC.new$pub.site[i] <- "VL4"
+  }}
+
+
+#Remove the extra collums in the cloudcompare data that aren't necessary
+CC.new <- subset(CC.new, select = c("region", "timepoint","hum_dist", "site", "pub.site" ,"mpq", "volume.change"))
+colnames(CC.new)
+CC.new
+
+
+#Change levels of sites to match disturbance level
+CC.new$site <- factor(CC.new$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
+#Check structure of CC
+str(CC.new)   ###human_dist is a factor, which we need to change to a character
+
+#Change hum_dist and mpq to a character
+CC.new$hum_dist <- as.character(CC.new$hum_dist)
+CC.new$mpq <- as.character(CC.new$mpq)
+CC.new$site <- as.character(CC.new$site)
+
+str(CC.new)
+
+#Assign levels to CC$hum_dist
+levels(CC.new$hum_dist)
+CC.new$hum_dist <- factor(CC.new$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(CC.new$hum_dist)
+
+
+#Change timepoint information from A, B,C to year differences
+CC.new$timepoint <- factor(CC.new$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+CC.new
+
+#Create new collumn to bind two dataframes together with (after creating 2017-2019 calculated dataframe)
+CC.new$ID <- paste(CC.new$pub.site, CC.new$mpq, sep=".")
+
+CC.new$timeblock <- "blank"
+
+#for loop to assign "timeblock" values to timepoints to make future for loop easier
+for(i in 1:length(CC.new$timepoint)) {
+  if(CC.new$timepoint[i] == "2015-2017"){
+    CC.new$timeblock[i] <- 1 } 
+  if(CC.new$timepoint[i] == "2017-2019"){
+    CC.new$timeblock[i] <- 3 }
+  if(CC.new$timepoint[i] == "2015-2019"){
+    CC.new$timeblock[i] <- 2 }
+  }
+
+#Calculate 2017-2019 Timepoint
+#Create new dataframe
+CC.new.2 <- as.data.frame(matrix(data=NA,ncol=9, nrow=50))
+
+colnames(CC.new.2) <- colnames(CC.new)
+
+ID.variables <- unique(CC.new$ID)
+
+#forloop
+for(i in 1:length(ID.variables)) {
+  xx <- subset(CC.new, ID == ID.variables[i])
+  after <- xx %>% filter(timeblock == 3)
+  if(length(after$timepoint) > 0) next
+  before <- xx %>% filter(timeblock == 1)
+  full <- xx %>% filter(timeblock == 2)
+  before_value <- before$volume.change[1]
+  full_value <- full$volume.change[1]
+  after_value <- full_value - before_value
+  CC.new.2$region[i] <- before$region[1]
+  CC.new.2$timepoint[i] <- "2017-2019"
+  CC.new.2$hum_dist[i] <- before$hum_dist[1]
+  CC.new.2$site[i] <- before$site[1]
+  CC.new.2$pub.site[i] <- before$pub.site[1]
+  CC.new.2$mpq[i] <- before$mpq[1]
+  CC.new.2$volume.change[i] <- after_value
+  CC.new.2$ID[i] <- before$ID[1]
+  CC.new.2$timeblock[i] <- 3  
+  
+}
+
+CC.new.2.1 <- CC.new.2 %>% drop_na()
+
+
+#Bind two together
+CC.total <- rbind(CC.new, CC.new.2.1)
+
+#Fix human disturbance values
+for(i in c(1:nrow(CC.total))) {
+  if(CC.total$site[i]=="5") {
+    CC.total$hum_dist[i] <- "Very Low"
+  } else if(CC.total$site[i]=="19") {
+    CC.total$hum_dist[i] <- "Very Low"
+  } else if(CC.total$site[i]=="15") {
+    CC.total$hum_dist[i] <- "Very Low"
+  } else if(CC.total$site[i]=="8") {
+    CC.total$hum_dist[i] <- "Medium"
+  } else if(CC.total$site[i]=="34") {
+    CC.total$hum_dist[i] <- "Medium"
+  } else if(CC.total$site[i]=="35") {
+   CC.total$hum_dist[i] <- "Medium"
+  } else if(CC.total$site[i]=="27") {
+   CC.total$hum_dist[i] <- "Very High"
+  } else if(CC.total$site[i]=="30") {
+   CC.total$hum_dist[i] <- "Very High"
+  } else if(CC.total$site[i]=="32") {
+    CC.total$hum_dist[i] <- "Very High"
+  } else if(CC.total$site[i]=="37") {
+    CC.total$hum_dist[i] <- "Very Low"
+  }}
+
+CC.total
+
+#Export Clean Data as a csv
+write.csv(CC.total, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean.csv")
+```
+
+## ArcMap Complexity
+
+```{r FINAL ArcMap complexity data, include = FALSE}
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+
+#Load the data
+mpq <- read.csv("ArcMAP_MPQ_Complexity_FINAL.csv")
+
+#Change collumn headers to make it easier to code
+colnames(mpq)[which(names(mpq)=="Year")] <- "year"
+colnames(mpq)[which(names(mpq)=="Site")] <- "site"
+colnames(mpq)[which(names(mpq)=="plot")] <- "ppq"
+colnames(mpq)[which(names(mpq)=="DEM.scale")] <- "DEM"
+colnames(mpq)[which(names(mpq)=="Complexity.Calculation")] <- "rug"
+colnames(mpq)[which(names(mpq)=="Avg..BTM_Slope")] <- "slope"
+colnames(mpq)[which(names(mpq)=="Avg_terrain_ruggedness..VRM."  )] <- "vrm"
+colnames(mpq)[which(names(mpq)=="profile.curvature")] <- "pro.curv"
+colnames(mpq)[which(names(mpq)=="planform.curvature")] <- "plan.curv"
+colnames(mpq)[which(names(mpq)=="average.curvature")] <- "curv"
+
+#Do 3 for-loops of assigning values in new collumns
+#1 to assign human disturbance levels
+#2 to assign sites to a region 
+#3 to assign publication name to site
+
+#1: For look to add human distrubance levels
+#Add human_dist collumn to kb Dataframe
+mpq$hum_dist <- "a"
+
+# #Delete rows in site collum that are NA
+# mpq %>% filter(!is.na(site))
+# tail(mpq$site)
+
+#Add according values to human dist collumn
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$hum_dist[i] <- "Very Low"
+  } else if(mpq$site[i]=="19") {
+    mpq$hum_dist[i] <- "Very Low"
+  } else if(mpq$site[i]=="15") {
+    mpq$hum_dist[i] <- "Very Low"
+  } else if(mpq$site[i]=="8") {
+    mpq$hum_dist[i] <- "Medium"
+  } else if(mpq$site[i]=="34") {
+    mpq$hum_dist[i] <- "Medium"
+  } else if(mpq$site[i]=="35") {
+   mpq$hum_dist[i] <- "Medium"
+  } else if(mpq$site[i]=="27") {
+   mpq$hum_dist[i] <- "Very High"
+  } else if(mpq$site[i]=="30") {
+   mpq$hum_dist[i] <- "Very High"
+  } else if(mpq$site[i]=="32") {
+    mpq$hum_dist[i] <- "Very High"
+  } else if(mpq$site[i]=="37") {
+    mpq$hum_dist[i] <- "Very Low"
+  }}
+
+#2. Create a collumn for region & fill it with values
+mpq$region <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$region[i] <- "Vaskes"
+  } else if(mpq$site[i]=="19") {
+    mpq$region[i] <- "BOW"
+  } else if(mpq$site[i]=="15") {
+    mpq$region[i] <- "BOW"
+  } else if(mpq$site[i]=="8") {
+    mpq$region[i] <- "S.Lagoon"
+  } else if(mpq$site[i]=="34") {
+    mpq$region[i] <- "S.Lagoon"
+  } else if(mpq$site[i]=="35") {
+   mpq$region[i] <- "S.Lagoon"
+  } else if(mpq$site[i]=="27") {
+   mpq$region[i] <- "N.Lagoon"
+  } else if(mpq$site[i]=="30") {
+   mpq$region[i] <- "N.Lagoon"
+  } else if(mpq$site[i]=="32") {
+    mpq$region[i] <- "N.Lagoon"
+  } else if(mpq$site[i]=="37") {
+    mpq$region[i] <- "Vaskes"
+  }}
+
+#3 Assign publication name to site
+mpq$pub.site <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$pub.site[i] <- "VL3"
+  } else if(mpq$site[i]=="19") {
+    mpq$pub.site[i] <- "VL3"
+  } else if(mpq$site[i]=="15") {
+    mpq$pub.site[i] <- "VL1"
+  } else if(mpq$site[i]=="8") {
+    mpq$pub.site[i] <- "M1"
+  } else if(mpq$site[i]=="34") {
+    mpq$pub.site[i] <- "M3"
+  } else if(mpq$site[i]=="35") {
+   mpq$pub.site[i] <- "M2"
+  } else if(mpq$site[i]=="27") {
+   mpq$pub.site[i] <- "VH1"
+  } else if(mpq$site[i]=="30") {
+   mpq$pub.site[i] <- "VH3"
+  } else if(mpq$site[i]=="32") {
+    mpq$pub.site[i] <- "VH2"
+  } else if(mpq$site[i]=="37") {
+    mpq$pub.site[i] <- "VL4"
+  }}
+
+
+#Create dataframe with only columns I require
+mpq.temp <- subset(mpq, select = c("year", "region","hum_dist","site" ,"pub.site", "ppq", "SHAPE_Area", "SArea", "rug", "slope", "vrm", "DEM", "curv", "pro.curv", "plan.curv"))
+
+#Switch dataframe name back to mpq
+mpq <- mpq.temp
+str(mpq)
+
+#Change DEM, Site, Year,Plot all to character
+mpq$DEM <- as.character(mpq$DEM)
+mpq$site <- as.character(mpq$site)
+mpq$ppq <- as.character(mpq$ppq)
+
+str(mpq)
+
+#Change levels of hum_dist & site
+levels(mpq$hum_dist)
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
+mpq$site <- factor(mpq$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+levels(mpq$hum_dist)
+
+#<----- create "clean" dataframe without excessive collumns ----->
+mpq.temp <- subset(mpq, select = c("year", "hum_dist", "site", "ppq", "DEM", "SHAPE_Area", "SArea", "surface.rugosity", "slope", "vrm", "curv", "pro.curv", "plan.curv"))
+colnames(mpq)
+
+#Change collumn names for plot surface area
+colnames(mpq.temp)[which(names(mpq)=="SHAPE_Area")] <- "area_2d"
+colnames(mpq.temp)[which(names(mpq)=="SArea")] <- "area_3d"
+colnames(mpq.temp)[which(names(mpq)=="surface.rugosity")] <- "s.complex"
+
+#Switch dataframe name back to mpq
+mpq <- mpq.temp
+str(mpq)
+
+#Export csv file 
+write.csv(mpq, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_Data_Clean.csv")
+
+### Look into converting planform & profile curv values into Z values
+
+```
+
+## ArcMap Digitization
+
+### Combine the dataframes together
+```{r Digitization sensetivity test with all sites, include = FALSE}
+
+#loading the data
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data") 
+dig.15 <- read.csv("2015.MPQ.Digitization.Data.csv")
+dig.17 <- read.csv("2017.MPQ.Digitization.Data.csv")
+dig.19 <- read.csv("2019.MPQ.Digitization.Data.csv")
+
+#Filter out extra collumns that mess up the merging process
+names(dig.15)
+names(dig.17)
+names(dig.19)
+d.15 <- dig.15 %>% select(-c (X, X.1, X.2, X.3, X.4, X.5))
+d.17 <- dig.17 %>% select(-c (X, X.1))
+d.19 <- dig.19 %>% select(-c (X, X.1, X.2, X.3, X.4, X.5))
+
+#Merge all data together
+dig <- rbind(d.15, d.17, d.19)
+
+#Turn the area into numeric
+dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
+
+colnames(dig)
+#Rename shape_area to area
+colnames(dig)[which(names(dig)=="SHAPE_Area")] <- "area"
+colnames(dig)[which(names(dig)=="Year")] <- "year"
+colnames(dig)[which(names(dig)=="surface.rugosity")] <- "surface.complexity"
+
+# Make a unique column for year.site.ppq
+dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=".") 
+#dig$year.site.ppq <- dig$site.ppq #renamed to make code work better (will need to change back once we get multiple years I imagine)
+
+#Convert year.site.ppq from a character to a factor
+dig$year.site.ppq <- as.factor(dig$year.site.ppq)
+
+
+#Levels of dig$sites (will need to change when uploading more files)
+unique(dig$year.site.ppq)
+str(dig$year.site.ppq)
+levels(dig$year.site.ppq)
+
+#Convert year.site.ppq from a character to a factor
+dig$year.site.ppq <- as.factor(dig$year.site.ppq)
+```
+
+### Summarized total coverage
+```{r 1. Summarize total area for each year.site.ppq}
+#1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
+#Erase all rows with an NA in it
+dig <- dig %>% drop_na(surface.complexity) #Removed 447 rows (10,759 rows to 10,312)
+
+#Re-input this column
+dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=".") 
+
+# Summarize the total area of each morphology in Long format
+dig_sum <- dig %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(Area = sum(area))
+
+# Wide format total area
+dig_wide <- tidyr::spread(dig_sum, Benthic_Morphology, Area)
+dig_wide[is.na(dig_wide)] <- 0
+
+```
+
+### % Coverage/Morphology
+```{r 2. Calculate % coverage for each morphology}
+#2a. Calculate the % of each morphology at each plot & Graph the proportion of  each morphology present at each plot using stacked bar charts
+
+#creating a matrix with the total areas for each year site ppq combination
+total_area <- dig_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
+
+#loop that takes the total area for each year site ppq combination and puts it in a new column
+for (i in 1:length(dig_sum$year)) {
+
+  xx <- subset(total_area, year.site.ppq == dig_sum$year.site.ppq[i])
+  
+  dig_sum$Tot_Area[i] <- xx$tot_area[1]
+}
+
+#calculates the percent area for each Benthic Substrate & puts it into percent
+dig_sum$Per_Area <- (dig_sum$Area / dig_sum$Tot_Area)*100 #remove *100 if you just want proportion
+
+#Put the percent cover dataframe into wide format
+dig_wide_percent <- tidyr::spread(dig_sum[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
+dig_wide_percent[is.na(dig_wide_percent)] <- 0
+```
+
+### Number of colonies
+```{r 3. Calculate # of colonies of each morphology}
+######################################################################################################
+#2b. Calculate the # of colonies of each morphology at each timepoint:
+#create a matrix with the total areas for each year site ppq combination
+#WORK ON
+total_num <- dig_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
+
+
+#loop that takes the total area for each year site ppq combination and puts it in a new column
+for (i in 1:length(dig_sum$year)) {
+
+  xx <- subset(total_area, year.site.ppq == dig_sum$year.site.ppq[i])
+  
+  dig_sum$Tot_Area[i] <- xx$tot_area[1]
+  
+}
+
+#calculates the percent area for each Benthic Substrate & puts it into percent
+dig_sum$Per_Area <- (dig_sum$Area / dig_sum$Tot_Area)*100 #remove *100 if you just want proportion
+
+
+#Put the percent cover dataframe into wide format
+dig_wide_percent <- tidyr::spread(dig_sum[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
+dig_wide_percent[is.na(dig_wide_percent)] <- 0
+```
+
+### Sensitivity Analysis
+```{r 4. Test to see if encrusting on rubble made a difference (disregard), eval=FALSE, include=FALSE}
+######################################################################################################
+#3. Create a new dataframe with same data from step 2, but convert all live_encrusting category tags to either dead_massive OR rubble (based on the one category left til the end of each plot) --> OUTDATED, DON'T BOTHER
+
+# #creating a data frame for the "extra" category for each year site ppq combination
+# max_benthic <- as.data.frame(matrix(data=NA, nrow = length(unique(dig_sum$year.site.ppq)), ncol = 2))
+# colnames(max_benthic) <- c("year.site.ppq", "max_benthic")
+# 
+# max_benthic$year.site.ppq <- unique(dig_sum$year.site.ppq)
+# 
+# #new data frame name for this new "extra" category calculation
+# dig_sum_extra <- dig_sum
+# 
+# #loop that pulls out the rubble and dead massize categorues for each year site ppq combination and decides which is larger and adds that to the max_benthic data frame for that year site ppq combination
+# for (i in 1:length(max_benthic$year.site.ppq)) {
+# 
+#   xx <- subset(dig_sum_extra, year.site.ppq == max_benthic$year.site.ppq[i] & (Benthic_Morphology == "Rubble" | Benthic_Morphology == "Dead_Massive"))
+#   
+#   yy <- subset(xx, Per_Area == max(xx$Per_Area))
+#   
+#   max_benthic$year.site.ppq[i] <- yy$year.site.ppq
+#   max_benthic$max_benthic[i] <- yy$Benthic_Morphology
+#   
+# }
+# 
+# #made an ID column for the max_benthic data frame
+# max_benthic$ID <- paste(max_benthic$year.site.ppq, max_benthic$max_benthic, sep = "_", collapse = NULL)
+# 
+# #subset only the columns I want
+# #only doing the following analysis on percent area calculations
+# dig_sum_extra <- dig_sum_extra[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")]
+
+# #creating a new row in the long format for each sum "extra" category  
+# for(i in 1:length(max_benthic$year.site.ppq)){
+# 
+#   xx <- subset(dig_sum_extra, year.site.ppq == unique(dig_sum_extra$year.site.ppq)[i])
+#   
+#   max_benth <- subset(max_benthic, year.site.ppq == xx$year.site.ppq[1])
+#   max_benth_var <- max_benth$max_benthic[1]
+#   
+#   combo_var <- paste(max_benth_var, "Live_Encrusting", sep = "_n_")
+#   
+#   template_row <- xx[1,]
+#   template_row$Benthic_Morphology <- combo_var
+#   summ_vars <- subset(xx, Benthic_Morphology == "Live_Encrusting" | Benthic_Morphology == max_benth_var)
+#   template_row$Per_Area <- sum(summ_vars$Per_Area)
+#   dig_sum_extra <- rbind(dig_sum_extra, template_row)
+#   
+# }
+# 
+# #creating an ID column for the dig_sum_extra data frame
+# dig_sum_extra$ID <- paste(dig_sum_extra$year.site.ppq, dig_sum_extra$Benthic_Morphology, sep = "_", collapse = NULL)
+# 
+# #the "extra" categories to remove
+# var_remove <- max_benthic$ID
+# 
+# #removing the Live_Encrusting and "extra" categories
+# dig_sum_removed <- subset(dig_sum_extra, Benthic_Morphology != "Live_Encrusting")
+# dig_sum_removed_full <- dig_sum_removed[!(dig_sum_removed$ID %in% var_remove),]
+# 
+# #turning it into long format if you want it
+# dig_wide_removed_full <- tidyr::spread(dig_sum_removed_full[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
+# dig_wide_removed_full[is.na(dig_wide_removed_full)] <- 0
+```
+
+### Surface Rugosity summarization
+
+```{r 5. Surface Rugosity Summarization}
+#4. Calculate SR values to justify morphological complexity
+dig_sum$surface.rugosity <- paste(dig_sum$year, dig_sum$site, sep=".")
+dig_sum$surface.rugosity <- a
+
+
+#Make a new SR dataframe
+dig_SR <- subset(dig, select = c("year", "hum_dist", "site", "ppq", "Benthic_Morphology", "area", "SArea", "surface.complexity"))
+
+
+#Summarize all the Surface Rugosity values by morphology type
+#Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
+dig_SR_sum <- aggregate(surface.complexity ~ Benthic_Morphology, dig_SR, mean )
+dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
+
+#Summarize all the Surface Rugosity values by morphology type
+#Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
+dig_SR_sum <- aggregate( surface.complexity ~ Benthic_Morphology, dig_SR, mean )
+dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
+
+#looking at the outliers (might need to delete these as they are mistakes)
+dig_ordered <- dig_SR[order(dig_SR[,8] ),]
+tail(dig_ordered, 10)
+
+
+
+######################################################################################################
+################################COPY BELOW CODE TO FIT SR CALC########################################
+######################################################################################################
+str(dig)
+#Change SR to a numeric
+dig$surface.complexity <- as.numeric(dig$surface.complexity)
+
+
+#1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
+#Erase all rows with an NA in it
+dig <- dig %>% drop_na(surface.complexity) #Removed 447 rows (10,759 rows to 10,312)
+
+#Re-input this column
+dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=".") 
+
+# Summarize the total area of each morphology in Long format
+dig_SR <- dig %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(surface.complexity = mean(surface.complexity))
+
+
+
+# 
+# 
+# # Wide format total area (** Does Dig_sum include rug values?)
+# dig_SR_wide <- tidyr::spread(dig_sum, Benthic_Morphology, Area)
+# dig_wide[is.na(dig_wide)] <- 0
+
+
+
+```
+
+
+
