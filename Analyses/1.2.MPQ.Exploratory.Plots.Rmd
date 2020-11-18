@@ -32,7 +32,7 @@ setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 #Load Data
 CC <- read.csv("BaumLab_CloudCompare_Data_Clean.csv")
 mpq <- read.csv("BaumLab_Complexity_Data_Clean.csv")
-#dig <- read.csv()
+dig <- read.csv("BaumLab_Digitization_Data_Clean.csv")
 
 #<----- Create subset dataframes for future plots ----->
 #1a. CloudCompare
@@ -262,7 +262,7 @@ grid.arrange(cc.vask.1,cc.vask.2, nrow=2)
 
 # 2. ArcMap Complexity
 
-#### 2.1 Plot size through time
+#### 2.a Plot size through time
 
 - Plot size had been shown to vary over time in previous exploratory plots
 
@@ -272,6 +272,30 @@ grid.arrange(cc.vask.1,cc.vask.2, nrow=2)
 ```{r plot size, echo=FALSE}
 ggplot(mpq, aes(ppq, area_2d, colour = year)) + geom_boxplot() +facet_wrap(~site, scales = "fixed", ncol= 3) + xlab("PPQ") + ylab("Plot 2d Area")+ theme(plot.title = element_text(hjust = 0.5))+ theme(plot.title = element_text(size=22)) + ylim(15, 17)
 ```
+
+#### 2.b. Fractal Dimension
+
+- For these caluclations, Atsuko's code mentioned calculating log(3d area/2d area), which she says is "to account for changes in area due to raster aggregate function". We didn't use R to aggregate different resolution values, so therefore I decided to just use 3d area. 
+
+- This appears to be the right decision, as Young et al. (2017) did a similar calcualtion and state that "D is between 2 and 3 for a surface, with a greater number indicating greater complexity" 
+
+```{r Fractal Dimension work}
+frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv")
+
+frac
+levels(frac$site.ppq)
+frac$site.ppq <- as.character(frac$site.ppq)
+
+frac.5 <- subset(frac, site == 5)
+frac.15 <- subset(frac, site == 15)
+
+ggplot(frac.5, aes (x= ppq, y= fractal.dimension, color = year)) + geom_point() #+ facet_wrap(~site, scales = "fixed", ncol= 3)
+
+ggplot(frac.15, aes (x= ppq, y= fractal.dimension, color = year)) + geom_point() #+ facet_wrap(~site, scales = "fixed", ncol= 3)
+
+
+```
+
 
 
 # 3 Complexity Metrics ~ Year {.tabset}
@@ -368,8 +392,38 @@ grid.arrange(Slope.1, Slope.2, Slope.3, ncol = 3)
 # ggplot(mpq, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 3)+ xlab("Year") + ylab("VRM") 
 
 ####1cm#####
-VRM.1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("VRM") + geom_label(label= "p=2.81E-10", x= 3, y=0.120, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") + ylim(0.02, 0.12)
+VRM.1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill="deepskyblue") + theme_classic(base_size = 10) +facet_wrap(~DEM, scales = "fixed", ncol= 2)+ xlab("Year") + ylab("VRM") + geom_label(label= "p=2.81E-10", x= 4, y=0.120, label.size= 0.02, label.padding= unit(0.02, "lines"), fill= "grey", color="black") + ylim(0.02, 0.12)
 
+#For Grad Symposium Slide
+
+mpq.1.grad <- mpq.1
+str(mpq.1.grad$year)
+mpq.1.grad$year <- as.character(mpq.1.grad$year)
+
+#Change Years to time
+for(i in c(1:nrow(mpq.1.grad))) {
+  if(mpq.1.grad$year[i]=="2015") {
+    mpq.1.grad$year[i] <- "July 2015"
+  } else if(mpq.1.grad$year[i]=="2016a") {
+    mpq.1.grad$year[i] <- "March 2016"
+  } else if(mpq.1.grad$year[i]=="2016b") {
+    mpq.1.grad$year[i] <- "November 2016"
+  } else if(mpq.1.grad$year[i]=="2017") {
+    mpq.1.grad$year[i] <- "July 2017"
+  } else if(mpq.1.grad$year[i]=="2019") {
+   mpq.1.grad$year[i] <- "July 2019"
+  }}
+
+levels(mpq.1.grad$year)
+mpq.1.grad$year <- factor(mpq.1.grad$year, levels = c("July 2015", "March 2016", "November 2016", "July 2017", "July 2019"))
+
+
+
+VRM.1 <- ggplot(mpq.1.grad, aes(x = year, y=vrm)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") + ylim(0.02, 0.12)  + annotate("text", x=5, y=0.12, label= "p=2.81E-10", size = 7) + annotate("text", x= 1, y=0.115, label= "A", size = 6) + annotate("text", x= 2, y=0.095, label= "B", size = 6) + annotate("text", x= 3, y=0.095, label= "B", size = 6) + annotate("text", x= 4, y=0.095, label= "B", size = 6) + annotate("text", x= 5, y=0.095, label= "AB", size = 6) 
+
+
+ 
+VRM.1
 #Anova at 1cm DEM
 # vrm.1 <- aov(vrm~year, data=mpq.1)
 # summary(vrm.1)
@@ -576,8 +630,119 @@ ggplot(mpq, aes(x= year, y= plan.curv, fill=region)) +  geom_boxplot() + xlab("Y
 
 # 6. ArcMap Digitization {.tabset}
 
-TO COME
+```{r Digitization code prep for plots, include=FALSE}
+#Change the structure in some of the 
+str(dig)
+dig$year <- as.character(dig$year)
 
+#Check the levels of how the sites show up on the barchart 
+levels(as.factor(dig$year.site.ppq))
+
+#Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
+dig$year.site.ppq <- factor(dig$year.site.ppq, levels=c("2015.5.1","2015.5.2","2015.5.3","2015.15.1","2015.15.2","2015.15.3","2015.19.1","2015.19.2", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1","2015.34.2","2015.34.3","2015.35.1","2015.35.2","2015.35.3", "2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3","2017.5.1","2017.5.2","2017.5.3","2017.15.1","2017.15.2","2017.15.3","2017.19.1","2017.19.2","2017.19.3", "2017.37.1","2017.37.2","2017.37.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1","2017.34.2","2017.34.3","2017.35.1","2017.35.2", "2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.32.2", "2019.5.1","2019.5.2","2019.5.3", "2019.37.1","2019.37.2","2019.37.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1","2019.34.2","2019.34.3","2019.35.1","2019.35.2","2019.35.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3"))
+
+**** something in above code is causing an NA collumn to show up. Also might be worthwhile clustering site 5 at end of VL group, so that it is next to Site 37 in 2017 and 2019 (regional changes can show up then too)
+
+# #Use the below code once all the sites are included in the 2019 dataframe (once all plots are digitized and uploaded)
+# dig$year.site.ppq <- factor(dig$year.site.ppq, levels=c("2015.5.1","2015.5.2","2015.15.3","2015.15.1","2015.15.2","2015.15.3","2015.19.1","2015.19.2", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1","2015.34.2","2015.34.3","2015.35.1","2015.35.2","2015.35.3", "2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3","2017.5.1","2017.5.2","2017.15.3","2017.15.1","2017.15.2","2017.15.3","2017.19.1","2017.19.2","2017.19.3", "2017.37.1","2017.37.2","2017.37.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1","2017.34.2","2017.34.3","2017.35.1","2017.35.2","2017.35.3", 2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.32.1", "2017.32.2", "2017.32.3","2019.5.1","2019.5.2","2019.15.3", "2019.37.1","2019.37.2","2019.37.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1","2019.34.2","2019.34.3","2019.35.1","2019.35.2","2019.35.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3"))
+
+
+
+#Check the levels of how the bars will show up on the stacked barchart
+levels(as.factor(dig$Benthic_Morphology))
+
+#Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
+dig$Benthic_Morphology <- factor(dig$Benthic_Morphology, levels=c("Sand", "Rubble", "Dead_SoftCoral", "Dead_Tabulate", "Dead_Massive", "Dead_Foliose","Dead_Columnar","Dead_Branching", "Macroalgae", "NonCoral_SubMassive", "NonCoral_Massive", "NonCoral_Encrusting", "NonCoral_Branching", "SoftCoral_Plating", "SoftCoral_Nodular", "Live_Tabulate", "Live_SubMassive", "Live_Porites", "Live_Massive_Grooved", "Live_Massive", "Live_FreeLiving", "Live_Foliose", "Live_Encrusting_Columnar", "Live_Encrusting", "Live_Digitate", "Live_Columnar","Live_Branching"))
+
+##<------Set Colour Pallettes for each morphology type ----->
+morph.cols <- rev(c("seagreen3", "Medium Spring Green", "Chartreuse", "Forest Green", "Spring Green","palegreen2", "mediumseagreen", "darkseagreen3", "Yellow Green", "Green Yellow", "Light Green", "Orchid", "Pale Violet Red", "Cyan", "Dark Turquoise", "Deep Sky Blue", "Dodger Blue", "Dark Blue","Gray80", "Gray75", "Gray70","Gray65","Gray60","Gray55", "Gray30", "Gray25"))
+morph.colscale<- scale_fill_manual(name="", values=morph.cols, breaks=rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand")))
+
+#% Coverage
+ggplot(dig, aes(y=percent.coverage, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack') + morph.colscale +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 20.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 56.5, linetype="dashed", color="red", size=0.5) + geom_vline(xintercept = 26.5, linetype="dashed", color="red", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) + xlab("Year-Site-PPQ") + ylab("Percent Cover")
+
+#Colony Count
+ggplot(dig, aes(y=colony.count, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack') + morph.colscale +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 20.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 56.5, linetype="dashed", color="red", size=0.5) + geom_vline(xintercept = 26.5, linetype="dashed", color="red", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) + xlab("Year-Site-PPQ") + ylab("Colony Count")
+
+
+
+#############################################################################################################################
+###### TEMPORARY PLOT FOR MEETING WITH JB ####
+#############################################################################################################################
+
+#dataframe to use
+dig_percent
+
+#Re-Structure bar charts
+#dig_percent$Benthic_Morphology <- factor(dig_percent$Benthic_Morphology, levels= rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand")))
+   
+dig$Benthic_Morphology <- factor(dig$Benthic_Morphology, levels=c("Sand", "Rubble", "Dead_SoftCoral", "Dead_Tabulate", "Dead_Massive", "Dead_Foliose","Dead_Columnar","Dead_Branching", "Macroalgae", "NonCoral_SubMassive", "NonCoral_Massive", "NonCoral_Encrusting", "NonCoral_Branching", "SoftCoral_Plating", "SoftCoral_Nodular", "Live_Tabulate", "Live_SubMassive", "Live_Porites", "Live_Massive_Grooved", "Live_Massive", "Live_FreeLiving", "Live_Foliose", "Live_Encrusting_Columnar", "Live_Encrusting", "Live_Digitate", "Live_Columnar","Live_Branching"))
+                                     
+#<------Set Colour Pallettes for each morphology type ----->
+morph.cols <- rev(c("seagreen3", "Medium Spring Green", "Chartreuse", "Forest Green", "Spring Green","palegreen2", "mediumseagreen", "darkseagreen3", "Yellow Green", "Green Yellow", "Light Green", "Orchid", "Pale Violet Red", "Cyan", "Dark Turquoise", "Deep Sky Blue", "Dodger Blue", "Dark Blue","Gray80", "Gray75", "Gray70","Gray65","Gray60","Gray55", "Gray30", "Gray25"))
+morph.colscale<- scale_fill_manual(name="", values=morph.cols, breaks=rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand")))
+
+#% Coverage
+ggplot(dig_percent, aes(y=coverage, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack') + morph.colscale +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 20.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 56.5, linetype="dashed", color="red", size=0.5) + geom_vline(xintercept = 26.5, linetype="dashed", color="red", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) + xlab("Year-Site-PPQ") + ylab("Percent Cover")
+
+#Subset a few sites just to get some plots for the prezzy
+#Site 5
+dig_s5 <- subset (dig_percent, site == 5)
+
+#Create unique color scheme for site 5 to match with site 8
+morph.cols_s5 <- rev(c("seagreen3", "Medium Spring Green", "Chartreuse", "Forest Green", "Spring Green","palegreen2", "mediumseagreen", "darkseagreen3", "Yellow Green","Light Green", "Orchid", "Pale Violet Red", "Deep Sky Blue", "Dodger Blue", "Dark Blue","Gray80", "Gray75", "Gray70","Gray65","Gray60","Gray55", "Gray30", "Gray25"))
+morph.colscale_s5<- scale_fill_manual(name="", values=morph.cols_s5, breaks=rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand")))
+
+morph1 <- ggplot(dig_s5, aes(fill=Benthic_Morphology, y=coverage, x=ppq)) + geom_bar(stat = 'identity', position = 'stack') +facet_wrap(~year, scales = "fixed", ncol= 3)+ morph.colscale_s5+ xlab("Year-Site-PPQ") + ylab("Percent Cover") + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))#ggplot(dig_s5, aes(y=coverage, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack') + morph.colscale +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 20.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 56.5, linetype="dashed", color="red", size=0.5) + geom_vline(xintercept = 26.5, linetype="dashed", color="red", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) + xlab("Year-Site-PPQ") + ylab("Percent Cover")
+morph1
+
+###Site 8
+dig_s8 <- subset (dig_percent, site == 8)
+
+#Create unique colour scale for site 8
+morph.cols_s8 <- rev(c("seagreen3", "Medium Spring Green", "Chartreuse", "Forest Green", "Spring Green","palegreen2", "mediumseagreen", "darkseagreen3", "Green Yellow", "Light Green", "Orchid", "Pale Violet Red", "Cyan", "Dark Turquoise", "Deep Sky Blue", "Dodger Blue", "Dark Blue","Gray75", "Gray70","Gray65","Gray60","Gray55", "Gray30", "Gray25"))
+
+morph.colscale_s8<- scale_fill_manual(name="", values=morph.cols_s8, breaks=rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Rubble", "Sand")))
+
+
+morph2<- ggplot(dig_s8, aes(fill=Benthic_Morphology, y=coverage, x=ppq)) + geom_bar(stat = 'identity', position = 'stack') +facet_wrap(~year, scales = "fixed", ncol= 3)+ morph.colscale_s8 + xlab("Year-Site-PPQ") + ylab("Percent Cover") + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))#+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 20.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 56.5, linetype="dashed", color="red", size=0.5) + geom_vline(xintercept = 26.5, linetype="dashed", color="red", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) 
+morph2
+
+### Site 27
+dig_s27 <- subset (dig_percent, site == 27)
+
+morph3 <-ggplot(dig_s27, aes(fill=Benthic_Morphology, y=coverage, x=ppq)) + geom_bar(stat = 'identity', position = 'stack') +facet_wrap(~year, scales = "fixed", ncol= 3)+ morph.colscale+ xlab("Year-Site-PPQ") + ylab("Percent Cover") + scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
+
+
+morph3
+
+
+
+#############################################################################################################################
+
+#Prepping dataframe for proper coloration of stacked bars
+#Re-Structure bar charts
+dig$Benthic_Morphology <- factor(dig$Benthic_Morphology, levels= c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand"))
+                                        
+#<------Set Colour Pallettes for each morphology type ----->
+morph.cols <- c("seagreen3", "Medium Spring Green", "Chartreuse", "Forest Green", "Spring Green","palegreen2", "mediumseagreen", "darkseagreen3", "Yellow Green", "Green Yellow", "Light Green", "Orchid", "Pale Violet Red", "Cyan", "Dark Turquoise", "Deep Sky Blue", "Dodger Blue", "Dark Blue","Gray80", "Gray75", "Gray70","Gray65","Gray60","Gray55", "Wheat", "Sandy Brown")
+morph.colscale<- scale_fill_manual(name="", values=morph.cols, breaks=rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand")))
+
+ggplot(dig, aes(y=colony.count, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack') + morph.colscale +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 26.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 45.5, linetype="dashed", color="black", size=0.5) + geom_vline(xintercept = 32.5, linetype="dashed", color="black", size=0.5)#+ scale_color_manual(values = c("Dead_Branching" = "grey69", "Dead_Columnar" = "grey68", "Dead_Foliose" ="grey67", "Dead_Massive"="grey66", "Dead_Tabulate"="grey65", "Dead_SoftCoral"="grey40", "Rubble"= "grey30", "Sand"="grey20"))
+
+#% Coverage
+ggplot(dig, aes(y=coverage, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack') + morph.colscale +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 26.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 45.5, linetype="dashed", color="black", size=0.5) + geom_vline(xintercept = 32.5, linetype="dashed", color="black", size=0.5)
+
+```
+
+
+## 6.1. # of colonies
+```{r Colony counts}
+ggplot(dig, aes(fill=Benthic_Morphology, y=colony.count, x=year)) + geom_bar(stat = 'identity', position = 'stack') +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+
+
+```
 
 ```{r subsetting digitization data for julia pres,}
 # dig_sum

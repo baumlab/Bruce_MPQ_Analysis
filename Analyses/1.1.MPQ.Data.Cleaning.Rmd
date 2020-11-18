@@ -4,15 +4,31 @@ author: "Kevin Bruce"
 date: "11/10/2020"
 output: html_document
 ---
-
-```{r setup, include=FALSE}
+#Load R Packages
+```{r load packages, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+#Load Packages
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+library(DHARMa)
+library(reshape2)
+
 ```
 
-# One code chunk for each "type" of data
-
-## Cloud Compare Volumetric Analysis
-
+# Cloud Compare Volumetric Analysis
 ```{r Clean CloudCompare Data, include=FALSE}
 ###################################################
 ##### NEW CLOUD COMPARE DATA WITH TRUE VALUES ####
@@ -226,9 +242,8 @@ CC.total
 write.csv(CC.total, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean.csv")
 ```
 
-## ArcMap Complexity
-
-```{r FINAL ArcMap complexity data, include = FALSE}
+# ArcMap Complexity
+```{r Clean ArcMap complexity data, include = FALSE}
 #Set the Working Directory
 setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 
@@ -246,6 +261,8 @@ colnames(mpq)[which(names(mpq)=="Avg_terrain_ruggedness..VRM."  )] <- "vrm"
 colnames(mpq)[which(names(mpq)=="profile.curvature")] <- "pro.curv"
 colnames(mpq)[which(names(mpq)=="planform.curvature")] <- "plan.curv"
 colnames(mpq)[which(names(mpq)=="average.curvature")] <- "curv"
+colnames(mpq)[which(names(mpq)=="SHAPE_Area")] <- "area_2d"
+colnames(mpq)[which(names(mpq)=="SArea")] <- "area_3d"
 
 #Do 3 for-loops of assigning values in new collumns
 #1 to assign human disturbance levels
@@ -338,39 +355,33 @@ for(i in c(1:nrow(mpq))) {
     mpq$pub.site[i] <- "VL4"
   }}
 
+#Create unique collumn name site.ppq
+mpq$site.ppq <- paste(mpq$site, mpq$ppq, sep=".")
+
 
 #Create dataframe with only columns I require
-mpq.temp <- subset(mpq, select = c("year", "region","hum_dist","site" ,"pub.site", "ppq", "SHAPE_Area", "SArea", "rug", "slope", "vrm", "DEM", "curv", "pro.curv", "plan.curv"))
+mpq.temp <- subset(mpq, select = c("year", "region","hum_dist","site" ,"site.ppq", "pub.site", "ppq", "DEM", "area_2d", "area_3d", "rug", "slope", "vrm", "curv", "pro.curv", "plan.curv"))
 
 #Switch dataframe name back to mpq
 mpq <- mpq.temp
 str(mpq)
 
-#Change DEM, Site, Year,Plot all to character
-mpq$DEM <- as.character(mpq$DEM)
-mpq$site <- as.character(mpq$site)
-mpq$ppq <- as.character(mpq$ppq)
+#Create unique colname
+mpq$year.site.ppq <- paste(mpq$year, mpq$site, mpq$ppq, sep = ".")
 
-str(mpq)
-
-#Change levels of hum_dist & site
-levels(mpq$hum_dist)
+#Change descriptors to factors (Ex: Year, region, disturbance)
+mpq$region <- as.factor(mpq$region) 
+levels(mpq$region)
+mpq$hum_dist <- as.factor(mpq$hum_dist) 
 mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
 mpq$site <- factor(mpq$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+mpq$site.ppq<- factor(mpq$site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "35.1", "35.2", "35.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
 levels(mpq$hum_dist)
+levels(mpq$site.ppq)
 
-#<----- create "clean" dataframe without excessive collumns ----->
-mpq.temp <- subset(mpq, select = c("year", "hum_dist", "site", "ppq", "DEM", "SHAPE_Area", "SArea", "surface.rugosity", "slope", "vrm", "curv", "pro.curv", "plan.curv"))
+#Reorder the dataframe
 colnames(mpq)
-
-#Change collumn names for plot surface area
-colnames(mpq.temp)[which(names(mpq)=="SHAPE_Area")] <- "area_2d"
-colnames(mpq.temp)[which(names(mpq)=="SArea")] <- "area_3d"
-colnames(mpq.temp)[which(names(mpq)=="surface.rugosity")] <- "s.complex"
-
-#Switch dataframe name back to mpq
-mpq <- mpq.temp
-str(mpq)
+mpq <- subset(mpq, select = c ("year",  "hum_dist","region",  "pub.site", "site","site.ppq","ppq", "year.site.ppq", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv"))
 
 #Export csv file 
 write.csv(mpq, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_Data_Clean.csv")
@@ -379,245 +390,1520 @@ write.csv(mpq, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_Data
 
 ```
 
-## ArcMap Digitization
+### Fractal Dimension Calculation
 
-### Combine the dataframes together
-```{r Digitization sensetivity test with all sites, include = FALSE}
+- For these caluclations, Atsuko's code mentioned calculating log(3d area/2d area), which she says is "to account for changes in area due to raster aggregate function". We didn't use R to aggregate different resolution values, so therefore I decided to just use 3d area. 
 
+- This appears to be the right decision, as Young et al. (2015) did a similar calcualtion and state that "D is between 2 and 3 for a surface, with a greater number indicating greater complexity" 
+
+
+```{r Fractal Dimension Calculation}
+#Equation is D = 2-(slope log(S(s))/log(s))
+#     s = resolution of the DEM in meters (ex: 0.01, 0.04, 0.08)
+#     S(s) = 3D surface area at the given resolution 
+
+
+# Atsuko did 3D/2D ratio to # using log(s_area/area) to account for changes in are due to raster aggregate function (unsure if we should do that. We didn't use aggregate function, but will get values similar to Johns.....)
+
+
+#Create new dataframe to house fractal dimension data
+frac <- mpq
+
+#And make a single DEM category to link back all metadata to
+frac.1 <- subset(mpq, DEM == 1)
+
+nrow(frac)
+nrow(frac.1)
+
+str(frac)
+frac$DEM <- as.numeric(frac$DEM)
+
+#Change DEM scale from cm to meters
+frac$resolution <- frac$DEM / 100
+
+#Do math each row to get the frac.val
+frac$frac.val <- 1
+
+#Now do the math via  a for loop
+for(i in 1:nrow(frac)){
+frac$frac.val[i] = (log(frac$area_3d[i])/log(frac$resolution[i]))
+}
+
+#Make a table for the slopes
+slope <- as.data.frame(matrix(data=NA, nrow=length(unique(frac$year.site.ppq)), ncol= 2))
+colnames(slope) <- c("year.site.ppq", "slope.val")
+slope$year.site.ppq <- unique(frac$year.site.ppq)
+slope$year <- frac.1$year
+slope$hum_dist <- frac.1$hum_dist
+slope$region <- frac.1$region
+slope$pub.site <- frac.1$pub.site
+slope$site <- frac.1$site
+slope$site.ppq <- frac.1$site.ppq
+slope$ppq <- frac.1$ppq
+
+
+for (i in 1:nrow(slope)){
+  xx <- subset(frac, year.site.ppq == slope$year.site.ppq[i])
+  lm_i <- lm(resolution ~ frac.val, xx)
+  slope_i <- coef(lm_i)[[2]]
+  slope$slope.val[i] <- slope_i
+  
+}
+
+slope$fractal.dimension <- 2- slope$slope.val
+
+ggplot(slope, aes (x= year.site.ppq, y= fractal.dimension)) + geom_point()
+
+colnames(slope)
+#Reorder dataframe
+slope1 <- subset(slope, select = c("year", "hum_dist" ,"region", "pub.site", "site", "site.ppq", "ppq", "year.site.ppq", "slope.val", "fractal.dimension"))
+
+
+#Export Fractal Dimension Dataframe
+write.csv(slope1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv")
+
+  
+```
+
+
+### ArcMap Complexity Distributions
+```{r distributions of complexity data, include=FALSE}
+mpq
+
+#Metrics
+#Surface Rugosity = bounded from 1 upwards
+#VRM= "bounded" from 4 to -4, but never reaches those so should appear normal
+#Profile Curvature = 
+#Planform Curvature = 
+# Habitat Volume = unbounded/continuous
+
+###Surface Complexity##
+#Simple linear model with DHARMa package to see residuals
+m1a <- lm(rug ~ year, data= mpq)
+m1.1a<- simulateResiduals(m1a)
+plot(m1.1a)
+
+#Not good, try going to a log-normal distribution
+mpq$log.s.rug <- "blank"
+mpq$log.s.rug <- log(mpq$rug)
+
+#Log normal distribution
+m1 <- lm(log.s.rug ~ year, data= mpq)
+m1.1<- simulateResiduals(m1)
+plot(m1.1)
+
+ggplot(mpq, aes(x = rug)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = .1, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(rug, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+#Log transformed data
+ggplot(mpq, aes(x = log.s.rug)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = .1, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(log.s.rug, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+
+#VRM
+m2 <- lm(vrm ~ year, data= mpq)
+m2.1<- simulateResiduals(m2)
+plot(m2.1)
+
+##VRM
+ggplot(mpq, aes(x = vrm)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = .001, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(vrm, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+
+#Profile Curvature
+m3 <- lm(pro.curv ~ year, data= mpq)
+m3.1<- simulateResiduals(m3)
+plot(m3.1)
+
+ggplot(mpq, aes(x = pro.curv)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = 10, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(pro.curv, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+#Planform Curvature
+m4 <- lm(plan.curv ~ year, data= mpq)
+m4.1<- simulateResiduals(m4)
+plot(m4.1)
+
+ggplot(mpq, aes(x = plan.curv)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = 10, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(plan.curv, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+#Habitat Volume
+m5 <- lm(volume.change ~ timepoint, data= CC.total)
+m5.1<- simulateResiduals(m3)
+plot(m5.1)
+
+#Non-transformed data  
+ggplot(CC.total, aes(x = volume.change)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = .1, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(volume.change, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+
+
+plot(fitted(m5), resid(m5))
+qqnorm(resid(m5))
+qqline(resid(m5))
+
+
+
+#Transform to new distribution which can compute it out of negative values as well! (apparently not a good idea- according to DOM)
+CC.total$cube.change <- "blank"
+CC.total$cube.change <- CC.total$volume.change ^ 1/3
+
+m5.a <- lm(cube.change ~ timepoint, data= CC.total)
+m5.1.a<- simulateResiduals(m5.a)
+plot(m5.1.a)
+
+
+```
+
+# ArcMap Digitization
+
+## i. Digitization Data Cleaning (all plots- don't run each time (not required))
+```{r complexity data clean, eval=FALSE, include=FALSE}
+dig_sum #dataframe WHICH DATAFRAME IS THIS???
+
+#Subset large dataframe into subsets of site
+d5 <- subset (dig_sum, site == 5)
+d5.1 <- subset (d5, ppq == 1)
+d5.2 <- subset (d5, ppq == 2)
+d5.3 <- subset (d5, ppq == 3)
+
+d15 <- subset (dig_sum, site == 15)
+d15.1 <- subset (d15, ppq == 1)
+d15.2 <- subset (d15, ppq == 2)
+d15.3 <- subset (d15, ppq == 3)
+
+
+d19 <- subset (dig_sum, site == 19)
+d19.1 <- subset (d19, ppq == 1)
+d19.2 <- subset (d19, ppq == 2)
+d19.3 <- subset (d19, ppq == 3)
+
+d27 <- subset (dig_sum, site == 27)
+d27.1 <- subset (d27, ppq == 1)
+d27.2 <- subset (d27, ppq == 2)
+d27.3 <- subset (d27, ppq == 3)
+
+d30 <- subset (dig_sum, site == 30)
+d30.1 <- subset (d30, ppq == 1)
+d30.2 <- subset (d30, ppq == 2)
+d30.3 <- subset (d30, ppq == 3)
+
+d32 <- subset (dig_sum, site == 32)
+d32.1 <- subset (d32, ppq == 1)
+d32.2 <- subset (d32, ppq == 2)
+d32.3 <- subset (d32, ppq == 3)
+
+d8 <- subset (dig_sum, site == 8)
+d8.1 <- subset (d8, ppq == 1)
+d8.2 <- subset (d8, ppq == 2)
+d8.3 <- subset (d8, ppq == 3)
+
+d34 <- subset (dig_sum, site == 34)
+d34.1 <- subset (d34, ppq == 1)
+d34.2 <- subset (d34, ppq == 2)
+d34.3 <- subset (d34, ppq == 3)
+
+d35 <- subset (dig_sum, site == 35)
+d35.1 <- subset (d35, ppq == 1)
+d35.2 <- subset (d35, ppq == 2)
+d35.3 <- subset (d35, ppq == 3)
+
+d37 <- subset (dig_sum, site == 37)
+d37.1 <- subset (d37, ppq == 1)
+d37.2 <- subset (d37, ppq == 2)
+d37.3 <- subset (d37, ppq == 3)
+
+#Plot stacked barcharts of each subset with PPQ on X axis,=
+#Site 5
+ggplot(d5.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d5.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d5.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+
+#Site 15
+ggplot(d15.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d15.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d15.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+#Site 19
+ggplot(d19.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d19.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d19.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+#Site 27
+ggplot(d27.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d27.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d27.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+#Site 30
+ggplot(d30.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d30.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d30.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+
+#Site 32
+ggplot(d32.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d32.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d32.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+#Site 8
+ggplot(d8.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d8.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d8.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+
+#Site 34
+ggplot(d34.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d34.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d34.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+#Site 35
+ggplot(d35.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d35.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d35.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+#Site 37
+ggplot(d37.1, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d37.2, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+ggplot(d37.3, aes(y=Area, x=year.site.ppq, fill= Benthic_Morphology))+facet_wrap(~Benthic_Morphology, scales = "fixed", ncol= 3)  +geom_bar(stat = 'identity')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+```
+
+### 1. Combine full dataframe 
+```{r Combining and cleaning dataframes of digitization data, include = FALSE}
 #loading the data
 setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data") 
-dig.15 <- read.csv("2015.MPQ.Digitization.Data.csv")
-dig.17 <- read.csv("2017.MPQ.Digitization.Data.csv")
-dig.19 <- read.csv("2019.MPQ.Digitization.Data.csv")
+dig.15 <- read.csv("2015.MPQ.Digitization.Data.Final.csv")
+dig.17 <- read.csv("2017.MPQ.Digitization.Data.Final.csv")
+dig.19 <- read.csv("2019.MPQ.Digitization.Data.Final.csv")
 
-#Filter out extra collumns that mess up the merging process
+#Filter out extra collumns that mess up the merging process (if they exist)
 names(dig.15)
 names(dig.17)
 names(dig.19)
-d.15 <- dig.15 %>% select(-c (X, X.1, X.2, X.3, X.4, X.5))
-d.17 <- dig.17 %>% select(-c (X, X.1))
-d.19 <- dig.19 %>% select(-c (X, X.1, X.2, X.3, X.4, X.5))
+#dig.15 <- dig.15 %>% select(-c (X, X.1, X.2, X.3, X.4, X.5)) <- to take out collumns I don't want
+#dig.17 <- dig.17 %>% select(-c (X, X.1))
+#dig.19 <- dig.19 %>% select(-c (X, X.1, X.2, X.3, X.4, X.5))
 
 #Merge all data together
-dig <- rbind(d.15, d.17, d.19)
+dig <- rbind(dig.15, dig.17, dig.19)
 
-#Turn the area into numeric
-dig$SHAPE_Area <- as.numeric(dig$SHAPE_Area)
-
-colnames(dig)
 #Rename shape_area to area
-colnames(dig)[which(names(dig)=="SHAPE_Area")] <- "area"
 colnames(dig)[which(names(dig)=="Year")] <- "year"
-colnames(dig)[which(names(dig)=="surface.rugosity")] <- "surface.complexity"
+colnames(dig)[which(names(dig)=="SHAPE_Area")] <- "area"
+
+#For loop time! Make for looks to add values for human disturbance, publication site name, and region
+#1. Add according values to human dist collumn
+#1a. Create a collumn for region & fill it with values
+dig$hum_dist <- "a"
+
+#1b. Add human dist values
+for(i in c(1:nrow(dig))) {
+  if(dig$site[i]=="5") {
+    dig$hum_dist[i] <- "Very Low"
+  } else if(dig$site[i]=="19") {
+    dig$hum_dist[i] <- "Very Low"
+  } else if(dig$site[i]=="15") {
+    dig$hum_dist[i] <- "Very Low"
+  } else if(dig$site[i]=="8") {
+    dig$hum_dist[i] <- "Medium"
+  } else if(dig$site[i]=="34") {
+    dig$hum_dist[i] <- "Medium"
+  } else if(dig$site[i]=="35") {
+   dig$hum_dist[i] <- "Medium"
+  } else if(dig$site[i]=="27") {
+   dig$hum_dist[i] <- "Very High"
+  } else if(dig$site[i]=="30") {
+   dig$hum_dist[i] <- "Very High"
+  } else if(dig$site[i]=="32") {
+    dig$hum_dist[i] <- "Very High"
+  } else if(dig$site[i]=="37") {
+    dig$hum_dist[i] <- "Very Low"
+  }}
+
+#2a. Create a collumn for region & fill it with values
+dig$region <- "a"
+
+#2b. Assign Region values
+for(i in c(1:nrow(dig))) {
+  if(dig$site[i]=="5") {
+    dig$region[i] <- "Vaskes"
+  } else if(dig$site[i]=="19") {
+    dig$region[i] <- "BOW"
+  } else if(dig$site[i]=="15") {
+    dig$region[i] <- "BOW"
+  } else if(dig$site[i]=="8") {
+    dig$region[i] <- "S.Lagoon"
+  } else if(dig$site[i]=="34") {
+    dig$region[i] <- "S.Lagoon"
+  } else if(dig$site[i]=="35") {
+   dig$region[i] <- "S.Lagoon"
+  } else if(dig$site[i]=="27") {
+   dig$region[i] <- "N.Lagoon"
+  } else if(dig$site[i]=="30") {
+   dig$region[i] <- "N.Lagoon"
+  } else if(dig$site[i]=="32") {
+    dig$region[i] <- "N.Lagoon"
+  } else if(dig$site[i]=="37") {
+    dig$region[i] <- "Vaskes"
+  }}
+
+#3a. Assign publication name to site
+dig$pub.site <- "a"
+
+#3b. Assign Region values
+for(i in c(1:nrow(dig))) {
+  if(dig$site[i]=="5") {
+    dig$pub.site[i] <- "VL3"
+  } else if(dig$site[i]=="19") {
+    dig$pub.site[i] <- "VL2"
+  } else if(dig$site[i]=="15") {
+    dig$pub.site[i] <- "VL1"
+  } else if(dig$site[i]=="8") {
+    dig$pub.site[i] <- "M1"
+  } else if(dig$site[i]=="34") {
+    dig$pub.site[i] <- "M3"
+  } else if(dig$site[i]=="35") {
+   dig$pub.site[i] <- "M2"
+  } else if(dig$site[i]=="27") {
+   dig$pub.site[i] <- "VH1"
+  } else if(dig$site[i]=="30") {
+   dig$pub.site[i] <- "VH3"
+  } else if(dig$site[i]=="32") {
+    dig$pub.site[i] <- "VH2"
+  } else if(dig$site[i]=="37") {
+    dig$pub.site[i] <- "VL4"
+  }}
 
 # Make a unique column for year.site.ppq
 dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=".") 
-#dig$year.site.ppq <- dig$site.ppq #renamed to make code work better (will need to change back once we get multiple years I imagine)
+dig$site.ppq <- paste(dig$site, dig$ppq, sep=".") 
 
-#Convert year.site.ppq from a character to a factor
+
+#Remove the extra collums in the digitization dataframe that aren't necessary
+colnames(dig)
+dig <- subset(dig, select = c("year", "hum_dist", "region",  "pub.site", "site", "site.ppq", "year.site.ppq", "ppq" ,"digitizer", "Benthic_Morphology", "area", "SArea"))
+colnames(dig)
+dig
+
+
+#Levels of dataframe (make first 4 collumns factors that align with mpq dataframe)
+str(dig)
+dig$year <- as.factor(dig$year)
+dig$hum_dist<- as.factor(dig$hum_dist)
+dig$hum_dist <- factor(dig$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
+dig$site <- factor(dig$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+dig$site.ppq<- factor(dig$site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "35.1", "35.2", "35.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
 dig$year.site.ppq <- as.factor(dig$year.site.ppq)
+dig$year.site.ppq<- factor(dig$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.5.1", "2015.5.2", "2015.5.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
 
 
-#Levels of dig$sites (will need to change when uploading more files)
-unique(dig$year.site.ppq)
-str(dig$year.site.ppq)
-levels(dig$year.site.ppq)
-
-#Convert year.site.ppq from a character to a factor
-dig$year.site.ppq <- as.factor(dig$year.site.ppq)
 ```
 
-### Summarized total coverage
-```{r 1. Summarize total area for each year.site.ppq}
-#1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
-#Erase all rows with an NA in it
-dig <- dig %>% drop_na(surface.complexity) #Removed 447 rows (10,759 rows to 10,312)
+#### A. Create simplified Live/Dead Dataframe and summarize
+```{r Live dead dataframe, echo=FALSE}
+##################################################################################################
+#<-----------CREATE Simple Live/Dead Coral Cover Dataframe------------>#
+##################################################################################################
+dig.simple <- dig
 
-#Re-input this column
-dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=".") 
+#Add new collumn
+dig.simple$status <- "Blank"
+
+#4Loop transferring any live coral morphs to "live" and dead = "dead" (macroalgae stays the same)
+for(i in c(1:nrow(dig.simple))) {
+  if(dig.simple$Benthic_Morphology[i]=="Live_Branching") {
+   dig.simple$status[i] <- "HardCoral"
+  } else if(dig.simple$Benthic_Morphology[i]=="Live_Columnar") {
+    dig.simple$status[i] <- "HardCoral"
+ } else if(dig.simple$Benthic_Morphology[i]=="Live_Digitate") {
+    dig.simple$status[i] <- "HardCoral"
+  } else if(dig.simple$Benthic_Morphology[i]=="Live_Encrusting") {
+    dig.simple$status[i] <- "HardCoral"
+ } else if(dig.simple$Benthic_Morphology[i]=="Live_Encrusting_Columnar") {
+    dig.simple$status[i] <- "HardCoral"
+} else if(dig.simple$Benthic_Morphology[i]=="Live_Foliose") {
+    dig.simple$status[i] <- "HardCoral"
+} else if(dig.simple$Benthic_Morphology[i]=="Live_FreeLiving") {
+  dig.simple$status[i] <- "HardCoral"
+} else if(dig.simple$Benthic_Morphology[i]=="Live_Massive") {
+    dig.simple$status[i] <- "HardCoral"
+  } else if(dig.simple$Benthic_Morphology[i]=="Live_Massive_Grooved") {
+    dig.simple$status[i] <- "HardCoral"
+  } else if(dig.simple$Benthic_Morphology[i]=="Live_Porites") {
+    dig.simple$status[i] <- "HardCoral"
+   } else if(dig.simple$Benthic_Morphology[i]=="Live_SubMassive") {
+    dig.simple$status[i] <- "HardCoral"
+  } else if(dig.simple$Benthic_Morphology[i]=="Live_Tabulate") {
+    dig.simple$status[i] <- "HardCoral"
+  } else if(dig.simple$Benthic_Morphology[i]=="Macroalgae") {
+    dig.simple$status[i] <- "Macroalgae"
+  } else if(dig.simple$Benthic_Morphology[i]=="Dead_Branching") {
+    dig.simple$status[i] <- "Dead"
+   } else if(dig.simple$Benthic_Morphology[i]=="Dead_Columnar") {
+    dig.simple$status[i] <- "Dead"
+  } else if(dig.simple$Benthic_Morphology[i]=="Dead_Foliose") {
+    dig.simple$status[i] <- "Dead"
+} else if(dig.simple$Benthic_Morphology[i]=="Dead_Massive") {
+    dig.simple$status[i] <- "Dead"  
+  } else if(dig.simple$Benthic_Morphology[i]=="Dead_SoftCoral") {
+    dig.simple$status[i] <- "Dead"
+  } else if(dig.simple$Benthic_Morphology[i]=="Dead_Tabulate") {
+    dig.simple$status[i] <- "Dead"
+  } else if(dig.simple$Benthic_Morphology[i]=="NonCoral_Branching") {
+    dig.simple$status[i] <- "Non.Coral"
+  } else if(dig.simple$Benthic_Morphology[i]=="NonCoral_Encrusting") {
+    dig.simple$status[i] <- "Non.Coral"
+  } else if(dig.simple$Benthic_Morphology[i]=="NonCoral_Massive") {
+    dig.simple$status[i] <- "Non.Coral"
+  } else if(dig.simple$Benthic_Morphology[i]=="NonCoral_SubMassive") {
+    dig.simple$status[i] <- "Non.Coral"
+  } else if(dig.simple$Benthic_Morphology[i]=="Rubble") {
+    dig.simple$status[i] <- "Rubble"
+} else if(dig.simple$Benthic_Morphology[i]=="Sand") {
+    dig.simple$status[i] <- "Sand"
+} else if(dig.simple$Benthic_Morphology[i]=="SoftCoral_Nodular") {
+    dig.simple$status[i] <- "SoftCoral"
+} else if(dig.simple$Benthic_Morphology[i]=="SoftCoral_Plating") {
+    dig.simple$status[i] <- "SoftCoral"
+}}
+
+                       #<-----------Summarize Area by Morphology------------>#
+
+#Change area to numeric
+dig.simple$area <- as.numeric(dig.simple$area)
 
 # Summarize the total area of each morphology in Long format
-dig_sum <- dig %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(Area = sum(area))
+str(dig.simple$area)
+dig_sum_simple <- dig.simple %>% dplyr::group_by(year, hum_dist, region, site, ppq, year.site.ppq, status) %>% dplyr::summarise(Area = sum(area))
+
+#creating a matrix with the total areas for each year site ppq combination
+total_area1 <- dig_sum_simple %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
+
+dig_sum_simple$Tot_Area <- "blank"
+
+#loop that takes the total area for each year site ppq combination and puts it in a new column
+for (i in 1:length(dig_sum_simple$year)) {
+  xx <- subset(total_area1, year.site.ppq == dig_sum_simple$year.site.ppq[i])
+  
+  dig_sum_simple$Tot_Area[i] <- xx$tot_area[1]
+}
+
+#Turn area into a numeric
+dig_sum_simple$Tot_Area <- as.numeric(dig_sum_simple$Tot_Area)
+
+#Calculate proportional and percent cover
+dig_sum_simple$per_area <- (dig_sum_simple$Area / dig_sum_simple$Tot_Area) *100 #Calculate percent coverage of each type
+dig_sum_simple$prop_area <- (dig_sum_simple$Area / dig_sum_simple$Tot_Area)  #Calculate proportional coverage of each type
+
+#Create unique collumn site.ppq
+dig_sum_simple$site.ppq <- paste(dig_sum_simple$site, dig_sum_simple$ppq, sep=".")
+
+#Convert to wide format
+dig_simple_per_w <- dcast(dig_sum_simple, year + hum_dist + region+ site + site.ppq + year.site.ppq ~status, value.var="per_area", fun.aggregate = sum) 
+dig_simple_prop_w <- dcast(dig_sum_simple, year + hum_dist + region+ site + site.ppq + year.site.ppq ~status, value.var="prop_area", fun.aggregate = sum) 
+
+#Dataframes
+dig_simple_per_w 
+dig_simple_prop_w 
+
+
+# < ---------- 2b Plot percent cover ---------> #
+
+#Set Color Pallette
+#Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
+dig_sum_simple$status <- factor(dig_sum_simple$status, levels = c("Sand", "Rubble", "Dead", "Macroalgae", "Non.Coral", "SoftCoral", "HardCoral"))
+
+##<------Set Colour Pallettes for each morphology type ----->
+sum.simple.cols <- c("Gray30", "Gray35", "Gray40", "Forest Green", "yellow","mediumseagreen", "Dodger Blue")
+
+morph.sum.simple.colscale<- scale_fill_manual(name="", values=sum.simple.cols, breaks=c("Sand", "Rubble", "Dead", "Macroalgae", "Non.Coral", "SoftCoral", "HardCoral"))
+
+
+
+
+
+# <--------- 3b. Calculating colony counts of this dataframe -------> #
+dig.simple
+
+#Create new dataframe for simple polygon # count
+dig.simple2 <- subset(dig.simple, select = c("year", "hum_dist", "region", "site", "site.ppq", "year.site.ppq", "status"))
+colnames(dig.simple2)
+
+#Add a collumn called "count" with a 1 in it
+dig.simple2$count <- 1
+
+#Switch to wide format now
+dig.simple2.w <- dcast(dig.simple2, year + hum_dist + region+ site + site.ppq + year.site.ppq ~status, value.var="count", fun.aggregate = sum)
+
+dig.simple2.w
+
+#Summarize by year
+dig.simple2.w2 <- dcast(dig.simple2, year ~status, value.var="count", fun.aggregate = sum)
+
+#2015 = 7867 Living Colonies
+#2017 = 2504 Living Colonies
+#2019 = 5497 Living Colonies
+#Total Colonies Digitized = #15,868
+7867+ 2504 + 5497 #15,868
+
+```
+
+##### A1. live/dead plot through time
+```{r simple plot, eval=FALSE, include=FALSE}
+#Plot
+ggplot(dig_sum_simple, aes(y=per_area, x=year.site.ppq, fill= status)) + geom_bar(stat = 'identity', position = 'stack') + morph.sum.simple.colscale +theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1) +  geom_vline(xintercept = 20.5, linetype="dashed", color="black", size=0.5)) + geom_vline(xintercept = 56.5, linetype="solid", color="red", size=0.5) + 
+    xlab("Year-Site-PPQ") + ylab("Percent Cover") + #label titles
+  geom_vline(xintercept = 26.5, linetype="solid", color="red", size=0.5)+ theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) + 
+  geom_vline(xintercept = 18.5, linetype="dashed", color="Magenta", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) + 
+  geom_vline(xintercept = 9.5, linetype="dashed", color="Magenta", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))  + 
+  geom_vline(xintercept = 35.5, linetype="dashed", color="Magenta", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) +
+geom_vline(xintercept = 44.5, linetype="dashed", color="Magenta", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) +
+geom_vline(xintercept = 65.5, linetype="dashed", color="Magenta", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) +
+geom_vline(xintercept = 74.5, linetype="dashed", color="Magenta", size=0.5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+
+```
+
+#### B. Create and Summarize Grouped live_massive category
+```{r grouped dead massive summary }
+#<----CREATE dataframe where massive category includes Porites and Massive_grooved --->#
+
+dig2 <- dig
+
+dig2$Benthic_Morphology[dig2$Benthic_Morphology == "Live_Massive_Grooved"] <- "Live_Massive"
+dig2$Benthic_Morphology[dig2$Benthic_Morphology == "Live_Porites"] <- "Live_Massive"
+
+dig2
+
+
+#Change area to numeric
+dig2$area <- as.numeric(dig2$area)
+
+#Re-input this column
+dig2$year.site.ppq <- paste(dig2$year, dig2$site, dig2$ppq, sep=".") 
+
+# Summarize the total area of each morphology in Long format
+str(dig2$area)
+dig2_sum <- dig2 %>% dplyr::group_by(year, hum_dist, region, site, site.ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(Area = sum(area))
+
+
+# Wide format total area
+dig2.wide <- tidyr::spread(dig2_sum, Benthic_Morphology, Area)
+dig2.wide[is.na(dig2.wide)] <- 0
+
+#Create a matrix with the total areas for each year site ppq combination
+total_area2 <- dig2_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
+
+dig2_sum$Tot_Area <- "blank"
+
+#loop that takes the total area for each year site ppq combination and puts it in a new column
+for (i in 1:length(dig2_sum$year)) {
+  xx <- subset(total_area2, year.site.ppq == dig2_sum$year.site.ppq[i])
+  
+  dig2_sum$Tot_Area[i] <- xx$tot_area[1]
+}
+
+#Turn area into a numeric
+dig2_sum$Tot_Area <- as.numeric(dig2_sum$Tot_Area)
+
+#Calculate proportional and percent cover
+dig2_sum$per_area <- (dig2_sum$Area / dig2_sum$Tot_Area) *100 #Calculate percent coverage of each type
+dig2_sum$prop_area <- (dig2_sum$Area / dig2_sum$Tot_Area)  #Calculate proportional coverage of each type
+
+#Convert to wide format
+dig2_prop_w <- dcast(dig2_sum, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="prop_area", fun.aggregate = sum) #Convert to wide format
+dig2_perc_w <- dcast(dig2_sum, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="per_area", fun.aggregate = sum) #Convert to wide format
+
+
+# <--------- 3b. Calculating colony counts of this dataframe -------> #
+dig2 
+
+#Create new dataframe for simple polygon # count
+dig2.num <- subset(dig2, select = c("year", "hum_dist", "region", "site", "site.ppq", "year.site.ppq", "Benthic_Morphology"))
+colnames(dig2.num)
+
+#Add a collumn called "count" with a 1 in it
+dig2.num$count <- 1
+
+#Switch to wide format now
+dig2.num.w <- dcast(dig2.num, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="count", fun.aggregate = sum)
+
+#Only include categories of "live" colonies
+dig2.num.live <- subset(dig2.num.w, select = c("year", "hum_dist", "region", "site", "site.ppq", "year.site.ppq", "Live_Branching",  "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving" , "Live_Massive" , "Live_SubMassive", "Live_Tabulate" , "NonCoral_Encrusting" , "NonCoral_Massive" , "NonCoral_SubMassive",  "SoftCoral_Nodular" , "SoftCoral_Plating",  "NonCoral_Branching"))
+
+
+#Dataframe for colony count (wide)
+dig2.num.w <- dig2.num.live
+
+#End Databases
+dig2_prop_w 
+dig2_perc_w 
+dig2.num.w
+
+
+
+
+
+```
+
+#### C. Summarize Full dataframe
+```{r Full dataframe summary}
+#Change area to numeric
+dig$area <- as.numeric(dig$area)
+
+# Summarize the total area of each morphology in Long format
+str(dig$area)
+dig_sum <- dig %>% dplyr::group_by(year, hum_dist, region, site, site.ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(Area = sum(area))
 
 # Wide format total area
 dig_wide <- tidyr::spread(dig_sum, Benthic_Morphology, Area)
 dig_wide[is.na(dig_wide)] <- 0
 
-```
+#Summarized dataframe of 2d surface area in the plots
+dig_sum
 
-### % Coverage/Morphology
-```{r 2. Calculate % coverage for each morphology}
-#2a. Calculate the % of each morphology at each plot & Graph the proportion of  each morphology present at each plot using stacked bar charts
+#Calculate the % of each morphology at each plot & Graph the proportion of  each morphology   present at each plot using stacked bar charts
 
 #creating a matrix with the total areas for each year site ppq combination
 total_area <- dig_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
 
+dig_sum$Tot_Area <- "blank"
+
 #loop that takes the total area for each year site ppq combination and puts it in a new column
 for (i in 1:length(dig_sum$year)) {
-
   xx <- subset(total_area, year.site.ppq == dig_sum$year.site.ppq[i])
   
   dig_sum$Tot_Area[i] <- xx$tot_area[1]
 }
 
-#calculates the percent area for each Benthic Substrate & puts it into percent
-dig_sum$Per_Area <- (dig_sum$Area / dig_sum$Tot_Area)*100 #remove *100 if you just want proportion
+#Turn area
+dig_sum$Tot_Area <- as.numeric(dig_sum$Tot_Area)
 
-#Put the percent cover dataframe into wide format
-dig_wide_percent <- tidyr::spread(dig_sum[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
-dig_wide_percent[is.na(dig_wide_percent)] <- 0
-```
+#Calculate percent cover
+dig_sum$per_area <- (dig_sum$Area / dig_sum$Tot_Area) * 100 #Calculate percent coverage of each type
 
-### Number of colonies
-```{r 3. Calculate # of colonies of each morphology}
-######################################################################################################
-#2b. Calculate the # of colonies of each morphology at each timepoint:
-#create a matrix with the total areas for each year site ppq combination
-#WORK ON
-total_num <- dig_sum %>% dplyr::group_by(year.site.ppq) %>% dplyr::summarise(tot_area = sum(Area))
+#Convert to wide format
+dig_per_w<- dcast(dig_sum, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="per_area", fun.aggregate = sum) #Convert to wide format
 
 
-#loop that takes the total area for each year site ppq combination and puts it in a new column
-for (i in 1:length(dig_sum$year)) {
+#### <----- 3a. Proportional Coverage Data ----> ###
+#Create a proportional coverage dataframe too
+dig_cover <- dig_sum
+dig_cover$prop_area <- (dig_cover$Area / dig_cover$Tot_Area) #Calculate proportional coverage of each type
+dig_prop_w <- dcast(dig_cover, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="prop_area", fun.aggregate = sum) #Convert to wide format
 
-  xx <- subset(total_area, year.site.ppq == dig_sum$year.site.ppq[i])
+#Dataframes
+dig_per_w #Percent coverage wide
+dig_prop_w #Proportional coverage wide
+
+
+
+# <--------- 3b. Calculating colony counts of this dataframe -------> #
+
+#Create new dataframe for simple polygon # count
+dig.num <- subset(dig, select = c("year", "hum_dist", "region", "site", "site.ppq", "year.site.ppq", "Benthic_Morphology"))
+colnames(dig.num)
+
+#Add a collumn called "count" with a 1 in it
+dig.num$count <- 1
+
+#Summarize by status
+dig.num.summarized <- dig.num %>% dplyr::group_by(year, hum_dist, region, site, site.ppq, Benthic_Morphology) %>% dplyr::summarise(Count = sum(count))
+
+#Switch to wide format now
+dig.num.w <- dcast(dig.num, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="count", fun.aggregate = sum)
+colnames(dig.num.w)
   
-  dig_sum$Tot_Area[i] <- xx$tot_area[1]
-  
-}
+#Only include categories of "live" colonies
+dig.num.w1 <- subset(dig.num.w, select = c("year", "hum_dist", "region", "site", "site.ppq", "year.site.ppq", "Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting","Live_Encrusting_Columnar","Live_Foliose",     "Live_FreeLiving", "Live_Massive","Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive",  "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching"))
 
-#calculates the percent area for each Benthic Substrate & puts it into percent
-dig_sum$Per_Area <- (dig_sum$Area / dig_sum$Tot_Area)*100 #remove *100 if you just want proportion
+#Dataframe for colony count (wide)
+dig.num.w1
 
-
-#Put the percent cover dataframe into wide format
-dig_wide_percent <- tidyr::spread(dig_sum[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
-dig_wide_percent[is.na(dig_wide_percent)] <- 0
 ```
 
-### Sensitivity Analysis
-```{r 4. Test to see if encrusting on rubble made a difference (disregard), eval=FALSE, include=FALSE}
-######################################################################################################
-#3. Create a new dataframe with same data from step 2, but convert all live_encrusting category tags to either dead_massive OR rubble (based on the one category left til the end of each plot) --> OUTDATED, DON'T BOTHER
+### 2. DF Export
+#### A. Live/Dead Dataframe
+```{r live or dead df database prep and exportation}
+dig_simple_per_w 
+dig_simple_prop_w 
 
-# #creating a data frame for the "extra" category for each year site ppq combination
-# max_benthic <- as.data.frame(matrix(data=NA, nrow = length(unique(dig_sum$year.site.ppq)), ncol = 2))
-# colnames(max_benthic) <- c("year.site.ppq", "max_benthic")
-# 
-# max_benthic$year.site.ppq <- unique(dig_sum$year.site.ppq)
-# 
-# #new data frame name for this new "extra" category calculation
-# dig_sum_extra <- dig_sum
-# 
-# #loop that pulls out the rubble and dead massize categorues for each year site ppq combination and decides which is larger and adds that to the max_benthic data frame for that year site ppq combination
-# for (i in 1:length(max_benthic$year.site.ppq)) {
-# 
-#   xx <- subset(dig_sum_extra, year.site.ppq == max_benthic$year.site.ppq[i] & (Benthic_Morphology == "Rubble" | Benthic_Morphology == "Dead_Massive"))
-#   
-#   yy <- subset(xx, Per_Area == max(xx$Per_Area))
-#   
-#   max_benthic$year.site.ppq[i] <- yy$year.site.ppq
-#   max_benthic$max_benthic[i] <- yy$Benthic_Morphology
-#   
-# }
-# 
-# #made an ID column for the max_benthic data frame
-# max_benthic$ID <- paste(max_benthic$year.site.ppq, max_benthic$max_benthic, sep = "_", collapse = NULL)
-# 
-# #subset only the columns I want
-# #only doing the following analysis on percent area calculations
-# dig_sum_extra <- dig_sum_extra[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")]
+##### <------- Export Dataframes to use for nmds -----> ######
+write.csv(dig_simple_per_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv")
+write.csv(dig_simple_prop_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PropCover_Data_Clean.csv")
 
-# #creating a new row in the long format for each sum "extra" category  
-# for(i in 1:length(max_benthic$year.site.ppq)){
-# 
-#   xx <- subset(dig_sum_extra, year.site.ppq == unique(dig_sum_extra$year.site.ppq)[i])
-#   
-#   max_benth <- subset(max_benthic, year.site.ppq == xx$year.site.ppq[1])
-#   max_benth_var <- max_benth$max_benthic[1]
-#   
-#   combo_var <- paste(max_benth_var, "Live_Encrusting", sep = "_n_")
-#   
-#   template_row <- xx[1,]
-#   template_row$Benthic_Morphology <- combo_var
-#   summ_vars <- subset(xx, Benthic_Morphology == "Live_Encrusting" | Benthic_Morphology == max_benth_var)
-#   template_row$Per_Area <- sum(summ_vars$Per_Area)
-#   dig_sum_extra <- rbind(dig_sum_extra, template_row)
-#   
-# }
-# 
-# #creating an ID column for the dig_sum_extra data frame
-# dig_sum_extra$ID <- paste(dig_sum_extra$year.site.ppq, dig_sum_extra$Benthic_Morphology, sep = "_", collapse = NULL)
-# 
-# #the "extra" categories to remove
-# var_remove <- max_benthic$ID
-# 
-# #removing the Live_Encrusting and "extra" categories
-# dig_sum_removed <- subset(dig_sum_extra, Benthic_Morphology != "Live_Encrusting")
-# dig_sum_removed_full <- dig_sum_removed[!(dig_sum_removed$ID %in% var_remove),]
-# 
-# #turning it into long format if you want it
-# dig_wide_removed_full <- tidyr::spread(dig_sum_removed_full[,c("year","hum_dist","site","ppq","year.site.ppq","Benthic_Morphology","Per_Area")], Benthic_Morphology, Per_Area)
-# dig_wide_removed_full[is.na(dig_wide_removed_full)] <- 0
 ```
 
-### Surface Rugosity summarization
-
-```{r 5. Surface Rugosity Summarization}
-#4. Calculate SR values to justify morphological complexity
-dig_sum$surface.rugosity <- paste(dig_sum$year, dig_sum$site, sep=".")
-dig_sum$surface.rugosity <- a
-
-
-#Make a new SR dataframe
-dig_SR <- subset(dig, select = c("year", "hum_dist", "site", "ppq", "Benthic_Morphology", "area", "SArea", "surface.complexity"))
+#### B. Simplified dataframe (live massive emagulmation)
+```{r grouped dm database prep and exportation}
+#End Databases of of massive structure merged dataframe (porites, live_massive, & live_massive_grooved)
+dig2_prop_w  #Proportional cover 
+dig2_perc_w  #Percent cover
+dig2.num.w   #Colony Count of live corals
 
 
-#Summarize all the Surface Rugosity values by morphology type
-#Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
-dig_SR_sum <- aggregate(surface.complexity ~ Benthic_Morphology, dig_SR, mean )
-dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
-
-#Summarize all the Surface Rugosity values by morphology type
-#Mean + St. Dev calculations (still need to find a way to calculate the St. Dev for the plots)
-dig_SR_sum <- aggregate( surface.complexity ~ Benthic_Morphology, dig_SR, mean )
-dig_SR_ordered <- dig_SR_sum[order(dig_SR_sum[,2] ),]
-
-#looking at the outliers (might need to delete these as they are mistakes)
-dig_ordered <- dig_SR[order(dig_SR[,8] ),]
-tail(dig_ordered, 10)
+#Export
+write.csv(dig2_prop_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simplified_Wide_PropCover_Data_Clean.csv")
+write.csv(dig2_perc_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simplified_Wide_PerCover_Data_Clean.csv")
+write.csv(dig2.num.w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simplified_Wide_ColonyCount_Data_Clean.csv")
 
 
 
-######################################################################################################
-################################COPY BELOW CODE TO FIT SR CALC########################################
-######################################################################################################
-str(dig)
-#Change SR to a numeric
-dig$surface.complexity <- as.numeric(dig$surface.complexity)
 
+```
 
+#### C. Full Dataframe
+```{r full dataframe exportation}
+dig_per_w #Percent coverage wide
+dig_prop_w #Proportional coverage wide
+dig.num.w1 #Colony Counts
+
+#Export
+write.csv(dig.num.w1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_ColonyCount_Data_Clean.csv")
+write.csv(dig_per_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv")
+write.csv(dig_prop_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PropCover_Data_Clean.csv")
+
+```
+
+# 3. Surface Complexity Calculations (Sum 3D and 2D Surface areas by morphology)
+```{r Area calculation for Surface Complexity values, include=FALSE}
 #1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
 #Erase all rows with an NA in it
-dig <- dig %>% drop_na(surface.complexity) #Removed 447 rows (10,759 rows to 10,312)
+str(dig) #area is a number and SArea is a factor because it includes <Null> values
 
-#Re-input this column
-dig$year.site.ppq <- paste(dig$year, dig$site, dig$ppq, sep=".") 
+#Create new dataframe that both: removes the null values from polygons too small, and converts SArea to a numeric
+dig.area <- dig %>% filter(SArea != "<Null>") %>% mutate(area_3d = as.numeric(as.character(SArea)))
+str(dig.area)
 
-# Summarize the total area of each morphology in Long format
-dig_SR <- dig %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(surface.complexity = mean(surface.complexity))
+str(dig.area$area_3d) #number
+str(dig.area$area) #number
 
+# Summarize the total 2D area of each morphology in Long format
+dig_sum_2d <- dig.area %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(area_2d = sum(area))
 
+# Summarize the total 3D area of each morphology in Long format
+dig_sum_3d <- dig.area %>% dplyr::group_by(year, hum_dist, site, ppq, year.site.ppq, Benthic_Morphology) %>% dplyr::summarise(area_3d = sum(area_3d))
 
+#Create unique ID collumn for both dataframes
+dig_sum_3d$ID <- paste(dig_sum_3d$year, dig_sum_3d$site, dig_sum_3d$ppq,dig_sum_3d$Benthic_Morphology, sep=".")
+
+dig_sum_2d$ID <- paste(dig_sum_2d$year, dig_sum_2d$site, dig_sum_2d$ppq,dig_sum_2d$Benthic_Morphology, sep=".")
+
+#Plot proportional data to see if ~16m for all (they are)
+#Test plot to see if it works for 2d area 
+ggplot(dig_sum_2d, aes(y=area_2d, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) + scale_y_continuous(breaks=seq(0,16,1))
+
+#Test plot to see if it works for 3d area 
+ggplot(dig_sum_3d, aes(y=area_3d, x=year.site.ppq, fill= Benthic_Morphology)) + geom_bar(stat = 'identity', position = 'stack')+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))+ scale_y_continuous(breaks=seq(0,50,5))
+
+#Combine two dataframes using for loop
+dig_sum_2d$area_3d <- "blank"
+for(i in 1:length(dig_sum_2d$year)){
+  xx <- subset(dig_sum_3d, ID == dig_sum_2d$ID[i])
+  dig_sum_2d$area_3d[i] <- xx$area_3d[1]
+}
+
+#Test to see
+dig_sum_2d
+
+#Transform area_3d into numeric in order to do SR calculations
+str(dig_sum_2d)
+dig_sum_2d$area_3d <- as.numeric(dig_sum_2d$area_3d)
+
+#Create new dataframe (causing some issues with some of the data....)
+dig_area <- dig_sum_2d %>% group_by(ID) %>% mutate(surface.complexity = area_3d/area_2d)
+
+dig_area$surface.complexity
+
+##################################################################################################################################################################################
+######### Plots created for talk with John Burns Oct 19 2020#######
+##################################################################################################################################################################################
+# ggplot(dig_area, aes(x = Benthic_Morphology, y=surface.complexity)) + geom_boxplot() + ylim(0, 5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1)) 
 # 
+# #Redo plot so that the boxplots are sorted from most complex to least complex 
+# dig_area_sorted <- dig_area %>% mutate(Benthic_Morphology = fct_reorder(Benthic_Morphology, -surface.complexity))
 # 
-# # Wide format total area (** Does Dig_sum include rug values?)
-# dig_SR_wide <- tidyr::spread(dig_sum, Benthic_Morphology, Area)
-# dig_wide[is.na(dig_wide)] <- 0
+# ggplot(dig_area_sorted, aes(x = Benthic_Morphology, y = surface.complexity)) +
+#   geom_boxplot()+ ylim(0, 5)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+# 
+# #Redo plot so that the morphology is on the y axis (easier to read) and getting less complex as we go down 
+# dig_area_sorted2 <- dig_area %>% mutate(Benthic_Morphology = fct_reorder(Benthic_Morphology, +surface.complexity))
+# 
+# ggplot(dig_area_sorted2, aes(x = Benthic_Morphology, y = surface.complexity)) +
+#   geom_boxplot()+ ylim(0, 4)+theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))+ coord_flip() + xlab("Benthic Morphology") + ylab("Surface Complexity")
 
+```
+
+#4. Fish Data
+## Load fish data
+```{r load fish data, eval=FALSE, include=FALSE}
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/FishSurveys")
+
+#Load the data
+## < ----- 2015 fish data -----> ##
+fish.15a <-read.csv("KI_fishsurvey_2015_SD.csv",stringsAsFactors = FALSE)
+fish.15b <- read.csv("KI_fishsurvey_2015_SC.csv",stringsAsFactors = FALSE)
+ki.15 <- rbind(fish.15a, fish.15b)
+
+#Convert depth from feet to m
+ki.15$`Depth(m)` <- (ki.15$`Depth(m)`) *0.3048
+
+#Remove extra collumns
+ki.15 <- ki.15[,c(1:13)] #removing extra columns from each dataframe
+
+#Make all colnames match
+names(ki.15) <- c("KI_Date", "Site", "Observer", "Transect", "Species_Code", "Species", "Size(cm)", "Number", "Sexual.Phase..TP..IP..juv.", "Time", "Depth(m)", "Slope", "Note")
+
+
+## < ----- 2017 fish data -----> ##
+fish.17a <- read.csv("2017_Kiritimati_FISH_SD_FINAL.csv",stringsAsFactors = FALSE)
+fish.17b <- read.csv("2017_Kiritimati_FISH_TAP_FINAL.csv",stringsAsFactors = FALSE)
+
+#Remove extra collumns
+ki_17_tap <- fish.17b[,c(1:13)] #removing extra columns from each dataframe
+ki_17_sd <- fish.17a[,c(1:13)] #removing extra columns from each dataframe
+
+#Make names the same
+names(ki_17_tap) <- c("KI_Date", "Site", "Observer", "Transect", "Species_Code", "Species", "Size(cm)", "Number", "Sexual.Phase..TP..IP..juv.", "Time", "Depth(m)", "Slope", "Note")
+names(ki_17_sd) <- c("KI_Date", "Site", "Observer", "Transect", "Species_Code", "Species", "Size(cm)", "Number", "Sexual.Phase..TP..IP..juv.", "Time", "Depth(m)", "Slope", "Note")
+
+ki.17 <- rbind(ki_17_tap, ki_17_sd)
+
+
+## < ----- 2019 fish data -----> ##
+fish.19a <- read.csv("2019_Kiritimati_FISH_SD_FINAL.csv",stringsAsFactors = FALSE)
+fish.19b <- read.csv("2019_Kiritimati_FISH_SC_FINAL.csv",stringsAsFactors = FALSE)
+fish.19c <- read.csv("2019_Kiritimati_FISH_KB_FINAL.csv",stringsAsFactors = FALSE)
+
+#Remove extra collumns from each dataframe
+ki.19a <- fish.19a[,c(1:13)] #removing extra columns from each dataframe
+ki.19b <- fish.19b[,c(1:13)] #removing extra columns from each dataframe
+ki.19c <- fish.19c[,c(1:13)] #removing extra columns from each dataframe
+
+#Make all colnames match
+names(ki.19a) <- c("KI_Date", "Site", "Observer", "Transect", "Species_Code", "Species", "Size(cm)", "Number", "Sexual.Phase..TP..IP..juv.", "Time", "Depth(m)", "Slope", "Note")
+names(ki.19b) <- c("KI_Date", "Site", "Observer", "Transect", "Species_Code", "Species", "Size(cm)", "Number", "Sexual.Phase..TP..IP..juv.", "Time", "Depth(m)", "Slope", "Note")
+names(ki.19c) <- c("KI_Date", "Site", "Observer", "Transect", "Species_Code", "Species", "Size(cm)", "Number", "Sexual.Phase..TP..IP..juv.", "Time", "Depth(m)", "Slope", "Note")
+
+ki.19 <- rbind(ki.19a, ki.19b, ki.19c)
+
+
+#Remove collumns not needed in my analyses
+names(ki.17)
+ki_19 <- subset(ki.19, select =c("KI_Date", "Site", "Observer", "Transect", "Species", "Size(cm)", "Number", "Time", "Depth(m)", "Note"))
+ki_17 <-subset(ki.17, select =c("KI_Date", "Site", "Observer", "Transect", "Species", "Size(cm)", "Number", "Time", "Depth(m)", "Note"))
+ki_15 <- subset(ki.15, select =c("KI_Date", "Site", "Observer", "Transect", "Species", "Size(cm)", "Number", "Time", "Depth(m)", "Note"))
+
+#adding year column to each
+ki_15$Year <- 2015
+ki_17$Year <- 2017
+ki_19$Year <- 2019
+  
+#Only include sites that I will use
+ki.15.mine <-  subset(ki_15, Site == 5 | Site == 19 | Site == 15 | Site == 37 | Site == 8 | Site == 34 | Site == 35 | Site == 27 | Site ==30 | Site == 32)
+ki.17.mine <-  subset(ki_17, Site == 5 | Site == 19 | Site == 15 | Site == 37 | Site == 8 | Site == 34 | Site == 35 | Site == 27 | Site ==30 | Site == 32)
+ki.19.mine <-  subset(ki_19, Site == 5 | Site == 19 | Site == 15 | Site == 37 | Site == 8 | Site == 34 | Site == 35 | Site == 27 | Site ==30 | Site == 32)
+
+#binding all years into ONE dataframe
+ki_full <- rbind(ki.15.mine, ki.17.mine, ki.19.mine)
+
+### Check that no data was lost in binding
+dim(ki_full); dim(ki.15.mine)[1] + dim(ki.17.mine)[1] + dim(ki.19.mine)[1] #9556 rows
+
+
+### Clean data frame #19240 observations of 10 variables
+#See if any collumns have any na's
+apply(ki_full, 2, function(x) any(is.na(x))) #No NA's
+str(ki_full)
+ki_full$Number <- as.numeric(ki_full$Number)
+ki_full$Year <- as.character(ki_full$Year)
+ki_full$Depth <- as.character(ki_full$Depth)
+
+
+### Remove data from training dives, etc. # removes 654 rows #end up with 38112
+unique(ki_full$Note)
+ki_full <- ki_full[!grepl("Training", ki_full$Note), ]
+ki_full <- ki_full[!grepl("Trainiing", ki_full$Note), ]
+ki_full <- ki_full[!grepl("TRAINING", ki_full$Note), ]
+ki_full <- ki_full[!grepl("Bad data", ki_full$Note), ]
+ki_full <- ki_full[!grepl("TRAINING NOT FOR USE", ki_full$Note), ]
+ki_full <- ki_full[!grepl("Training Dive", ki_full$Note), ]
+ki_full <- ki_full[!grepl("Training Dive - did not finish", ki_full$Note), ]
+ki_full <- ki_full[!grepl("Training", ki_full$Note), ]
+
+dim(ki_full) #9232 Rows Now
+
+
+### Clean some typos
+ki_full <- ki_full[order(ki_full$Species), ]
+ki_full$Species <- paste(toupper(substr(ki_full$Species, 1, 1)), substr(ki_full$Species, 2, nchar(ki_full$Species)), sep = "")
+
+unique(ki_full$Species)
+
+#Just a few corrections
+ki_full$Species[ki_full$Species == "Acanthurus achiles"] <- "Acanthurus achilles"
+ki_full$Species[ki_full$Species == "Acanthurus flavicaudus"] <- "Ctenochaetus flavicauda"
+ki_full$Species[ki_full$Species == "Acanthurus leucochilus"] <- "Acanthurus leucocheilus"
+ki_full$Species[ki_full$Species == "Acanthurus nigricans "] <- "Acanthurus nigricans"
+ki_full$Species[ki_full$Species == "Acanthurus nirgricauda"] <- "Acanthurus nigricauda"
+ki_full$Species[ki_full$Species == "Acanturus nigroris"] <- "Acanthurus nigroris"
+ki_full$Species[ki_full$Species == "Acanthurus olivacious"] <- "Acanthurus olivaceus"
+ki_full$Species[ki_full$Species == "Acanthurus tricolor "] <- "Scarus tricolor"
+ki_full$Species[ki_full$Species == "Apogon angustus"] <- "Ostorhinchus angustatus"
+ki_full$Species[ki_full$Species == "Apogon apogonides"] <- "Ostorhinchus apogonoides"
+ki_full$Species[ki_full$Species == "Arothron caruleopunctatus"] <- "Arothron caeruleopunctatus"
+ki_full$Species[ki_full$Species == "BAlistapus undulatus"] <- "Balistapus undulatus"
+ki_full$Species[ki_full$Species == "Blenniid sp."] <- "Blenniidae sp"
+ki_full$Species[ki_full$Species == "Unknown Blenniidae"] <- "Blenniidae sp"
+ki_full$Species[ki_full$Species == "Cantherhines dumerelii"] <- "Cantherhines dumerilii"
+ki_full$Species[ki_full$Species == "Centropyger loricula"] <- "Centropyge loricula"
+ki_full$Species[ki_full$Species == "Centropygi loricula"] <- "Centropyge loricula"
+ki_full$Species[ki_full$Species == "Cephalopholis hexagonatus"] <- "Epinephelus hexagonatus"
+ki_full$Species[ki_full$Species == "Cephalopholis minita"] <- "Cephalopholis miniata"
+ki_full$Species[ki_full$Species == "Cephaloppholis miniata"] <- "Cephalopholis miniata"
+ki_full$Species[ki_full$Species == "Cephalopholis urodeta "] <- "Cephalopholis urodeta"
+ki_full$Species[ki_full$Species == "Chaetodon citronelis"] <- "Chaetodon citrinellus"
+ki_full$Species[ki_full$Species == "Chaetodon kleini"] <- "Chaetodon kleinii"
+ki_full$Species[ki_full$Species == "Chaetodon loricula"] <- "Centropyge loricula"
+ki_full$Species[ki_full$Species == "Chaetodon vagabundas"] <- "Chaetodon vagabundus"
+ki_full$Species[ki_full$Species == "Chelinus trilobatus"] <- "Cheilinus trilobatus"
+ki_full$Species[ki_full$Species == "Chlorurus spp."] <- "Chlorurus sp."
+ki_full$Species[ki_full$Species == "Chromis ternatenis "] <- "Chromis ternatensis"
+ki_full$Species[ki_full$Species == "Chhromis vanderbilti"] <- "Chromis vanderbilti"
+ki_full$Species[ki_full$Species == "Chromis xanth"] <- "Chromis xanthura"
+ki_full$Species[ki_full$Species == "Cirrhitichthys oxycephalis"] <- "Cirrhitichthys oxycephalus"
+ki_full$Species[ki_full$Species == "Cirripectes spp."] <- "Cirripectes sp."
+ki_full$Species[ki_full$Species == "Coris Centralis"] <- "Coris centralis"
+ki_full$Species[ki_full$Species == "Ctenochaetus cyanocheilus "] <- "Ctenochaetus cyanocheilus"
+ki_full$Species[ki_full$Species == "Ctenochaetus flavissimus"] <- "Ctenochaetus striatus"
+ki_full$Species[ki_full$Species == "Enchelychore pardalis"] <- "Enchelycore pardalis"
+ki_full$Species[ki_full$Species == "Epinephelus miniata"] <- "Cephalopholis miniata"
+ki_full$Species[ki_full$Species == "Epinephalis spilotoceps"] <- "Epinephelus spilotoceps"
+ki_full$Species[ki_full$Species == "Epinephelos spilotoceps"] <- "Epinephelus spilotoceps"
+ki_full$Species[ki_full$Species == "Eviola cometa"] <- "Eviota cometa"
+ki_full$Species[ki_full$Species == "Forcipiger longorostris"] <- "Forcipiger longirostris"
+ki_full$Species[ki_full$Species == "Gobiid sp"] <- "Gobiidae sp"
+ki_full$Species[ki_full$Species == "Gomphosis varius"] <- "Gomphosus varius"
+ki_full$Species[ki_full$Species == "Gracila albomarinata"] <- "Gracila albomarginata"
+ki_full$Species[ki_full$Species == "Gracila albomarginata\n\n"] <- "Gracila albomarginata"
+ki_full$Species[ki_full$Species == "Gymnothorax species"] <- "Gymnothorax sp"
+ki_full$Species[ki_full$Species == "Gymnothorax thrysoideus"] <- "Gymnothorax thyrsoideus"
+ki_full$Species[ki_full$Species == "Iniistius auropuctatus"] <- "Iniistius auropunctatus"
+ki_full$Species[ki_full$Species == "Labrid sp."] <- "Labridae sp"
+ki_full$Species[ki_full$Species == "Labroides rubroviolacious"] <- "Labroides rubrolabiatus"
+ki_full$Species[ki_full$Species == "Lethrines meleagris"] <- "Lethrinus olivaceus"
+ki_full$Species[ki_full$Species == "Lutjanus monotaxis"] <- "Lutjanus monostigma"
+ki_full$Species[ki_full$Species == "MAcropharyngodon meleagris"] <- "Macropharyngodon meleagris"
+ki_full$Species[ki_full$Species == "Melicthys niger"] <- "Melichthys niger"
+ki_full$Species[ki_full$Species == "Melicthys vidua"] <- "Melichthys vidua"
+ki_full$Species[ki_full$Species == "Myripristis tiere"] <- "Sargocentron tiere"
+ki_full$Species[ki_full$Species == "Ostorhinchus apogonides"] <- "Ostorhinchus apogonoides"
+ki_full$Species[ki_full$Species == "Oxycheilinus diagrammus"] <- "Oxycheilinus digramma"
+ki_full$Species[ki_full$Species == "Paracanthus hepatus"] <- "Paracanthurus hepatus"
+ki_full$Species[ki_full$Species == "Paracirrhites xanthus?"] <- "Paracirrhites xanthus"
+ki_full$Species[ki_full$Species == "Parapercis spp."] <- "Parapercis sp."
+ki_full$Species[ki_full$Species == "Parupeneus cyclostomas"] <- "Parupeneus cyclostomus"
+ki_full$Species[ki_full$Species == "PArupeneus insularis"] <- "Parupeneus insularis"
+ki_full$Species[ki_full$Species == "Parupeneus mimicus"] <- "Mulloidichthys mimicus"
+ki_full$Species[ki_full$Species == "Parupeneus multifaciatus"] <- "Parupeneus multifasciatus"
+ki_full$Species[ki_full$Species == "Parupeneus pleurostrigma"] <- "Parupeneus pleurostigma"
+ki_full$Species[ki_full$Species == "Pempheris oulensis"] <- "Pempheris oualensis"
+ki_full$Species[ki_full$Species == "Pervagor aspricauda"] <- "Pervagor aspricaudus"
+ki_full$Species[ki_full$Species == "Plagiotremis sp."] <- "Plagiotremus sp."
+ki_full$Species[ki_full$Species == "Plagiotremus species"] <- "Plagiotremus sp."
+ki_full$Species[ki_full$Species == "PLectroglyphidodon dickii"] <- "Plectroglyphidodon dickii"
+ki_full$Species[ki_full$Species == "Pseudocheilinus evanides"] <- "Pseudocheilinus evanidus"
+ki_full$Species[ki_full$Species == "Pseduocheilnus octotaenia"] <- "Pseudocheilinus octotaenia"
+ki_full$Species[ki_full$Species == "Pseudanthias hexataniea"] <- "Pseudocheilinus hexataenia"
+ki_full$Species[ki_full$Species == "Pteroleotris zebra"] <- "Ptereleotris zebra"
+ki_full$Species[ki_full$Species == "Caesio tile"] <- "Pterocaesio tile"
+ki_full$Species[ki_full$Species == "Pterocaesio spp."] <- "Pterocaesio sp."
+ki_full$Species[ki_full$Species == "Scorpaenidae sp."] <- "Pterois sp."
+ki_full$Species[ki_full$Species == "Sargocentron tiare"] <- "Sargocentron tiere"
+ki_full$Species[ki_full$Species == "Scarus frenatus "] <- "Scarus frenatus"
+ki_full$Species[ki_full$Species == "Scarus frontalis"] <- "Chlorurus frontalis"
+ki_full$Species[ki_full$Species == "Scarus ghobon"] <- "Scarus ghobban"
+ki_full$Species[ki_full$Species == "Sccarus oviceps"] <- "Scarus oviceps"
+ki_full$Species[ki_full$Species == "Scarus rubrovioulacious"] <- "Scarus rubroviolaceus"
+ki_full$Species[ki_full$Species == "Scombroides lysan"] <- "Scomberoides lysan"
+ki_full$Species[ki_full$Species == "Unknown Scorpaenidae"] <- "Scorpaenidae sp."
+ki_full$Species[ki_full$Species == "Stegastes fasciatus"] <- "Stegastes fasciolatus"
+ki_full$Species[ki_full$Species == "Sufflamen fraenatus"] <- "Sufflamen fraenatum"
+ki_full$Species[ki_full$Species == "Synchiropus ocellatus"] <- "Neosynchiropus ocellatus"
+ki_full$Species[ki_full$Species == "Synodus sp"] <- "Synodus sp."
+ki_full$Species[ki_full$Species == "Thalassoma quinquevittatum\n"] <- "Thalassoma quinquevittatum"
+ki_full$Species[ki_full$Species == "Variola lauti"] <- "Variola louti"
+ki_full$Species[ki_full$Species == "Acanthurus nigrofuscus "] <- "Acanthurus nigrofuscus"
+ki_full$Species[ki_full$Species == "Blennidaae sp"] <- "Blenniidae sp"
+ki_full$Species[ki_full$Species == "Blenniidae sp."] <- "Blenniidae sp"
+ki_full$Species[ki_full$Species == "Blenniidae spp"] <- "Blenniidae sp"
+ki_full$Species[ki_full$Species == "Cephalopholis argus "] <- "Cephalopholis argus"
+ki_full$Species[ki_full$Species == "Chomis vanderbilti "] <- "Chromis vanderbilti"
+ki_full$Species[ki_full$Species == "Chromis acares "] <- "Chromis acares"
+ki_full$Species[ki_full$Species == "Cirrihilabrus exquisitus"] <- "Cirrhilabrus exquisitus"
+ki_full$Species[ki_full$Species == "Ctenochaetus multifasciatus"] <- "Ctenochaetus marginatus" #this must be a mis-entered mistake, the species doesn't exist
+ki_full$Species[ki_full$Species == "Pseudodax molucanus"] <- "Pseudodax moluccanus"
+ki_full$Species[ki_full$Species == "Cephalophoilis argus "] <- "Cephalopholis argus"
+ki_full$Species[ki_full$Species == "Aluterus scripta"] <- "Aluterus scriptus"
+ki_full$Species[ki_full$Species == "Lujanus monostigma"] <- "Lutjanus monostigma"
+
+unique(ki_full$Species) #Went from 260 options to 233 types
+
+#Load Cred and TMP Data
+load("/Users/kevin/Desktop/GitHub/Bruce_MPQ_Analysis/Data/FishSurveys/TMPwd.Rdata") #TMP Data
+cred.allo <- read.csv("/Users/kevin/Desktop/GitHub/Bruce_MPQ_Analysis/Data/FishSurveys/Deith_CRED_FG_Allocation.csv")
+cred <- wd
+
+colnames(cred)
+ki_full$lw_a <- cred$LW_A[match(ki_full$Species, cred$SCIENTIFIC_NAME)]
+ki_full$lw_b <- cred$LW_B[match(ki_full$Species, cred$SCIENTIFIC_NAME)]
+ki_full$LENGTH_CONVERSION_FACTOR <- cred$LENGTH_CONVERSION_FACTOR[match(ki_full$Species, cred$SCIENTIFIC_NAME)]
+
+
+# See which species are missing l-w data
+dim(ki_full[is.na(ki_full$lw_a),] ) #15 rows without length data
+unique(ki_full$Species[is.na(ki_full$lw_a)] ) # 21 species
+sum(as.numeric(ki_full$Number[is.na(ki_full$lw_a)] ), na.rm = TRUE) # number of individuals without l/w information - 669
+
+
+### Add Fishbase parameters for species not in CRED dataset
+ki_full$lw_a[ki_full$Species == "Arothron caeruleopunctatus"] <- 0.02692
+ki_full$lw_b[ki_full$Species == "Arothron caeruleopunctatus"] <- 2.88
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Arothron caeruleopunctatus"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Bothus pantherinus"] <- 0.00912
+ki_full$lw_b[ki_full$Species == "Bothus pantherinus"] <- 3.07
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Bothus pantherinus"] <- 1
+
+# ki_full$lw_a[ki_full$Species == "Chromis atripes"] <- 0.0229
+# ki_full$lw_b[ki_full$Species == "Chromis atripes"] <- 3.175
+# ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Chromis atripes"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Cirripectes auritus"] <- 0.00741
+ki_full$lw_b[ki_full$Species == "Cirripectes auritus"] <- 3.00
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Cirripectes auritus"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Eviota albolineata"] <- 0.00631
+ki_full$lw_b[ki_full$Species == "Eviota albolineata"] <- 3.08
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Eviota albolineata"] <- 1
+
+# ki_full$lw_a[ki_full$Species == "Eviota cometa"] <- 0.00891
+# ki_full$lw_b[ki_full$Species == "Eviota cometa"] <- 3.08
+# ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Eviota cometa"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Gnatholepis anjerensis"] <- 0.00871
+ki_full$lw_b[ki_full$Species == "Gnatholepis anjerensis"] <- 3.05
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Gnatholepis anjerensis"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Gymnothorax thyrsoideus"] <- 0.0005
+ki_full$lw_b[ki_full$Species == "Gymnothorax thyrsoideus"] <- 3.303
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Gymnothorax thyrsoideus"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Iniistius auropunctatus"] <- 0.01122
+ki_full$lw_b[ki_full$Species == "Iniistius auropunctatus"] <- 3.04
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Iniistius auropunctatus"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Neosynchiropus ocellatus"] <- 0.01047
+ki_full$lw_b[ki_full$Species == "Neosynchiropus ocellatus"] <- 2.96
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Neosynchiropus ocellatus"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Ostorhinchus angustatus"] <- 0.01479
+ki_full$lw_b[ki_full$Species == "Ostorhinchus angustatus"] <- 3.07
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Ostorhinchus angustatus"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Ostorhinchus apogonoides"] <- 0.01479
+ki_full$lw_b[ki_full$Species == "Ostorhinchus apogonoides"] <- 3.07
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Ostorhinchus apogonoides"] <- 1
+
+# ki_full$lw_a[ki_full$Species == "Oxycheilinus diagramma"] <- 0.01950
+# ki_full$lw_b[ki_full$Species == "Oxycheilinus diagramma"] <- 2.95
+# ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Oxycheilinus diagramma"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Parapercis lata"] <- 0.0133
+ki_full$lw_b[ki_full$Species == "Parapercis lata"] <- 2.943
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Parapercis lata"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Priacanthus hamrur"] <- 0.03
+ki_full$lw_b[ki_full$Species == "Priacanthus hamrur"] <- 2.801
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Priacanthus hamrur"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Pterocaesio lativittata"] <- 0.0092
+ki_full$lw_b[ki_full$Species == "Pterocaesio lativittata"] <- 3.234
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species=="Pterocaesio lativittata"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Synodus jaculum"] <- 0.0085
+ki_full$lw_b[ki_full$Species == "Synodus jaculum"] <- 3.078
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Synodus jaculum"] <- 1
+
+# ki_full$lw_a[ki_full$Species == "Valenciennea helsdingenii"] <- 0.0104
+# ki_full$lw_b[ki_full$Species == "Valenciennea helsdingenii"] <- 2.859
+# ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Valenciennea helsdingenii"] <- 1
+
+ki_full$lw_a[ki_full$Species == "Echidna nebulosus"] <- 0.0183
+ki_full$lw_b[ki_full$Species == "Echidna nebulosus"] <- 3.64
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Echidna nebulosus"] <- 1
+
+#using the same length weight formula as echidna nebulosus
+ki_full$lw_a[ki_full$Species == "Echidna unicolor"] <- 0.0183
+ki_full$lw_b[ki_full$Species == "Echidna unicolor"] <- 3.64
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Echidna unicolor"] <- 1
+
+### Assign fish identified to genus or Family with mean l-w parameters
+ki_full$lw_a[ki_full$Species == "Blenniidae sp"] <- mean(cred$LW_A[grepl("Blenniella", cred$SCIENTIFIC_NAME)])
+ki_full$lw_b[ki_full$Species == "Blenniidae sp"] <- mean(cred$LW_B[grepl("Blenniella", cred$SCIENTIFIC_NAME)])
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Blenniidae sp"] <- mean(cred$LENGTH_CONVERSION_FACTOR[grepl("Blenniella", cred$SCIENTIFIC_NAME)])
+
+ki_full$lw_a[ki_full$Species == "Epinephelus sp."] <- mean(cred$LW_A[grepl("Epinephelus", cred$SCIENTIFIC_NAME)])
+ki_full$lw_b[ki_full$Species == "Epinephelus sp."] <- mean(cred$LW_B[grepl("Epinephelus", cred$SCIENTIFIC_NAME)])
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Epinephelus sp."] <- mean(cred$LENGTH_CONVERSION_FACTOR[grepl("Epinephelus", cred$SCIENTIFIC_NAME)])
+
+ki_full$lw_a[ki_full$Species == "Gobiidae sp"] <- mean(cred$LW_A[grepl("Gobiidae", cred$SCIENTIFIC_NAME)])
+ki_full$lw_b[ki_full$Species == "Gobiidae sp"] <- mean(cred$LW_B[grepl("Gobiidae", cred$SCIENTIFIC_NAME)])
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Gobiidae sp"] <- mean(cred$LENGTH_CONVERSION_FACTOR[grepl("Gobiidae", cred$SCIENTIFIC_NAME)])
+
+ki_full$lw_a[ki_full$Species == "Halichoeres sp."] <- mean(cred$LW_A[grepl("Halichoeres", cred$SCIENTIFIC_NAME)])
+ki_full$lw_b[ki_full$Species == "Halichoeres sp."] <- mean(cred$LW_B[grepl("Halichoeres", cred$SCIENTIFIC_NAME)])
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Halichoeres sp."] <- mean(cred$LENGTH_CONVERSION_FACTOR[grepl("Halichoeres", cred$SCIENTIFIC_NAME)])
+
+ki_full$lw_a[ki_full$Species == "Labridae sp"] <- mean(cred$LW_A[grepl("Labroides", cred$SCIENTIFIC_NAME)])
+ki_full$lw_b[ki_full$Species == "Labridae sp"] <- mean(cred$LW_B[grepl("Labroides", cred$SCIENTIFIC_NAME)])
+ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Labridae sp"] <- mean(cred$LENGTH_CONVERSION_FACTOR[grepl("Labroides", cred$SCIENTIFIC_NAME)])
+
+#Double Check everything is good
+dim(ki_full[is.na(ki_full$lw_a),] ) #0 NA's out of 15 collumns
+unique(ki_full$Species[is.na(ki_full$lw_a)] ) #None
+
+
+******* ASK SEAN WHERE Trophic is coming from..... **********
+
+
+## Add Family info
+ki_full$Family <- as.character(trophic$X[match(ki_full$Species, trophic$CREDSpecies)])
+dim(ki_full[is.na(ki_full$Family),])
+
+# Add in Family info for species not in 'trophic' dataset
+unique(ki_full$Species[is.na(ki_full$Family)])
 
 
 ```
 
 
+```{r cleaning script from Sean, eval=FALSE, include=FALSE}
+### Cleaning the 2019 Data and creating a dataframe with 2017, 2018, and 2019 data###
+
+### Add Family info
+ki_full$Family <- as.character(trophic$X[match(ki_full$Species, trophic$CREDSpecies)])
+dim(ki_full[is.na(ki_full$Family),])
+
+# Add in Family info for species not in 'trophic' dataset
+unique(ki_full$Species[is.na(ki_full$Family)])
+
+ki_full$Family[ki_full$Species == "Arothron caeruleopunctatus"] <- "Tetraodontidae"
+ki_full$Family[ki_full$Species == "Bothus pantherinus"] <- "Bothidae"
+ki_full$Family[ki_full$Species == "Chlorurus sp."] <- "Scaridae"
+ki_full$Family[ki_full$Species == "Chromis atripes"] <- "Pomacentridae"
+ki_full$Family[ki_full$Species == "Cirripectes auritus"] <- "Blenniidae"
+ki_full$Family[ki_full$Species == "Cirripectes sp."] <- "Blenniidae"
+ki_full$Family[ki_full$Species == "Epinephelus sp."] <- "Serranidae"
+ki_full$Family[ki_full$Species == "Eviota cometa"] <- "Gobiidae"
+ki_full$Family[ki_full$Species == "Gnatholepis anjerensis"] <- "Gobiidae"
+ki_full$Family[ki_full$Species == "Gymnothorax thyrsoideus"] <- "Muraenidae"
+ki_full$Family[ki_full$Species == "Echidna nebulosus"] <- "Muraenidae"
+ki_full$Family[ki_full$Species == "Halichoeres sp."] <- "Labridae"
+ki_full$Family[ki_full$Species == "Halichoeres chrysus"] <- "Labridae"
+ki_full$Family[ki_full$Species == "Iniistius auropunctatus"] <- "Labridae"
+ki_full$Family[ki_full$Species == "Kyphosus sp"] <- "Kyphosidae"
+ki_full$Family[ki_full$Species == "Neosynchiropus ocellatus"] <- "Callionymidae"
+ki_full$Family[ki_full$Species == "Ostorhinchus angustatus"] <- "Apogonidae"
+ki_full$Family[ki_full$Species == "Ostorhinchus apogonoides"] <- "Apogonidae"
+ki_full$Family[ki_full$Species == "Parapercis lata"] <- "Pinguipedidae"
+ki_full$Family[ki_full$Species == "Parapercis sp."] <- "Pinguipedidae"
+ki_full$Family[ki_full$Species == "Plagiotremus sp."] <- "Blenniidae"
+ki_full$Family[ki_full$Species == "Priacanthus hamrur"] <- "Priacanthidae"
+ki_full$Family[ki_full$Species == "Pseudanthias sp"] <- "Serranidae"
+ki_full$Family[ki_full$Species == "Ptereleotris sp"] <- "Microdesmidae"
+ki_full$Family[ki_full$Species == "Pterocaesio sp."] <- "Caesionidae"
+ki_full$Family[ki_full$Species == "Pterocaesio lativittata"] <- "Caesionidae"
+ki_full$Family[ki_full$Species == "Pterois sp."] <- "Scorpaenidae"
+ki_full$Family[ki_full$Species == "Synodus jaculum"] <- "Synodontidae"
+ki_full$Family[ki_full$Species == "Synodus sp."] <- "Synodontidae"
+ki_full$Family[ki_full$Species == "Valenciennea sp."] <- "Gobiidae"
+ki_full$Family[ki_full$Species == "Valenciennea helsdingenii"] <- "Gobiidae"
+ki_full$Family[ki_full$Species == "Echidna unicolor"] <- "Muraenidae"
+ki_full$Family[ki_full$Species == "Sebastapistes cyanostigma"] <- "Scorpaenidae"
+
+unique(ki_full$Species[is.na(ki_full$Family)])
+
+
+### Add functional group data
+ki_full$CoarseFG <- as.character(trophic$CoarseFG[match(ki_full$Species, trophic$CREDSpecies)])
+ki_full$FineFG <- as.character(trophic$FineFG[match(ki_full$Species, trophic$CREDSpecies)])
+
+
+# Add in CoarseFG info for species not in 'trophic' dataset
+dim(ki_full[is.na(ki_full$CoarseFG),])
+unique(ki_full$Species[is.na(ki_full$CoarseFG)])
+
+ki_full$CoarseFG[ki_full$Species == "Arothron caeruleopunctatus"] <- "Omnivore"
+ki_full$CoarseFG[ki_full$Species == "Bothus pantherinus"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Chlorurus sp."] <- "Herbivore"
+ki_full$CoarseFG[ki_full$Species == "Chromis atripes"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Cirripectes auritus"] <- "Herbivore"
+ki_full$CoarseFG[ki_full$Species == "Cirripectes sp."] <- "Herbivore"
+ki_full$CoarseFG[ki_full$Species == "Epinephelus sp."] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Eviota cometa"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Gnatholepis anjerensis"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Gobiidae sp"] <- "NA"
+ki_full$CoarseFG[ki_full$Species == "Gymnothorax thyrsoideus"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Halichoeres sp."] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Halichoeres chrysus"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Iniistius auropunctatus"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Kyphosus sp"] <- "Herbivore"
+ki_full$CoarseFG[ki_full$Species == "Naso sp"] <- "NA"
+ki_full$CoarseFG[ki_full$Species == "Neosynchiropus ocellatus"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Ostorhinchus angustatus"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Ostorhinchus apogonoides"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Parapercis sp."] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Parapercis lata"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Plagiotremus sp."] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Priacanthus hamrur"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Pseudanthias sp"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Ptereleotris sp"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Pterocaesio sp."] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Pterocaesio lativittata"] <- "Planktivore"
+ki_full$CoarseFG[ki_full$Species == "Pterois sp."] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Synodus jaculum"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Synodus sp."] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Valenciennea sp."] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Valenciennea helsdingenii"] <- "Carnivore"
+ki_full$CoarseFG[ki_full$Species == "Echidna nebulosus"] <- "Carnivore" #Based on Fishbase trophic level ~ 4 based on relatives
+ki_full$CoarseFG[ki_full$Species == "Echidna unicolor"] <- "Carnivore" #Based on Fishbase trophic level ~ 4 based on relatives
+ki_full$CoarseFG[ki_full$Species == "Sebastapistes cyanostigma"] <- "Omnivore" #Based on Musembi and Cowburn paper
+# Too much variation within Family/genus to assign CoarseFG to Gobiidae sp or Naso sp
+
+unique(ki_full$Species[is.na(ki_full$CoarseFG)])
+
+
+# Add in FineFG info for species not in 'trophic' dataset
+unique(ki_full$Species[is.na(ki_full$FineFG)])
+
+ki_full$FineFG[ki_full$Species == "Acanthurus sp"] <- "Cropper"
+ki_full$FineFG[ki_full$Species == "Arothron caeruleopunctatus"] <- "Benthic intertivore"
+ki_full$FineFG[ki_full$Species == "Bothus pantherinus"] <- "Generalist carnivore"
+ki_full$FineFG[ki_full$Species == "Chlorurus sp."] <- "Excavator"
+ki_full$FineFG[ki_full$Species == "Chromis atripes"] <- "Diurnal planktivore"
+ki_full$FineFG[ki_full$Species == "Cirripectes auritus"] <- "Cropper"
+ki_full$FineFG[ki_full$Species == "Cirripectes sp."] <- "Cropper"
+ki_full$FineFG[ki_full$Species == "Epinephelus sp."] <- "Diurnal piscivore"
+ki_full$FineFG[ki_full$Species == "Eviota cometa"] <- "Diurnal planktivore"
+ki_full$FineFG[ki_full$Species == "Gnatholepis anjerensis"] <- "Benthic omnivore"
+ki_full$FineFG[ki_full$Species == "Gobiidae sp"] <- "NA"
+ki_full$FineFG[ki_full$Species == "Gymnothorax thyrsoideus"] <- "Generalist carnivore"
+ki_full$FineFG[ki_full$Species == "Halichoeres sp."] <- "Invertivore"
+ki_full$FineFG[ki_full$Species == "Halichoeres chrysus"] <- "Invertivore"
+ki_full$FineFG[ki_full$Species == "Iniistius auropunctatus"] <- "Invertivore"
+ki_full$FineFG[ki_full$Species == "Kyphosus sp"] <- "Browser"
+ki_full$FineFG[ki_full$Species == "Labridae sp"] <- "NA"
+ki_full$FineFG[ki_full$Species == "Naso sp"] <- "NA"
+ki_full$FineFG[ki_full$Species == "Neosynchiropus ocellatus"] <- "Invertivore"
+ki_full$FineFG[ki_full$Species == "Ostorhinchus angustatus"] <- "Nocturnal planktivore"
+ki_full$FineFG[ki_full$Species == "Ostorhinchus apogonoides"] <- "Nocturnal planktivore"
+ki_full$FineFG[ki_full$Species == "Parapercis sp."] <- "Generalist carnivore"
+ki_full$FineFG[ki_full$Species == "Parapercis lata"] <- "Generalist carnivore"
+ki_full$FineFG[ki_full$Species == "Plagiotremus sp."] <- "Diurnal piscivore"
+ki_full$FineFG[ki_full$Species == "Priacanthus hamrur"] <- "Nocturnal planktivore"
+ki_full$FineFG[ki_full$Species == "Pseudanthias sp"] <- "Diurnal planktivore"
+ki_full$FineFG[ki_full$Species == "Ptereleotris sp"] <- "Diurnal planktivore"
+ki_full$FineFG[ki_full$Species == "Pterocaesio sp."] <- "Diurnal planktivore"
+ki_full$FineFG[ki_full$Species == "Pterocaesio lativittata"] <- "Diurnal planktivore"
+ki_full$FineFG[ki_full$Species == "Pterois sp."] <- "Generalist carnivore"
+ki_full$FineFG[ki_full$Species == "Synodus jaculum"] <- "Diurnal piscivore"
+ki_full$FineFG[ki_full$Species == "Synodus sp."] <- "Diurnal piscivore"
+ki_full$FineFG[ki_full$Species == "Valenciennea sp."] <- "Invertivore"
+ki_full$FineFG[ki_full$Species == "Valenciennea helsdingenii"] <- "Invertivore"
+ki_full$FineFG[ki_full$Species == "Echidna nebulosus"] <- "Generalist carnivore" #THIS IS A GUESS
+ki_full$FineFG[ki_full$Species == "Caracanthus maculatus"] <- "Invertivore" #Leray 2015 paper
+ki_full$FineFG[ki_full$Species == "Echidna unicolor"] <- "Generalist carnivore" #this is a guess
+ki_full$FineFG[ki_full$Species == "Sebastapistes cyanostigma"] <- "Generalist carnivore" #this is a guess - its listed as an omnivore above but wtf. Its this.
+# Too much variation within Family/genus to assign FineFG to Gobiidae sp, Labridae sp, Naso sp
+
+unique(ki_full$Species[is.na(ki_full$FineFG)])
+
+
+# Specify corallivore groupings (oblivate vs. facultative)
+unique(ki_full$Species[ki_full$FineFG == "Corallivore"])
+
+# ki_full$FineFG[ki_full$Species == "Amanses scopas"] <- "corallivore"
+ki_full$FineFG[ki_full$Species == "Arothron meleagris"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Cantherhines dumerilii"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon auriga"] <- "Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon bennetti"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon citrinellus"] <- "Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon ephippium"] <- "Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon kleinii"] <- "Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon lunulatus"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon meyeri"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon ornatissimus"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon pelewensis"] <- "Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon quadrimaculatus"] <- "Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon trifascialis"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon unimaculatus"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Chaetodon vagabundus"] <- "Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Heniochus chrysostomus"] <- " Facultative corallivore"
+ki_full$FineFG[ki_full$Species == "Labrichthys unilineatus"] <- "Obligate corallivore"
+ki_full$FineFG[ki_full$Species == "Plectroglyphidodon johnstonianus"] <- "Obligate corallivore"
+
+
+
+unique(ki_full$Species[is.na(ki_full$FineFG)])
+
+
+### Now add mass estimates
+# Add mass values from length-weight relationships
+ki_full$length <- ki_full$Size..cm.*ki_full$LENGTH_CONVERSION_FACTOR
+ki_full$MASS <- round(with(ki_full, lw_a*(length)^lw_b), digits = 2)
+
+dim(ki_full[is.na(ki_full$MASS), ])
+unique(ki_full$Species[is.na(ki_full$MASS)])
+
+
+### Add site data
+sites <- read.csv("Raw_Data/ki_sites_updatedMay2018_newFPressure_KLT_msc.csv")
+
+head(sites)
+
+ki_full$f.pressure <- factor(sites$f.pressure[match(ki_full$Site, sites$site)])
+ki_full$lat <- sites$lat[match(ki_full$Site, sites$site)]
+ki_full$lon <- sites$lon[match(ki_full$Site, sites$site)]
+ki_full$prod <- sites$smw.prod[match(ki_full$Site, sites$site)]
+
+
+
+### Fix a few dates
+ki_full$KI.Date[ki_full$KI.Date == "21_07_13"] <- "21_07_2013"
+ki_full$KI.Date[ki_full$KI.Date == "22_07_13"] <- "22_07_2013"
+ki_full$KI.Date[ki_full$KI.Date == "24_07_13"] <- "24_07_2013"
+ki_full$KI.Date[ki_full$KI.Date == "25_07_13"] <- "25_07_2013"
+ki_full$KI.Date[ki_full$KI.Date == "4_07_2015"] <- "04_07_2015"
+ki_full$KI.Date[ki_full$KI.Date == "5_07_2015"] <- "05_07_2015"
+ki_full$KI.Date[ki_full$KI.Date == " 06_07_2015"] <- "06_07_2015"
+ki_full$KI.Date[ki_full$KI.Date == "31.07.2011"] <- "31_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "31/07/2011"] <- "31_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "25.07.2011"] <- "25_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "20/7/19"] <- "20_07_2019"
+ki_full$KI.Date[ki_full$KI.Date == "24.07.2011"] <- "24_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "27.07.2011"] <- "27_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "28.07.2011"] <- "28_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "23/7/19"] <- "23_07_2019"
+ki_full$KI.Date[ki_full$KI.Date == "29.07.2011"] <- "29_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "30.07.2011"] <- "30_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "29.08.2011"] <- "29_07_2011" #pretty sure they got the month wrong here
+ki_full$KI.Date[ki_full$KI.Date == "19/7/19"] <- "19_07_2019"
+ki_full$KI.Date[ki_full$KI.Date == "02/08/2019"] <- "02_08_2019"
+ki_full$KI.Date[ki_full$KI.Date == "25/07/11"] <- "25_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "01.08.2011"] <- "01_08_2011"
+ki_full$KI.Date[ki_full$KI.Date == "21/7/19"] <- "21_07_2019"
+ki_full$KI.Date[ki_full$KI.Date == "03/08/2019"] <- "03_08_2019"
+ki_full$KI.Date[ki_full$KI.Date == "27/07/11"] <- "27_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "28/07/11"] <- "28_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "09/08/2019"] <- "09_08_2019"
+ki_full$KI.Date[ki_full$KI.Date == "22/7/19"] <- "22_07_2019"
+ki_full$KI.Date[ki_full$KI.Date == "29/7/19"] <- "29_07_2019"
+ki_full$KI.Date[ki_full$KI.Date == "27/7/19"] <- "27_07_2019"
+ki_full$KI.Date[ki_full$KI.Date == "05/08/2019"] <- "05_08_2019"
+ki_full$KI.Date[ki_full$KI.Date == "23.07.2011"] <- "23_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "29/07/11"] <- "29_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "21.08.2011"] <- "21_08_2011" #pretty sure they got the month wrong here too
+ki_full$KI.Date[ki_full$KI.Date == "30/07/11"] <- "30_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "23/07/11"] <- "23_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "01/08/11"] <- "01_08_2011"
+ki_full$KI.Date[ki_full$KI.Date == "24/07/11"] <- "24_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "24/07/11"] <- "24_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "04/08/2019"] <- "04_08_2019"
+ki_full$KI.Date[ki_full$KI.Date == "31/07/11"] <- "31_07_2011"
+ki_full$KI.Date[ki_full$KI.Date == "5_08_2019"] <- "05_08_2019"
+
+
+unique(ki_full$KI.Date)
+
+
+### Create unique codes for each date/site/transect combo
+ki_full$unique.site <- paste(ki_full$KI.Date, ki_full$Transect, ki_full$Site, sep = "_")
+unique(ki_full$unique.site)
+
+
+### Get variables in the correct class
+head(ki_full)
+str(ki_full)
+
+ki_full$Site <- as.factor(ki_full$Site)
+ki_full$Observer <- as.factor(ki_full$Observer)
+ki_full$Transect <- as.factor(ki_full$Transect)
+ki_full$Year <- as.factor(ki_full$Year)
+ki_full$f.pressure <- as.factor(ki_full$f.pressure)
+
+
+### Need to correct abundances of small fish for smaller survey area
+ki_small <- ki_full[ki_full$length < 20, ]
+ki_large <- ki_full[ki_full$length >= 20, ]
+
+### Need to double ki small to account for smaller survey area (300m2 compared to 600m2 for large fish)
+ki_small$Number <- ki_small$Number*2
+ki_full <- rbind(ki_small, ki_large)
+
+
+### DATA IS CLEAN!!! ###
+
+### Save and quit
+save(ki_full, file = "Raw_Data/KI_UVC_11_13_15_17_18_19.Rdata")
+
+
+
+
+```
 

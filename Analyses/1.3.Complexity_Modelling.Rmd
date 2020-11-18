@@ -1,15 +1,17 @@
 ---
-title: "1.3.Complexity_Modelling"
+title: "Bruce_MSc_Complexity_Modelling"
 author: "Kevin Bruce"
-date: "03/07/2020"
+date: "Last compiled on `r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
     toc: yes
     toc_depth: 3
     toc_float: yes
 ---
+```{r Load the packages and load MPQ data, include=FALSE}
+rm(list = ls()) #This clears the environment
+dev.off()
 
-``````{r Load Packages, include=FALSE}
 #Load in Packages
 library(dplyr)
 library(ggplot2)
@@ -25,29 +27,3538 @@ library(tidyr)
 library(readxl)
 library(vegan)
 library(tidyverse)
+library(ade4)
+library(MASS)
+library(ellipse)
+library(FactoMineR)
+library(arm)
+library(ape)
+#library(PCNM)
+library(ggrepel)
+#library(vegan3d)
+#library(rgl)
+library(FactoMineR)
 
 #Set the Working Directory
 setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 
-```
+#1. Complexity Data
+mpq <- read.csv("BaumLab_Complexity_Data_Clean.csv", header=TRUE, row.names=1)
 
-```{r Load the data}
-mpq<- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_Data_Clean.csv")
+# #2. Digitization Data
+# #Dig Dataframe (all original data (no changes/grouping of morphologies))
+# dig.all.num  <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_ColonyCount_Data_Clean.csv", header=TRUE, row.names=1)
+# dig.all.per.cover <-  read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header=TRUE, row.names=1) 
+# dig.all.prop.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PropCover_Data_Clean.csv", header=TRUE, row.names=1)
+# 
+# #NMDS Dataframes
+# colnames(dig.all.per.cover)
+# 
+# #Simple Live/Dead Dataframe
+# dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header=TRUE, row.names=1)
+# dig.simple.nmds.pc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_NMDS_Data_Clean.csv", row.names = 1)
+# dig.simple.prop.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PropCover_Data_Clean.csv", header=TRUE, row.names=1)
+# 
+# #Grouped Morphology dataframe (grouped live massive, live porites & live_massive_grooved together)
+# dig.group.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization2_Wide_PerCover_Data_Clean.csv", header=TRUE, row.names=1)
+# dig.group.prop.cover<- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization2_Wide_PropCover_Data_Clean.csv", header=TRUE, row.names=1)
+# dig.group.num <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization2_Wide_ColonyCount_Data_Clean.csv", header=TRUE, row.names=1)
+# 
 
-```
-
-```{r VRM Metric Modelling}
+####### <--------- ENVIRONMENTAL/COMPLEXITY Dataframes ----------> ##########
+#Create separate dataframes of MPQ data based on DEM/Year combos
 mpq
+mpq.1 <- subset (mpq, DEM == 1) 
+mpq.4 <- subset (mpq, DEM == 4) 
+mpq.8 <- subset (mpq, DEM == 8) 
+
+#Delete our 2016 timepoints
+mpq.1 <- subset(mpq.1, year == 2015 | year == 2017 | year == 2019)
+mpq.4 <- subset(mpq.4, year == 2015 | year == 2017 | year == 2019)
+mpq.8 <- subset(mpq.8, year == 2015 | year == 2017 | year == 2019)
+
+#Delete DEM & area_2d collumns not needed anymore
+names(mpq.1)
+mpq.1 <- subset(mpq.1, select = -c(DEM, area_2d))
+mpq.4 <- subset(mpq.4, select = -c(DEM, area_2d))
+mpq.8 <- subset(mpq.8, select = -c(DEM, area_2d))
+
+```
+# Bruce Thesis Modelling
+
+- This thesis has statistical components from two clear paths: Multivariate & Mixed-Effect Linear Modelling
+
+- For the multivariate analyses, I first computed multiple NMDS's to indicate drivers and then followed that up with RDA's to determine statistical significance of those same drivers.
+
+- The linear modelling that is to follow will have the knowledge gained from the multivariate analyses on what the "driving forces" of the trends we are seeing are, which will then be used as key components during the model fitting process.
+
+```{r Base R plotting, eval=FALSE, include=FALSE}
+#### PLOTTING IN BASE R ####
+par(mfrow=c(1,1)) #Changes plotting window to 1 row, 2 collumns
+plot(dig.mds,type="n") #plots empty plot
+points(dig.mds, display ="sites", col=c("blue", "green", "red", "purple")[as.numeric(mpq.1$region)])
+legend("topright", legend = c(levels(mpq.1$region)), pch = c(16, 16, 16), col = c("blue", "green", "red", "purple"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+
+#Working code
+####points(dig.mds, display ="sites", pch=c(16,8,17)[as.numeric(mpq.1$ppq)], col=c("blue", "green", "red", "purple")[as.numeric(mpq.1$region)])
+###legend("topright", legend = c(levels(mpq.1$hum_dist), levels(mpq.1$region)), pch = c(16, 8, 17), col = c("blue", "green", "red", "purple"), bty = "n", cex = 1) # displays symbol and colour legend
+
+
+#Add hulls for regions
+ordiplot(dig.mds, type = "n", main = "hulls")
+orditorp(dig.mds, display = "sites", labels = F, pch = c(16, 16, 16, 16) [as.numeric(mpq.1$region)], col = c("blue", "green", "red", "purple")
+[as.numeric(mpq.1$region)], cex = 1)
+ordihull(dig.mds, groups = mpq.1$region, draw = "polygon", lty = 1, col = "grey90")
+ordihull(dig.mds, groups = mpq.1$region, draw = "polygon", lty = 1, col = "grey90")
+legend("topright", legend = c(levels(mpq.1$region)), pch = c(16, 16, 16), col = c("blue", "green", "red", "purple"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+
+#Add hulls for disturbance category
+ordiplot(dig.mds, type = "n", main = "hulls")
+orditorp(dig.mds, display = "sites", labels = F, pch = c(16, 8, 10) [as.numeric(mpq.1$hum_dist)], col = c("blue", "green", "red")
+[as.numeric(mpq.1$hum_dist)], cex = 1)
+ordihull(dig.mds, groups = mpq.1$hum_dist, draw = "polygon", lty = 1, col = "grey90")
+legend("topright", legend = c(levels(mpq.1$hum_dist)), pch = c(16, 16, 16), col = c("blue", "green", "red"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+
+
+#<--------- Investigate the species which may drive the site distribution pattern (aka intrinsic variables) ------>
+dig.spp.fit <- envfit(dig.mds, dig, permutations = 999)
+head(dig.spp.fit)
+
+#Plot these intrinsic species
+ordiplot(dig.mds, type = "n", main = "Coral Colonies ~ Site")
+orditorp(dig.mds, display = "sites", labels = F, pch = c(16, 8, 10) [as.numeric(mpq.1$hum_dist)], col = c("blue", "green", "red")
+[as.numeric(mpq.1$hum_dist)], cex = 1)
+ordihull(dig.mds, groups = mpq.1$hum_dist, draw = "polygon", lty = 1, col = "grey95")
+legend("topright", legend = c(levels(mpq.1$hum_dist)), pch = c(16, 8, 10), col = c("blue", "green", "red"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+plot(dig.spp.fit, p.max = 0.5, col = "black", cex = 0.7) # change the significance level of species shown with p.max
+```
+
+# Fractal Dimension
+
+- Before getting into modelling, I want to update you on the fractal dimension results
+
+- Since our last meeting I have calculated fractal dimension using the Fukunaga & Burns (2020) code available online
+
+- Fractal Dimension is calcualted by the following equation:
+
+**2 - Slope Of (Log(3d_Area)/Log(DEM resolution))**
+
+- Fractal dimension is reported as a singular value across a range of 2 to 3, with higher values indicating more complex environments across a range of resolutions (Young et al. 2017, Fukunaga & Burns, 2020)
+
+## Fractal Dimension Preliminary Results {.tabset}
+
+**Results:**
+
+A. A similar trend to other complexity metrics (VRM, surface complexity) is shown, with the largest decline in complexity was lost between 2015 and 2016a)
+
+B. Across multiple resolutions, very low disturbance sites experienced the largest loss of complexity, whereas very high disturbance locations remained relatively similar throughout the study.
+
+C. BOW & Vaskes bay (both locations of VL disturbance) experience sharp declines between 2015 and 2016a. I hypothesize that the S.Lagoon might have as well, if not for the large macroalgae bloom smothering the corals there and limiting ArcMaps ability to read the complexity of the underlying substrate.
+
+### A. By Year
+```{r fractal dimension, include=FALSE}
+frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv", row.names = 1)
+
+frac
+colnames(frac)
+
+levels(frac$hum_dist)
+frac$hum_dist <- factor(frac$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+```
+
+```{r fractal dimension by year, echo=FALSE}
+ggplot(frac, aes(x = year, y=fractal.dimension)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Fractal Dimension")  
+
+```
+
+### B. By Human Disturbance
+```{r fd by hum dist, echo=FALSE}
+ggplot(frac, aes(x = year, y=fractal.dimension)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 14) + xlab("Year") + ylab("Fractal Dimension")  +facet_wrap(~hum_dist, scales = "fixed", ncol= 3)
+
+```
+
+
+### C. By Region
+```{r fd by region, echo=FALSE}
+ggplot(frac, aes(x = year, y=fractal.dimension)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 14) + xlab("Year") + ylab("Fractal Dimension")  +facet_wrap(~region, scales = "fixed", ncol= 2, nrow=2) 
+
+```
+
+
+# A. NMDS
+
+Simply, an NMDS plots abundance data throughout 3D space and uses both abundance and environmental values to clump these groups together. Environmental parameters in this case will be our MPQ complexity metrics at a specific DEM resolution, while the abundance values will either be percent cover of the specific morphological groups or abundance of those colonies. 
+
+ ***I broke analyses down into 3 separate morphological classifications systems:***
+
+1. Coarse Morphological Classification - live/dead coral cover + others
+
+2. Simplified Live_Massive Classification - converted: live_massive_grooved & live_porites --> live_massive morphological tags
+
+3. Full classification- no morphological classifications have been changed or grouped together
+
+
+***From each of these, I will be looking at 2 separate NMDS's examining:***
+
+1. Coral Morphology Percent Cover
+
+2. Coral Morphology Colony Counts (*only for classification systems 2 & 3)
+
+
+
+## 1. Coarse Morphology Classification
+
+### 1a. % Cover in a different coding style with "drivers" {.tabset .tabset-fade}
+
+#### By Region
+```{r Coarse percent cover By Region, include=FALSE}
+#Dataframes to use
+mpq.1
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.1[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.1613771  with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #All are significant BUT Curv (VRM + both pro, plan curv values are VERY sig) 
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+- VRM and both curvature values are "significant environmental parameters". 
+- As expected, VRM is being pushed the direction of the living hard and soft corals
+- Distinct clumping of Vaskes Bay & Medium disturbance sites of the south lagoon (pink + purple circles)
+- North Lagoon = Very High disturbance location, is driven by sand and rubble
+- BOW = driven by the dead coral structure, particularly in 2017 (triangles)
+
+```{r Coarse percent cover By Region ordination, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.7, y=0.55, label= "stress = 0.161", size = 4)
+
+
+```
+
+#### By Year
+
+- 2015 & 2017 are distinctly different, with no overlap, while 2019 acts as the "intermediary", encompassing bits of both elipses
+- VRM + live coral cover is driven by the 2015 values, while 2017 is driven by the dead coral, sand, and macroalgae. 
+
+```{r Coarse percent cover By Year, include=FALSE}
+#Dataframes to use
+mpq.1
+dig.simple.per.cover <-read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1a <- dig.simple.per.cover[ , 7:13]
+env1a <- mpq.1[,9:13]
+
+#Check number of rows in each dataframe
+nrow(env1a)
+nrow(com1a)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds.1a <- metaMDS(com1a, distance = "bray")
+mpq.envfit.1a <- envfit(dig.pc.mds.1a, env1a, permutations = 999) # this fits environmental vectors
+dig.spp.fit.1a <- envfit(dig.pc.mds.1a, com1a, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds.1a #0.1601 with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit.1a #All are significant BUT Curv (VRM + both pro, plan curv values are VERY sig) 
+dig.spp.fit.1a #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs.1a <- as.data.frame(scores(dig.pc.mds.1a, display = "sites")) #save NMDS results into dataframe
+site.scrs.1a <- cbind(site.scrs.1a, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs.1a <- cbind(site.scrs.1a, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+
+head(site.scrs.1a)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs.1a <- as.data.frame(scores(dig.spp.fit.1a, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs.1a <- cbind(spp.scrs.1a, Morphologies = rownames(spp.scrs.1a)) #add species names to dataframe
+spp.scrs.1a <- cbind(spp.scrs.1a, pval = dig.spp.fit.1a$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs.1a <- subset(spp.scrs.1a, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs.1a)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq.1a <- as.data.frame(scores(mpq.envfit.1a, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq.1a <- cbind(env.scores.mpq.1a, env.variables = rownames(env.scores.mpq.1a)) #and then gives them their names
+
+env.scores.mpq.1a <- cbind(env.scores.mpq.1a, pval = mpq.envfit.1a$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs.1a <- subset(env.scores.mpq.1a, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq.1a)
+
+#Prepping plot to plot
+nmds.plot.coarse.1a <- ggplot(site.scrs.1a, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.1a$year), shape = factor(site.scrs.1a$region)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Year", shape = "Region")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.1a + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.1a+
+  geom_segment(data = sig.spp.scrs.1a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.1a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse.1a+
+  geom_segment(data = sig.env.scrs.1a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs.1a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+
+
+#Add levels to the year category in the site scores df
+levels(site.scrs.1a$region) 
+levels(site.scrs.1a$year) 
+site.scrs.1a$year <- factor(site.scrs.1a$year, levels = c("2015", "2017", "2019"))
+
+
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.1a <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.1a$year)){
+  df_ell.dig.management.1a <- rbind(df_ell.dig.management.1a, cbind(as.data.frame(with(site.scrs.1a [site.scrs.1a$year==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,year=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig.1a =aggregate(site.scrs.1a[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.1a$year), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.1a =aggregate(site.scrs.1a[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.1a$year), mean)
+
+#Plot the elipses
+nmds.plot.coarse.1a+ 
+geom_path(data = df_ell.dig.management.1a, aes(x = NMDS1, y = NMDS2, group = year)) #this is the ellipse, seperate ones by region 
+
+```
+
+```{r Coarse percent cover By Year ordination, echo=FALSE}
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.1a+
+geom_path(data = df_ell.dig.management.1a, aes(x = NMDS1, y = NMDS2, colour = year)) +
+  geom_segment(data = sig.spp.scrs.1a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.1a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover by year") + geom_segment(data = sig.env.scrs.1a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.1a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=-0.5, y=0.6, label= "stress = 0.1601", size = 4)
+```
+
+
+### 1b. Colony Count @ 1cm DEM
+
+I didn't create a dataframe for these because I would just be modelling live coral colonies and non-coral colonies alone, as the dead categories weren't digitized by inidvidual colony.
+
+
+
+### 1c. Percent Cover examing changes in DEM scale with a different coding style 
+
+- I computed this NMDS to see whether altering the DEM resolution that the complexity (environmental) components were used
+
+- All mpq data is plotted three times: once as raw data, the other with MPQ data rescaled to Z scores, the last with MPQ rescaled + % cover data hellinger transformed.
+
+Findings:
+
+- DEM does play a role in significant drivers
+
+- Differences between region still prevalent
+
+- Stress is least at option 3 (with both datasets transformed/rescaled)
+
+
+#### 1cm DEM {.tabset}
+
+A. All but Avg Curvature are significant; all morphologies significant
+
+B. Only VRM, Pro + Plan Curv signifcant; all morphologies significant
+
+C. Only VRM, Pro + Plan Curv signifcant; all morphologies significant
+
+
+##### A. Raw
+```{r 1cm DEM raw By Region, include=FALSE}
+#Dataframes to use
+mpq.1
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.1[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.161  with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #All are significant BUT Curv (VRM + both pro, plan curv values are VERY sig) 
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r 1cm DEM raw By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.7, y=0.55, label= "stress = 0.161", size = 4)
+
+
+```
+
+##### B. MPQ Standardized
+```{r 1cm DEM rescaled percent cover By Region, include=FALSE}
+#Dataframes to use
+mpq.1
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.1[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+env1 <- mpq.z
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.15998  with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #VRM, Pro + Plan curv only significant
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r 1cm DEM mpq rescaled percent cover By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=-0.5, y=0.6, label= "stress = 0.15998", size = 4)
+
+
+```
+
+
+##### C. MPQ Standardized & % Cov Hellinger Transformed
+```{r 1cm DEM mpq and percent rescaled percent cover By Region, include=FALSE}
+#Dataframes to use
+mpq.1
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.1[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+env1 <- mpq.z
+
+com1 <- decostand(com1, "hellinger")
+
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.1223  with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #All are significant BUT Curv (VRM + both pro, plan curv values are VERY sig) 
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r 1cm DEM mpq and percent rescaled percent cover By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=-0.5, y=0.6, label= "stress = 0.15998", size = 4)
+
+
+```
+
+#### 4cm DEM {.tabset}
+
+A. Profile Curv only significant complexity metric; all morpholgoies significant 
+
+B. Profile Curv only significant complexity metric (Plan close); all morpholgoies significant 
+
+C. Profile Curv only significant complexity metric (VRM + Plan are close); all morpholgoies significant 
+
+##### A. Raw
+```{r 4cm DEM raw By Region, include=FALSE}
+#Dataframes to use
+mpq.4
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.4[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.161 with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #Only Profile Curvature is significant 
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r 4cm DEM raw By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.7, y=0.55, label= "stress = 0.161", size = 4)
+
+
+```
+
+##### B. MPQ Standardized
+```{r 4cm DEM rescaled percent cover By Region, include=FALSE}
+#Dataframes to use
+mpq.4
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.4[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+env1 <- mpq.z
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.15998 with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #Profile Curvature only significant
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r 4cm DEM mpq rescaled percent cover By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=-0.5, y=0.6, label= "stress = 0.15998", size = 4)
+
+```
+
+
+##### C. MPQ Standardized & % Cov Hellinger Transformed
+```{r 4cm DEM mpq and percent rescaled percent cover By Region, include=FALSE}
+#Dataframes to use
+mpq.4
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.4[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+env1 <- mpq.z
+
+com1 <- decostand(com1, "hellinger")
+
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.1226  with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #Only Profile Curvature significant, while VRM and Plan.curv are close
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r 4cm DEM mpq and percent rescaled percent cover By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=-0.5, y=0.6, label= "stress = 0.123", size = 4)
+
+
+```
+
+
+#### 8cm DEM {.tabset}
+
+A. No significant complexity metric (average curv + pro curv close); all morpholgoies significant 
+
+B. No significant complexity metric; all morpholgoies significant 
+
+C. No significant complexity metric; all morpholgoies significant 
+
+Results: Standardization/recaling of the dataframes didn't change significance, other than highlighting the differences between regions (specifically all regions VS N.Lagoon (Very low disturbance))
+
+##### A. Raw
+```{r 8cm DEM raw By Region, include=FALSE}
+#Dataframes to use
+mpq.8
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.8[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.1601 with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #Only Profile Curvature is significant 
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+# #Adding vectors of Significant Complexity Metrics
+# nmds.plot.coarse+
+#   geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+#   ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+#   labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") #+ geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r 8cm DEM raw By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover")
+
+
+```
+
+##### B. MPQ Standardized
+```{r 8cm DEM rescaled percent cover By Region, include=FALSE}
+#Dataframes to use
+mpq.8
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.8[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+
+env1 <- mpq.z
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.162 with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #None significant
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover")
+```
+
+```{r 8cm DEM mpq rescaled percent cover By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") 
+
+```
+
+
+##### C. MPQ Standardized & % Cov Hellinger Transformed
+```{r 8cm DEM mpq and percent rescaled percent cover By Region, include=FALSE}
+#Dataframes to use
+mpq.8
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com1 <- dig.simple.per.cover[ ,7:13]
+env1 <- mpq.8[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+env1 <- mpq.z
+
+com1 <- decostand(com1, "hellinger")
+
+
+#Check number of rows in each dataframe
+nrow(env1)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(com1, distance = "bray")
+mpq.envfit <- envfit(dig.pc.mds, env1, permutations = 999) # this fits environmental vectors
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.1226  with Scaling: centring, PC rotation, halfchange scaling & species: expanded scores based on ‘wisconsin(sqrt(dig))’ 
+
+#Determine the significant the different variables measured
+mpq.envfit #Only Profile Curvature significant, while VRM and Plan.curv are close
+dig.spp.fit #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+site.scrs <- cbind(site.scrs, region = dig.simple.per.cover$region) #add grouping variable "Management" to dataframe
+site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, Morphologies = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") 
+```
+
+```{r 8cm DEM mpq and percent rescaled percent cover By Region plot, echo=FALSE}
+nmds.plot.coarse+ geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25) +labs(title = "Ordination with Coarse Coral Morphologies % Cover")
+
+```
+
+
+### 1d. NMDS using code from Morgan
+
+- I was given this code and have saved it here to so that I can potentially produce a more "publishable" figure & save it for later.
+
+```{r 1cm DEM, include=FALSE}
+### CODE IS FROM MORGAN BLACK ###
+# You can even go beyond that, and use the ggbiplot package.
+# You can install this package by running:
+# library(devtools)
+# install_github("vqv/ggbiplot")
+# library("ggbiplot")
+
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data") #set working directory
+
+#Load the data
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+mpq.1 #Response Variables
+en.var <- mpq.1
+en.var <- mpq.1[,c("year", "site", "region", "hum_dist", "site.ppq", "year.site.ppq")] #The descriptors that will be used in the upcoming dataframe/matrix
+
+#Species Data
+dig.simple.per.cover #Species MAtrix
+
+#Merge species data descriptor collumns and environmental data together
+all = merge(en.var, dig.simple.per.cover)
+
+
+community = all[ , 7:ncol(all)]
+env = all[,1:6]
+
+# With this command, you`ll perform a NMDS and plot the results
+community %>%
+metaMDS(trace = F) %>%
+ordiplot(type = "none") %>%
+text("sites")
+
+#Run NMDS
+community.mds <- metaMDS(comm = community , k = 2, distance = "bray", trace = FALSE, autotransform = FALSE)
+
+names = as.data.frame(community.mds$species)
+names = row.names(names)
+cep.names = make.cepnames(names)
+### Create species names dataframe that lines up with nMDS result for plotting... this again will be different depending on level of detail of diet data used
+
+species<-as.data.frame(scores(community.mds, display="species"))
+ 
+species$species <- c("Dead", "HardCoral", "Macroalgae", "Non.Coral", "Rubble", "Sand", "SoftCoral")
+
+species$MDS1<-species$NMDS1
+species$MDS2<-species$NMDS2
+species$cep.names = cep.names
+
+##Create dataframe for plotting in GGPLOT
+MDS_xy <- data.frame(community.mds$points)
+MDS_xy$Site <- as.factor(env$site)
+MDS_xy$year <- as.factor(env$year)
+MDS_xy$region <- as.factor(env$region) #this was treatment in morgans code
+
+###Create hulls for plotting in GGPLOT... dont really get this code, but it works!!!
+
+hull_cyl <- MDS_xy %>%
+  group_by(region) %>%
+  slice(chull(MDS1, MDS2))
+
+###order factors as desired
+
+MDS_xy$region<-factor(MDS_xy$region,levels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes"))
+
+hull_cyl$region<-factor(hull_cyl$region,levels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes"))
+
+levels(MDS_xy$region)
+
+##Plot results
+summary(MDS_xy)
+#tiff("DietbymonthSeasonNMDS.tiff", width = 9.5, height = 7, units = 'in', res = 300)
+```
+
+```{r 4 cm DEM, include=FALSE}
+# You can even go beyond that, and use the ggbiplot package.
+# You can install this package by running:
+# library(devtools)
+# install_github("vqv/ggbiplot")
+# library("ggbiplot")
+
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data") #set working directory
+
+#Load the data
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+mpq.4 #Response Variables
+en.var4 <- mpq.4
+en.var4 <- mpq.4[,c("year", "site", "region", "hum_dist", "site.ppq", "year.site.ppq")] #The descriptors that will be used in the upcoming dataframe/matrix
+
+#Species Data
+dig.simple.per.cover
+
+all4 = merge(en.var4, dig.simple.per.cover)
+#spec <- spec[order(spec$Event),]
+
+community4 = all4[ , 7:ncol(all)]
+env4 = all4[,1:6]
+
+# # With this command, you`ll perform a NMDS and plot the results
+community4 %>%
+metaMDS(trace = F) %>%
+ordiplot(type = "none") %>%
+text("sites")
+
+#Run NMDS
+community.mds4 <- metaMDS(comm = community4 , k = 2, distance = "bray", trace = FALSE, autotransform = FALSE)
+
+names4 = as.data.frame(community.mds4$species)
+names4 = row.names(names4)
+cep.names4 = make.cepnames(names4)
+### Create species names dataframe that lines up with nMDS result for plotting... this again will be different depending on level of detail of diet data used
+
+species4<-as.data.frame(scores(community.mds4, display="species"))
+ 
+species4$species <- c("Dead", "HardCoral", "Macroalgae", "Non.Coral", "Rubble", "Sand", "SoftCoral")
+
+species4$MDS1<-species$NMDS1
+species4$MDS2<-species$NMDS2
+species4$cep.names = cep.names
+
+##Create dataframe for plotting in GGPLOT
+MDS_xy4 <- data.frame(community.mds4$points)
+MDS_xy4$Site <- as.factor(env4$site)
+MDS_xy4$year <- as.factor(env4$year)
+MDS_xy4$region <- as.factor(env4$region) #this was treatment in morgans code
+
+###Create hulls for plotting in GGPLOT... dont really get this code, but it works!!!
+
+hull_cyl4 <- MDS_xy4 %>%
+  group_by(region) %>%
+  slice(chull(MDS1, MDS2))
+
+###order factors as desired
+
+MDS_xy4$region<-factor(MDS_xy4$region,levels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes"))
+
+hull_cyl4$region<-factor(hull_cyl4$region,levels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes"))
+
+levels(MDS_xy4$region)
+
+##Plot results
+summary(MDS_xy4)
+#tiff("DietbymonthSeasonNMDS.tiff", width = 9.5, height = 7, units = 'in', res = 300)
+
+```
+
+```{r 8 cm DEM, include=FALSE}
+# You can even go beyond that, and use the ggbiplot package.
+# You can install this package by running:
+# library(devtools)
+# install_github("vqv/ggbiplot")
+# library("ggbiplot")
+
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data") #set working directory
+
+#Load the data
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+mpq.8 #Response Variables
+en.var8 <- mpq.8
+en.var8 <- mpq.8[,c("year", "site", "region", "hum_dist", "site.ppq", "year.site.ppq")] #The descriptors that will be used in the upcoming dataframe/matrix
+
+#Species Data
+dig.simple.per.cover
+
+all8 = merge(en.var8, dig.simple.per.cover)
+#spec <- spec[order(spec$Event),]
+
+community8 = all8[ , 7:ncol(all)]
+env8 = all8[,1:6]
+
+# # With this command, you`ll perform a NMDS and plot the results
+community8 %>%
+metaMDS(trace = F) %>%
+ordiplot(type = "none") %>%
+text("sites")
+
+#Run NMDS
+community.mds8 <- metaMDS(comm = community8 , k = 2, distance = "bray", trace = FALSE, autotransform = FALSE)
+
+names8 = as.data.frame(community.mds8$species)
+names8 = row.names(names8)
+cep.names8 = make.cepnames(names8)
+### Create species names dataframe that lines up with nMDS result for plotting... this again will be different depending on level of detail of diet data used
+
+species8<-as.data.frame(scores(community.mds8, display="species"))
+ 
+species8$species <- c("Dead", "HardCoral", "Macroalgae", "Non.Coral", "Rubble", "Sand", "SoftCoral")
+
+species8$MDS1<-species$NMDS1
+species8$MDS2<-species$NMDS2
+species8$cep.names = cep.names
+
+##Create dataframe for plotting in GGPLOT
+MDS_xy8 <- data.frame(community.mds8$points)
+MDS_xy8$Site <- as.factor(env$site)
+MDS_xy8$year <- as.factor(env$year)
+MDS_xy8$region <- as.factor(env$region) #this was treatment in morgans code
+
+###Create hulls for plotting in GGPLOT... dont really get this code, but it works!!!
+
+hull_cyl8 <- MDS_xy8 %>%
+  group_by(region) %>%
+  slice(chull(MDS1, MDS2))
+
+###order factors as desired
+
+MDS_xy8$region<-factor(MDS_xy8$region,levels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes"))
+
+hull_cyl8$region<-factor(hull_cyl8$region,levels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes"))
+
+levels(MDS_xy8$region)
+
+##Plot results
+summary(MDS_xy8)
+#tiff("DietbymonthSeasonNMDS.tiff", width = 9.5, height = 7, units = 'in', res = 300)
+```
+
+#### DEM 1cm
+```{r dem 1cm plot, echo=FALSE}
+ggplot() +
+  geom_polygon(data=hull_cyl,aes(x=MDS1,y=MDS2,fill = region),alpha=0.40)+  # add the convex hulls
+  geom_point(data=species,aes(x=MDS1,y=MDS2), size = .1) +# add the species labels
+  #geom_point(data=MDS_xy,aes(x=MDS1,y=MDS2,shape=Treatment),size=2,alpha=0.8)+
+  geom_text_repel(data=species,aes(x=MDS1,y=MDS2,label=species),alpha=0.9,size=4) +
+  theme_classic(base_size = 16) +
+  theme(axis.text.x = element_blank(),  # remove x-axis text
+        axis.text.y = element_blank(), # remove y-axis text
+        axis.ticks = element_blank(),  # remove axis ticks
+        axis.title.x = element_text(size=14), # remove x-axis labels
+        axis.title.y = element_text(size=14), # remove y-axis labels
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),  #remove major-grid labels
+        panel.grid.minor = element_blank(),  #remove minor-grid labels
+        plot.background = element_blank()) +
+  scale_fill_manual(values=c("dodgerblue4", "bisque3", "green", "red"), name="Region", labels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes")) +
+  theme(legend.title = element_text()) +
+  theme(legend.text = element_text( size=12)) +
+  theme(legend.position = c(.15,.9))
+
+#ggsave(filename = "species by treatment nmds.jpeg",  quality = 300, dpi = 300)
+
+```
+
+#### DEM 4cm
+
+```{r 4cm dem output, echo=FALSE}
+ggplot() +
+  geom_polygon(data=hull_cyl4,aes(x=MDS1,y=MDS2,fill = region),alpha=0.40)+  # add the convex hulls
+  geom_point(data=species4,aes(x=MDS1,y=MDS2), size = .1) +# add the species labels
+  #geom_point(data=MDS_xy,aes(x=MDS1,y=MDS2,shape=Treatment),size=2,alpha=0.8)+
+  geom_text_repel(data=species4,aes(x=MDS1,y=MDS2,label=cep.names),alpha=0.9,size=4) +
+  theme_classic(base_size = 16) +
+  theme(axis.text.x = element_blank(),  # remove x-axis text
+        axis.text.y = element_blank(), # remove y-axis text
+        axis.ticks = element_blank(),  # remove axis ticks
+        axis.title.x = element_text(size=14), # remove x-axis labels
+        axis.title.y = element_text(size=14), # remove y-axis labels
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),  #remove major-grid labels
+        panel.grid.minor = element_blank(),  #remove minor-grid labels
+        plot.background = element_blank()) +
+  scale_fill_manual(values=c("dodgerblue4", "bisque3", "green", "red"), name="Region", labels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes")) +
+  theme(legend.title = element_text()) +
+  theme(legend.text = element_text( size=12)) +
+  theme(legend.position = c(.15,.9))
+
+#ggsave(filename = "species by treatment nmds.jpeg",  quality = 300, dpi = 300)
+
+
+```
+
+#### DEM 8cm
+
+```{r 8cm dem output, echo=FALSE}
+ggplot() +
+  geom_polygon(data=hull_cyl8,aes(x=MDS1,y=MDS2,fill = region),alpha=0.40)+  # add the convex hulls
+  geom_point(data=species8,aes(x=MDS1,y=MDS2), size = .1) +# add the species labels
+  #geom_point(data=MDS_xy,aes(x=MDS1,y=MDS2,shape=Treatment),size=2,alpha=0.8)+
+  geom_text_repel(data=species8,aes(x=MDS1,y=MDS2,label=species),alpha=0.9,size=4) +
+  theme_classic(base_size = 16) +
+  theme(axis.text.x = element_blank(),  # remove x-axis text
+        axis.text.y = element_blank(), # remove y-axis text
+        axis.ticks = element_blank(),  # remove axis ticks
+        axis.title.x = element_text(size=14), # remove x-axis labels
+        axis.title.y = element_text(size=14), # remove y-axis labels
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),  #remove major-grid labels
+        panel.grid.minor = element_blank(),  #remove minor-grid labels
+        plot.background = element_blank()) +
+  scale_fill_manual(values=c("dodgerblue4", "bisque3", "green", "red"), name="Region", labels=c("BOW","N.Lagoon", "S.Lagoon", "Vaskes")) +
+  theme(legend.title = element_text()) +
+  theme(legend.text = element_text( size=12)) +
+  theme(legend.position = c(.15,.9))
+
+#ggsave(filename = "species by treatment nmds.jpeg",  quality = 300, dpi = 300)
+
+
+```
+
+
+
+
+
+
+## 2. Simplified Live_Massive Classification
+
+In this dataframe, I have added the polygons previously tagged as live_massive_grooved and live_porities into the live_massive category. 
+
+### 2a. % Cover {.tabset}
+
+#### By Region 
+```{r percent cover by region for Live_Massive Classification, include=FALSE}
+#Dataframes to use
+mpq.1
+dig2 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simplified_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com2a <- dig2[ , 7:31]
+env2a <- mpq.1[,9:13]
+
+#Check number of rows in each dataframe
+nrow(env2a) #80
+nrow(com2a) #80
+
+str(env2a)
+
+#Run MDS and envfit functions
+dig.pc.mds.2a <- metaMDS(com2a, distance = "bray")
+mpq.envfit.2a <- envfit(dig.pc.mds.2a, env2a, permutations = 999) # this fits environmental vectors
+dig.spp.fit.2a <- envfit(dig.pc.mds.2a, com2a, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds.2a #0.1457784 
+
+
+#### CREATE SITE SCORES DATAFRAME ###
+#Determine the significant the different variables measured
+mpq.envfit.2a #AVRM + both pro, plan curv values sig
+dig.spp.fit.2a #Benthic Morphologies all significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs.2a <- as.data.frame(scores(dig.pc.mds.2a, display = "sites")) #save NMDS results into dataframe
+site.scrs.2a <- cbind(site.scrs.2a, region = dig2$region) #add grouping variable "Management" to dataframe
+site.scrs.2a <- cbind(site.scrs.2a, year = dig2$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs.2a)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs.2a <- as.data.frame(scores(dig.spp.fit.2a, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs.2a <- cbind(spp.scrs.2a, Morphologies = rownames(spp.scrs.2a)) #add species names to dataframe
+spp.scrs.2a <- cbind(spp.scrs.2a, pval = dig.spp.fit.2a$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs.2a <- subset(spp.scrs.2a, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs.2a)
+
+##### CREATE EXTRINSIC ENVIRONMENTAL VARIABLE DF #####
+#To show environmental extrinsic variables another dataframe needs to be created
+env.scores.mpq.2a <- as.data.frame(scores(mpq.envfit.2a, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq.2a <- cbind(env.scores.mpq.2a, env.variables = rownames(env.scores.mpq.2a)) #and then gives them their names
+env.scores.mpq.2a <- cbind(env.scores.mpq.2a, pval = mpq.envfit.2a$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs.2a <- subset(env.scores.mpq.2a, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq.2a)
+
+#Prepping plot to plot
+nmds.plot.coarse.2a <- ggplot(site.scrs.2a, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.2a$region), shape = factor(site.scrs.2a$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.2a + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2a+
+  geom_segment(data = sig.spp.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse.2a+
+  geom_segment(data = sig.env.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs.2a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.2a <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.2a$region)){
+  df_ell.dig.management.2a <- rbind(df_ell.dig.management.2a, cbind(as.data.frame(with(site.scrs.2a [site.scrs.2a$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig.2a=aggregate(site.scrs.2a[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.2a$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.2a=aggregate(site.scrs.2a[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.2a$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse.2a+ 
+geom_path(data = df_ell.dig.management.2a, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2a+
+geom_path(data = df_ell.dig.management.2a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.2a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r percent cover by region for Live_Massive Classification plot, echo=FALSE}
+nmds.plot.coarse.2a+
+geom_path(data = df_ell.dig.management.2a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.2a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.7, y=0.55, label= "stress = 0.146", size = 4)
+
+
+```
+
+#### By Year
+
+```{r percent cover  by year for Live_Massive Classification, include = FALSE}
+#Prepping plot to plot
+nmds.plot.coarse.2aa <- ggplot(site.scrs.2a, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.2a$year), shape = factor(site.scrs.2a$region)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Year", shape = "Region")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.2aa + labs(title = "Basic ordination plot") #displays plot
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2aa+
+  geom_segment(data = sig.spp.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2aa+
+  geom_segment(data = sig.spp.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Add levels to the year category in the site scores df
+levels(site.scrs.2a$region) 
+levels(site.scrs.2a$year) 
+site.scrs.2a$year <- factor(site.scrs.2a$year, levels = c("2015", "2017", "2019"))
+
+
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.2aa <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.2a$year)){
+  df_ell.dig.management.2aa <- rbind(df_ell.dig.management.2aa, cbind(as.data.frame(with(site.scrs.2a [site.scrs.2a$year==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,year=g))
+}
+ 
+
+# data for labelling the ellipse
+NMDS.mean.dig.2aa=aggregate(site.scrs.2a[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.2a$year), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.2aa=aggregate(site.scrs.2a[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.2a$year), mean)
+
+#Plot the elipses
+nmds.plot.coarse.2aa+ 
+geom_path(data = df_ell.dig.management.2aa, aes(x = NMDS1, y = NMDS2, colour = year)) #this is the ellipse, seperate ones by region 
+
+```
+
+```{r percent cover  by year for Live_Massive Classification plot, echo = FALSE}
+#FINAL PLOT# 
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2aa+
+geom_path(data = df_ell.dig.management.2aa, aes(x = NMDS1, y = NMDS2, colour = year)) +
+  geom_segment(data = sig.spp.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.2a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.2a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.75, y=0.8, label= "stress = 0.146", size = 4)
+
+```
+
+
+### 2b. Colony Count {.tabset}
+
+The colony count data is interesting, as we range from 0's into the hundreds of colonies. NMDS hate 0's, especially lots of them, so I added a constant (1) to all cells and therefore a value of 1 = 0 inidviduals were present. This allows NMDS to run well, and proportionally shouldn't affect the differences between the morphologies, right?
+
+
+#### By Region
+```{r colony count by region for Live_Massive Classification, include=FALSE}
+#Load the data
+dig2.col <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simplified_Wide_ColonyCount_Data_Clean.csv", header = TRUE, row.names = 1)
+mpq.1 #Environmental data again
+
+#Change environment & community to a numeric value only df
+com2b <- dig2.col[ , 7:22]
+env2a <- mpq.1[,9:13]
+
+#Check number of rows in each dataframe
+nrow(env2a) #80
+nrow(com2b) #80
+
+#NMDS Hates rows with lots of 0's, so if I add a constant of 1 to each cell, 1 now = 0 and it'll run better, yes?
+com2b <- com2b + 1
+
+#Run MDS and envfit functions
+dig.pc.mds.2b <- metaMDS(com2b, distance = "bray")
+mpq.envfit.2b <- envfit(dig.pc.mds.2b, env2a, permutations = 999) # this fits environmental vectors
+dig.spp.fit.2b <- envfit(dig.pc.mds.2b, com2b, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds.2b #0.1227119
+
+
+#### CREATE SITE SCORES DATAFRAME ###
+#Determine the significant the different variables measured
+mpq.envfit.2b #ONLY VRM signficant
+dig.spp.fit.2b #Benthic Morphologies, many are significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs.2b <- as.data.frame(scores(dig.pc.mds.2b, display = "sites")) #save NMDS results into dataframe
+site.scrs.2b <- cbind(site.scrs.2b, region = dig2.col$region) #add grouping variable "Management" to dataframe
+site.scrs.2b <- cbind(site.scrs.2b, year = dig2.col$year) #add grouping variable of cluster grouping to dataframe
+
+
+head(site.scrs.2b)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs.2b <- as.data.frame(scores(dig.spp.fit.2b, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs.2b <- cbind(spp.scrs.2b, Morphologies = rownames(spp.scrs.2b)) #add species names to dataframe
+spp.scrs.2b <- cbind(spp.scrs.2b, pval = dig.spp.fit.2b$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs.2b <- subset(spp.scrs.2b, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs.2b)
+
+
+##### CREATE EXTRINSIC ENVIRONMENTAL VARIABLE DF #####
+#To show environmental extrinsic variables another dataframe needs to be created
+env.scores.mpq.2b <- as.data.frame(scores(mpq.envfit.2b, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq.2b <- cbind(env.scores.mpq.2b, env.variables = rownames(env.scores.mpq.2b)) #and then gives them their names
+env.scores.mpq.2b <- cbind(env.scores.mpq.2b, pval = mpq.envfit.2b$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs.2b <- subset(env.scores.mpq.2b, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq.2b)
+
+#Prepping plot to plot
+nmds.plot.coarse.2b <- ggplot(site.scrs.2b, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.2b$region), shape = factor(site.scrs.2b$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.2b + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2b+
+  geom_segment(data = sig.spp.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse.2b+
+  geom_segment(data = sig.env.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs.2b, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.2b <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.2b$region)){
+  df_ell.dig.management.2b <- rbind(df_ell.dig.management.2b, cbind(as.data.frame(with(site.scrs.2b[site.scrs.2b$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig.2b=aggregate(site.scrs.2b[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.2b$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.2b=aggregate(site.scrs.2b[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.2b$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse.2b+ 
+geom_path(data = df_ell.dig.management.2b, aes(x = NMDS1, y = NMDS2, colour = region)) #this is the ellipse, seperate ones by region 
+```
+
+```{r colony count by region for Live_Massive Classification plot, echo=FALSE}
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2b+
+geom_path(data = df_ell.dig.management.2b, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.2b, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.4, y=0.85, label= "stress = 0.123", size = 4)
+
+```
+
+#### By Year
+
+```{r colony count by year for Live_Massive Classification, include = FALSE}
+#Prepping plot to plot
+nmds.plot.coarse.2bb <- ggplot(site.scrs.2b, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.2b$year), shape = factor(site.scrs.2b$region)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Year", shape = "Region")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.2bb + labs(title = "Basic ordination plot") #displays plot
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2bb+
+  geom_segment(data = sig.spp.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2bb+
+  geom_segment(data = sig.spp.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Add levels to the year category in the site scores df
+levels(site.scrs.2b$region) 
+levels(site.scrs.2b$year) 
+site.scrs.2b$year <- factor(site.scrs.2b$year, levels = c("2015", "2017", "2019"))
+
+
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.2bb <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.2b$year)){
+  df_ell.dig.management.2bb <- rbind(df_ell.dig.management.2bb, cbind(as.data.frame(with(site.scrs.2b [site.scrs.2b$year==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,year=g))
+}
+ 
+
+# data for labelling the ellipse
+NMDS.mean.dig.2bb=aggregate(site.scrs.2b[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.2b$year), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.2bb=aggregate(site.scrs.2b[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.2b$year), mean)
+
+#Plot the elipses
+nmds.plot.coarse.2bb+ 
+geom_path(data = df_ell.dig.management.2bb, aes(x = NMDS1, y = NMDS2, colour = year)) #this is the ellipse, seperate ones by region 
+
+```
+
+```{r colony count by year for Live_Massive Classification plot, echo = FALSE}
+#FINAL PLOT# 
+#Adding vectors of significant species to plot
+nmds.plot.coarse.2bb+
+geom_path(data = df_ell.dig.management.2bb, aes(x = NMDS1, y = NMDS2, colour = year)) +
+  geom_segment(data = sig.spp.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.2b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.2b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.2b, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ annotate("text", x=0.6, y=0.7, label= "stress = 0.123", size = 4)
+
+```
+
+
+
+
+## 3. Full Dataset Classification 
+
+### 3a. % Cover {.tabset}
+
+A. Only complexity metric that is significant is VRM (pro + plan curv are close)
+
+B. Only complexity metric that is significant is VRM (pro + plan curv are close)
+
+C. VRM, Pro + Plan Curv all significant
+
+D. Same as by region (Only complexity metric that is significant is VRM)
+
+#### A. By Region no standardization
+
+```{r percent cover by region for Full Dataset Classification, include=FALSE}
+#Dataframes to use
+mpq.1
+
+dig <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com3a <- dig[ , 7:33]
+env3a <- mpq.1[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env3a) #80
+nrow(com3a) #80
+
+str(env3a)
+
+#Run MDS and envfit functions
+dig.pc.mds.3a <- metaMDS(com3a, distance = "bray")
+mpq.envfit.3a <- envfit(dig.pc.mds.3a, env3a, permutations = 999) # this fits environmental vectors
+dig.spp.fit.3a <- envfit(dig.pc.mds.3a, com3a, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds.3a #0.1348768
+
+
+#### CREATE SITE SCORES DATAFRAME ###
+#Determine the significant the different variables measured
+mpq.envfit.3a #Only VRM significant (pro + plan curv's so close)
+dig.spp.fit.3a #Benthic Morphologies many are significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs.3a <- as.data.frame(scores(dig.pc.mds.3a, display = "sites")) #save NMDS results into dataframe
+site.scrs.3a <- cbind(site.scrs.3a, region = dig$region) #add grouping variable "Management" to dataframe
+site.scrs.3a <- cbind(site.scrs.3a, year = dig$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs.3a)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs.3a <- as.data.frame(scores(dig.spp.fit.3a, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs.3a <- cbind(spp.scrs.3a, Morphologies = rownames(spp.scrs.3a)) #add species names to dataframe
+spp.scrs.3a <- cbind(spp.scrs.3a, pval = dig.spp.fit.3a$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs.3a <- subset(spp.scrs.3a, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs.3a)
+
+##### CREATE EXTRINSIC ENVIRONMENTAL VARIABLE DF #####
+#To show environmental extrinsic variables another dataframe needs to be created
+env.scores.mpq.3a <- as.data.frame(scores(mpq.envfit.3a, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq.3a <- cbind(env.scores.mpq.3a, env.variables = rownames(env.scores.mpq.3a)) #and then gives them their names
+env.scores.mpq.3a <- cbind(env.scores.mpq.3a, pval = mpq.envfit.3a$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs.3a <- subset(env.scores.mpq.3a, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq.3a)
+
+#Prepping plot to plot
+nmds.plot.coarse.3a <- ggplot(site.scrs.3a, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.3a$region), shape = factor(site.scrs.3a$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.3a + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse.3a+
+  geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.3a <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.3a$region)){
+  df_ell.dig.management.3a <- rbind(df_ell.dig.management.3a, cbind(as.data.frame(with(site.scrs.3a [site.scrs.3a$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig.3a=aggregate(site.scrs.3a[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.3a$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.3a=aggregate(site.scrs.3a[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.3a$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse.3a+ 
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r percent cover by region for Full Dataset Classification plot, echo=FALSE}
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.7, y=0.85, label= "stress = 0.135", size = 4)
+
+
+```
+
+#### B. By Region standardization of mpq data
+
+- MPQ (environmental) data has been rescaled to Z scores 
+
+```{r percent cover by region for Full Dataset Classification standardized, include=FALSE}
+#Dataframes to use
+mpq.1
+
+dig <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com3a <- dig[ , 7:33]
+env3a <- mpq.1[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env3a) #80
+nrow(com3a) #80
+
+str(env3a)
+
+# Standardize predictor variables to Z scores
+mpq.z <- env3a
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+env3a <- mpq.z
+
+
+#Run MDS and envfit functions
+dig.pc.mds.3a <- metaMDS(com3a, distance = "bray")
+mpq.envfit.3a <- envfit(dig.pc.mds.3a, env3a, permutations = 999) # this fits environmental vectors
+dig.spp.fit.3a <- envfit(dig.pc.mds.3a, com3a, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds.3a #0.1348768
+
+
+#### CREATE SITE SCORES DATAFRAME ###
+#Determine the significant the different variables measured
+mpq.envfit.3a #Only VRM significant (pro + plan curv's so close)
+dig.spp.fit.3a #Benthic Morphologies many are significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs.3a <- as.data.frame(scores(dig.pc.mds.3a, display = "sites")) #save NMDS results into dataframe
+site.scrs.3a <- cbind(site.scrs.3a, region = dig$region) #add grouping variable "Management" to dataframe
+site.scrs.3a <- cbind(site.scrs.3a, year = dig$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs.3a)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs.3a <- as.data.frame(scores(dig.spp.fit.3a, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs.3a <- cbind(spp.scrs.3a, Morphologies = rownames(spp.scrs.3a)) #add species names to dataframe
+spp.scrs.3a <- cbind(spp.scrs.3a, pval = dig.spp.fit.3a$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs.3a <- subset(spp.scrs.3a, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs.3a)
+
+##### CREATE EXTRINSIC ENVIRONMENTAL VARIABLE DF #####
+#To show environmental extrinsic variables another dataframe needs to be created
+env.scores.mpq.3a <- as.data.frame(scores(mpq.envfit.3a, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq.3a <- cbind(env.scores.mpq.3a, env.variables = rownames(env.scores.mpq.3a)) #and then gives them their names
+env.scores.mpq.3a <- cbind(env.scores.mpq.3a, pval = mpq.envfit.3a$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs.3a <- subset(env.scores.mpq.3a, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq.3a)
+
+#Prepping plot to plot
+nmds.plot.coarse.3a <- ggplot(site.scrs.3a, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.3a$region), shape = factor(site.scrs.3a$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.3a + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse.3a+
+  geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.3a <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.3a$region)){
+  df_ell.dig.management.3a <- rbind(df_ell.dig.management.3a, cbind(as.data.frame(with(site.scrs.3a [site.scrs.3a$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig.3a=aggregate(site.scrs.3a[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.3a$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.3a=aggregate(site.scrs.3a[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.3a$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse.3a+ 
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r percent cover by region for Full Dataset Classification standardized plot, echo=FALSE}
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=-0.7, y=0.8, label= "stress = 0.135", size = 4)
+
+
+```
+
+#### C. By Region hellinger transformed % cover data
+
+- MPQ (environmental) data has been rescaled to Z scores 
+- % Coral Cover data has been hellinger transformed
+
+```{r percent cover by region for Full Dataset Classification hellinger, include=FALSE}
+#Dataframes to use
+mpq.1
+
+dig <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Change environment & community to a numeric value only df
+com3a <- dig[ , 7:33]
+env3a <- mpq.1[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env3a) #80
+nrow(com3a) #80
+
+str(env3a)
+
+# Standardize predictor variables to Z scores
+mpq.z <- env3a
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+env3a <- mpq.z #transfer back to prior dataframe so that code below works
+
+com3a <- decostand(com3a, "hellinger")
+
+
+#Run MDS and envfit functions
+dig.pc.mds.3a <- metaMDS(com3a, distance = "bray")
+mpq.envfit.3a <- envfit(dig.pc.mds.3a, env3a, permutations = 999) # this fits environmental vectors
+dig.spp.fit.3a <- envfit(dig.pc.mds.3a, com3a, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds.3a #0.117
+
+
+#### CREATE SITE SCORES DATAFRAME ###
+#Determine the significant the different variables measured
+mpq.envfit.3a #VRM + Pro/Plan Curv all significant
+dig.spp.fit.3a #Benthic Morphologies many are significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs.3a <- as.data.frame(scores(dig.pc.mds.3a, display = "sites")) #save NMDS results into dataframe
+site.scrs.3a <- cbind(site.scrs.3a, region = dig$region) #add grouping variable "Management" to dataframe
+site.scrs.3a <- cbind(site.scrs.3a, year = dig$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs.3a)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs.3a <- as.data.frame(scores(dig.spp.fit.3a, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs.3a <- cbind(spp.scrs.3a, Morphologies = rownames(spp.scrs.3a)) #add species names to dataframe
+spp.scrs.3a <- cbind(spp.scrs.3a, pval = dig.spp.fit.3a$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs.3a <- subset(spp.scrs.3a, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs.3a)
+
+##### CREATE EXTRINSIC ENVIRONMENTAL VARIABLE DF #####
+#To show environmental extrinsic variables another dataframe needs to be created
+env.scores.mpq.3a <- as.data.frame(scores(mpq.envfit.3a, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq.3a <- cbind(env.scores.mpq.3a, env.variables = rownames(env.scores.mpq.3a)) #and then gives them their names
+env.scores.mpq.3a <- cbind(env.scores.mpq.3a, pval = mpq.envfit.3a$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs.3a <- subset(env.scores.mpq.3a, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq.3a)
+
+#Prepping plot to plot
+nmds.plot.coarse.3a <- ggplot(site.scrs.3a, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.3a$region), shape = factor(site.scrs.3a$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.3a + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse.3a+
+  geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.3a <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.3a$region)){
+  df_ell.dig.management.3a <- rbind(df_ell.dig.management.3a, cbind(as.data.frame(with(site.scrs.3a [site.scrs.3a$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig.3a=aggregate(site.scrs.3a[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.3a$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.3a=aggregate(site.scrs.3a[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.3a$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse.3a+ 
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
+
+```{r percent cover by region for Full Dataset Classification hellinger plot, echo=FALSE}
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3a+
+geom_path(data = df_ell.dig.management.3a, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=-0.7, y=0.8, label= "stress = 0.117", size = 4)
+
+```
+
+
+#### D. By Year
+
+```{r percent cover  by year for Full Dataset Classification plot, include = FALSE}
+#Prepping plot to plot
+nmds.plot.coarse.3aa <- ggplot(site.scrs.3a, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.3a$year), shape = factor(site.scrs.3a$region)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Year", shape = "Region")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.3aa + labs(title = "Basic ordination plot") #displays plot
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3aa+
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3aa+
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Add levels to the year category in the site scores df
+levels(site.scrs.3a$region) 
+levels(site.scrs.3a$year) 
+site.scrs.3a$year <- factor(site.scrs.3a$year, levels = c("2015", "2017", "2019"))
+
+
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.3aa <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.3a$year)){
+  df_ell.dig.management.3aa <- rbind(df_ell.dig.management.3aa, cbind(as.data.frame(with(site.scrs.3a [site.scrs.3a$year==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,year=g))
+}
+ 
+
+# data for labelling the ellipse
+NMDS.mean.dig.3aa=aggregate(site.scrs.3a[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.3a$year), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.3aa=aggregate(site.scrs.3a[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.3a$year), mean)
+
+#Plot the elipses
+nmds.plot.coarse.3aa+ 
+geom_path(data = df_ell.dig.management.3aa, aes(x = NMDS1, y = NMDS2, colour = year)) #this is the ellipse, seperate ones by region 
+
+```
+
+```{r percent cover region for Full Dataset Classification plot, echo=FALSE}
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3aa+
+geom_path(data = df_ell.dig.management.3aa, aes(x = NMDS1, y = NMDS2, colour = year)) +
+  geom_segment(data = sig.spp.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3a, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3a, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3a, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ annotate("text", x=-0.7, y=0.8, label= "stress = 0.135", size = 4)
+
+```
+
+
+
+
+### 3b. Colony Count {.tabset}
+
+#### By Region
+```{r colony count by region for Full Dataset Classification, include=FALSE}
+#Load the data
+dig.col <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_ColonyCount_Data_Clean.csv", header = TRUE, row.names = 1)
+mpq.1 #Environmental data again
+
+#Change environment & community to a numeric value only df
+com3b <- dig.col[ , 7:24]
+env3a <- mpq.1[,9:14]
+
+#Check number of rows in each dataframe
+nrow(env3a) #80
+nrow(com3b) #80
+
+#NMDS Hates rows with lots of 0's, so if I add a constant of 1 to each cell, 1 now = 0 and it'll run better, yes?
+com3b <- com3b + 1
+
+#Run MDS and envfit functions
+dig.pc.mds.3b <- metaMDS(com3b, distance = "bray")
+mpq.envfit.3b <- envfit(dig.pc.mds.3b, env3a, permutations = 999) # this fits environmental vectors
+dig.spp.fit.3b <- envfit(dig.pc.mds.3b, com3b, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds.3b #0.1265
+
+
+#### CREATE SITE SCORES DATAFRAME ###
+#Determine the significant the different variables measured
+mpq.envfit.3b #VRM, rug, pro curv significant (plan curv is close)
+dig.spp.fit.3b #Benthic Morphologies, many are significant
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs.3b <- as.data.frame(scores(dig.pc.mds.3b, display = "sites")) #save NMDS results into dataframe
+site.scrs.3b <- cbind(site.scrs.3b, region = dig.col$region) #add grouping variable "Management" to dataframe
+site.scrs.3b <- cbind(site.scrs.3b, year = dig.col$year) #add grouping variable of cluster grouping to dataframe
+
+
+head(site.scrs.3b)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs.3b <- as.data.frame(scores(dig.spp.fit.3b, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs.3b <- cbind(spp.scrs.3b, Morphologies = rownames(spp.scrs.3b)) #add species names to dataframe
+spp.scrs.3b <- cbind(spp.scrs.3b, pval = dig.spp.fit.3b$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs.3b <- subset(spp.scrs.3b, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs.3b)
+
+
+##### CREATE EXTRINSIC ENVIRONMENTAL VARIABLE DF #####
+#To show environmental extrinsic variables another dataframe needs to be created
+env.scores.mpq.3b <- as.data.frame(scores(mpq.envfit.3b, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq.3b <- cbind(env.scores.mpq.3b, env.variables = rownames(env.scores.mpq.3b)) #and then gives them their names
+env.scores.mpq.3b <- cbind(env.scores.mpq.3b, pval = mpq.envfit.3b$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs.3b <- subset(env.scores.mpq.3b, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq.3b) #See which environmental variables are significant
+
+#Prepping plot to plot
+nmds.plot.coarse.3b <- ggplot(site.scrs.3b, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.3b$region), shape = factor(site.scrs.3b$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.3b + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3b+
+  geom_segment(data = sig.spp.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse.3b+
+  geom_segment(data = sig.env.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs.3b, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.3b <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.3b$region)){
+  df_ell.dig.management.3b <- rbind(df_ell.dig.management.3b, cbind(as.data.frame(with(site.scrs.3b[site.scrs.3b$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig.3b=aggregate(site.scrs.3b[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.3b$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.3b=aggregate(site.scrs.3b[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.3b$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse.3b+ 
+geom_path(data = df_ell.dig.management.3b, aes(x = NMDS1, y = NMDS2, colour = region)) #this is the ellipse, seperate ones by region 
+```
+
+```{r colony count by region for Full Dataset Classification plot, echo=FALSE}
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3b+
+geom_path(data = df_ell.dig.management.3b, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3b, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.6, y=0.77, label= "stress = 0.135", size = 4)
+
+```
+
+
+#### By Year
+```{r colony count by year for Full Dataset Classification, include = FALSE}
+#Prepping plot to plot
+nmds.plot.coarse.3bb <- ggplot(site.scrs.3b, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs.3b$year), shape = factor(site.scrs.3b$region)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Year", shape = "Region")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse.3bb + labs(title = "Basic ordination plot") #displays plot
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3bb+
+  geom_segment(data = sig.spp.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3bb+
+  geom_segment(data = sig.spp.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+#Add levels to the year category in the site scores df
+levels(site.scrs.3b$region) 
+levels(site.scrs.3b$year) 
+site.scrs.3b$year <- factor(site.scrs.3b$year, levels = c("2015", "2017", "2019"))
+
+
+#data for ellipse, in this case using the management factor
+df_ell.dig.management.3bb <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs.3b$year)){
+  df_ell.dig.management.3bb <- rbind(df_ell.dig.management.3bb, cbind(as.data.frame(with(site.scrs.3b [site.scrs.3b$year==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,year=g))
+}
+ 
+
+# data for labelling the ellipse
+NMDS.mean.dig.3bb=aggregate(site.scrs.3b[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs.3b$year), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean.3bb=aggregate(site.scrs.3b[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs.3b$year), mean)
+
+#Plot the elipses
+nmds.plot.coarse.3bb+ 
+geom_path(data = df_ell.dig.management.3bb, aes(x = NMDS1, y = NMDS2, colour = year)) #this is the ellipse, seperate ones by region 
+
+```
+
+```{r colony count by year for Full Dataset Classification plot, echo = FALSE}
+#FINAL PLOT# 
+#Adding vectors of significant species to plot
+nmds.plot.coarse.3bb+
+geom_path(data = df_ell.dig.management.3bb, aes(x = NMDS1, y = NMDS2, colour = year)) +
+  geom_segment(data = sig.spp.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs.3b, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs.3b, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs.3b, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25) + annotate("text", x=0.6, y=0.77, label= "stress = 0.124", size = 4)
+
+```
+
+
+# B. RDA's 
+
+### 1. RDA Percent cover for entire dataframe {.tabset}
+
+- 1st RDA Axis is significant, all aother axes are not significant
+
+- R2 value of 0.15
+
+- MPQ Complexity data was rescaled to Z scores | % Cover data was hellinger transformed
+
+**Results:**
+
+- VRM & Rug/3D area are pulling towards living corals, particularly live_foliose, live_branching, and Softcoral_nodular
+
+- Rubble is way off on its own
+
+- Both Curvatures are off on their own, seemingly pulled away in a mixture of dead coral colonies & sand/rubble
+
+#### Scaling 1
+```{r ggplot RDA percent cover, eval=FALSE, include=FALSE}
+#Load the data
+dig <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Ensure data are in dataframes
+str(mpq.1) #The environmental data
+str(dig) #The abundance data
+
+#Remove non-numeric collumns of dataframes
+#Change environment & community to a numeric value only df
+com.1a <- dig[ , 7:33]
+env.1 <- mpq.1[,9:14]
+
+
+# Standardize predictor variables to Z scores
+mpq.z <- env.1
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+
+#Transform the percent cover datasets using the hellinger transformation
+dig.hel1 <- decostand(com.1a, "hellinger")
+
+#Conduct RDA
+dig.rda1 <- rda(dig.hel1 ~ ., mpq.z)
+summary(dig.rda1)
+
+#RDA Outputs
+
+# - **Partitioning of variance**: the overall variance is partitioned into constrained and unconstrained fractions. The constrained fraction is the amount of variance of the Y matrix explained by the explanatory variables. Expressed as a proportion, it is equivalent to an R2 in multiple regression; in RDA this quantity is also called the bimultivariate redundancy statistic. However, this R2 is biased, like the unadjusted R2 of multiple regression. We will compute an adjusted R2 next. 
+
+# - **Eigenvalues and their contribution to the variance**: this analysis yielded 12 canonical axes (with eigenvalues labelled RDA1 to RDA12) and 16 additional, unconstrained axes for the residuals (with eigenvalues labelled PC1 to PC16). The results give the eigenvalues themselves, as well as the cumulative proportion of variance explained (for the RDA axes) or represented (for the residual axes). The last cumulative value is therefore 1. **The cumulative contribution to the variance obtained by the 12 canonical axes is the proportion of the total variance of the response data explained by the RDA.** It is the same value as the “Proportion constrained” presented above; it is 0.7271 in this example.
+
+
+#Obtaining Adjusted R2 value
+R2adj.1 <- RsquareAdj(dig.rda1)$adj.r.squared
+R2adj.1 #0.15
+
+# Permutation Test of the RDA
+anova.cca(dig.rda1, step = 1000) #Global test of the RDA results
+anova.cca(dig.rda1, by = "axis", step = 1000) #Tests of all canonical axes
+
+#RDA Axis 1 significant, all others aren't
+
+plot(dig.rda1, scaling = 1, main = "Triplot RDA of dig.percent cover ~ complexity - scaling 1")
+spe.sc <- scores(dig.rda1, choices = 1:2, scaling = 1, display = "sp")
+arrows(0, 0, spe.sc[,1], spe.sc[,2], length = 0, lty = 1, col = "red") 
+```
+
+#### Scaling 2
+```{r RDA percent cover scaling 2, echo= FALSE}
+#Load the data
+dig <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Ensure data are in dataframes
+str(mpq.1) #The environmental data
+str(dig) #The abundance data
+
+#Remove non-numeric collumns of dataframes
+#Change environment & community to a numeric value only df
+com.1a <- dig[ , 7:33]
+env.1 <- mpq.1[,9:14]
+
+
+# Standardize predictor variables to Z scores
+mpq.z <- env.1
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+
+#Transform the percent cover datasets using the hellinger transformation
+dig.hel1 <- decostand(com.1a, "hellinger")
+
+#Conduct RDA
+dig.rda1 <- rda(dig.hel1 ~ ., mpq.z)
+summary(dig.rda1)
+
+#RDA Outputs
+
+# - **Partitioning of variance**: the overall variance is partitioned into constrained and unconstrained fractions. The constrained fraction is the amount of variance of the Y matrix explained by the explanatory variables. Expressed as a proportion, it is equivalent to an R2 in multiple regression; in RDA this quantity is also called the bimultivariate redundancy statistic. However, this R2 is biased, like the unadjusted R2 of multiple regression. We will compute an adjusted R2 next. 
+
+# - **Eigenvalues and their contribution to the variance**: this analysis yielded 12 canonical axes (with eigenvalues labelled RDA1 to RDA12) and 16 additional, unconstrained axes for the residuals (with eigenvalues labelled PC1 to PC16). The results give the eigenvalues themselves, as well as the cumulative proportion of variance explained (for the RDA axes) or represented (for the residual axes). The last cumulative value is therefore 1. **The cumulative contribution to the variance obtained by the 12 canonical axes is the proportion of the total variance of the response data explained by the RDA.** It is the same value as the “Proportion constrained” presented above; it is 0.7271 in this example.
+
+
+#Obtaining Adjusted R2 value
+R2adj.1 <- RsquareAdj(dig.rda1)$adj.r.squared
+R2adj.1 #0.15
+
+# Permutation Test of the RDA
+anova.cca(dig.rda1, step = 1000) #Global test of the RDA results
+anova.cca(dig.rda1, by = "axis", step = 1000) #Tests of all canonical axes
+
+plot(dig.rda1, scaling = 2, main = "Triplot RDA of dig.percent cover ~ complexity  - scaling 2")
+spe.sc2 <- scores(dig.rda1, choices = 1:2, scaling = 2, display = "sp")
+arrows(0, 0, spe.sc2[,1], spe.sc2[,2], length = 0, lty = 1, col = "red")
+```
+
+#### Scaling 3
+```{r RDA percent cover scaling 3, echo= FALSE}
+#Load the data
+dig <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Ensure data are in dataframes
+str(mpq.1) #The environmental data
+str(dig) #The abundance data
+
+#Remove non-numeric collumns of dataframes
+#Change environment & community to a numeric value only df
+com.1a <- dig[ , 7:33]
+env.1 <- mpq.1[,9:14]
+
+
+# Standardize predictor variables to Z scores
+mpq.z <- env.1
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+
+#Transform the percent cover datasets using the hellinger transformation
+dig.hel1 <- decostand(com.1a, "hellinger")
+
+#Conduct RDA
+dig.rda1 <- rda(dig.hel1 ~ ., mpq.z)
+summary(dig.rda1)
+
+#RDA Outputs
+
+# - **Partitioning of variance**: the overall variance is partitioned into constrained and unconstrained fractions. The constrained fraction is the amount of variance of the Y matrix explained by the explanatory variables. Expressed as a proportion, it is equivalent to an R2 in multiple regression; in RDA this quantity is also called the bimultivariate redundancy statistic. However, this R2 is biased, like the unadjusted R2 of multiple regression. We will compute an adjusted R2 next. 
+
+# - **Eigenvalues and their contribution to the variance**: this analysis yielded 12 canonical axes (with eigenvalues labelled RDA1 to RDA12) and 16 additional, unconstrained axes for the residuals (with eigenvalues labelled PC1 to PC16). The results give the eigenvalues themselves, as well as the cumulative proportion of variance explained (for the RDA axes) or represented (for the residual axes). The last cumulative value is therefore 1. **The cumulative contribution to the variance obtained by the 12 canonical axes is the proportion of the total variance of the response data explained by the RDA.** It is the same value as the “Proportion constrained” presented above; it is 0.7271 in this example.
+
+
+#Obtaining Adjusted R2 value
+R2adj.1 <- RsquareAdj(dig.rda1)$adj.r.squared
+R2adj.1 #0.15
+
+# Permutation Test of the RDA
+anova.cca(dig.rda1, step = 1000) #Global test of the RDA results
+anova.cca(dig.rda1, by = "axis", step = 1000) #Tests of all canonical axes
+
+#RDA Axis 1 significant, all others aren't
+
+plot(dig.rda1, scaling = 3, main = "Triplot RDA of dig.percent cover ~ complexity  - scaling 3") 
+spe.sc3 <- scores(dig.rda1, choices = 1:2, scaling = 3, display = "sp")
+arrows(0, 0, spe.sc3[,1], spe.sc3[,2], length = 0, lty = 1, col = "red")
+```
+
+
+### 2.2. RDA Colony Count
+
+- RDA1 is significant (barely at 0.048) and RDA2 is close (0.068)
+
+- R2 value of 0.10
+
+- MPQ complexity data was rescaled to Z scores | % Cover data was hellinger transformed
+
+
+**Results:**
+- Similar results to previous RDA, however the patterns are more clear: VRM is pulling towards live_branching, rug/area_3d is pulling towards Live_Foliose, Average Curvature is pulling towards Live_encrusting, and Pro +Plan Curvatures are pulled towards Live_Massive & Live_Porites
+
+- The rest of the morphologies are less strong than those listed above (Soft Coral Nodular is relatively strong, but not towards any complexity metric particularly)
+
+#### Scaling 1
+```{r RDA colony count data, eval=FALSE, include=FALSE}
+dig.col <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_ColonyCount_Data_Clean.csv", header = TRUE, row.names = 1)
+
+str(mpq.1) #The environmental data
+str(dig.col) #The colony count data
+
+##Remove non-numeric collumns of dataframes
+#Change environment & community to a numeric value only df
+com1 <- dig.col[ , 7:24]
+env1 <- mpq.1[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+
+mpq1 <- mpq.z
+
+#Standardize the digitization count data by adding 0.5 to all values (avoids 0's which hellinger hates)
+dig.count1 <- com1 + 0.5
+dig.count.hell <- decostand(dig.count1, "hellinger")
+
+#Conduct RDA
+dig.rda2 <- rda(dig.count.hell ~ ., mpq1)
+summary(dig.rda2)
+
+#Obtaining Adjusted R2 value
+R2adj.2 <- RsquareAdj(dig.rda2)$adj.r.squared
+R2adj.2 #0.104
+
+# Permutation Test of the RDA
+AOV2a <- anova.cca(dig.rda2, step = 1000) #Global test of the RDA results
+AOV2b <- anova.cca(dig.rda2, by = "axis", step = 1000) #Tests of all canonical axes
+AOV2a
+AOV2b #RDA1 is significant (barely at 0.048) and RDA2 is close (0.068)
+
+plot(dig.rda2, scaling = 1, main = "Triplot RDA of Dig colony abundances  - scaling 1")
+spe.sc4 <- scores(dig.rda2, choices = 1:3, scaling = 1, display = "sp")
+arrows(0, 0, spe.sc4[,1], spe.sc4[,2], length = 0, lty = 1, col = "red")
+
+```
+
+
+#### Scaling 2
+```{r RDA colony count scaling 2, echo=FALSE}
+dig.col <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_ColonyCount_Data_Clean.csv", header = TRUE, row.names = 1)
+
+str(mpq.1) #The environmental data
+str(dig.col) #The colony count data
+
+##Remove non-numeric collumns of dataframes
+#Change environment & community to a numeric value only df
+com1 <- dig.col[ , 7:24]
+env1 <- mpq.1[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+
+mpq1 <- mpq.z
+
+#Standardize the digitization count data by adding 0.5 to all values (avoids 0's which hellinger hates)
+dig.count1 <- com1 + 0.5
+dig.count.hell <- decostand(dig.count1, "hellinger")
+
+#Conduct RDA
+dig.rda2 <- rda(dig.count.hell ~ ., mpq1)
+summary(dig.rda2)
+
+#RDA Outputs
+
+# - **Partitioning of variance**: the overall variance is partitioned into constrained and unconstrained fractions. The constrained fraction is the amount of variance of the Y matrix explained by the explanatory variables. Expressed as a proportion, it is equivalent to an R2 in multiple regression; in RDA this quantity is also called the bimultivariate redundancy statistic. However, this R2 is biased, like the unadjusted R2 of multiple regression. We will compute an adjusted R2 next. 
+
+# - **Eigenvalues and their contribution to the variance**: this analysis yielded 12 canonical axes (with eigenvalues labelled RDA1 to RDA12) and 16 additional, unconstrained axes for the residuals (with eigenvalues labelled PC1 to PC16). The results give the eigenvalues themselves, as well as the cumulative proportion of variance explained (for the RDA axes) or represented (for the residual axes). The last cumulative value is therefore 1. **The cumulative contribution to the variance obtained by the 12 canonical axes is the proportion of the total variance of the response data explained by the RDA.** It is the same value as the “Proportion constrained” presented above; it is 0.7271 in this example.
+
+
+#Obtaining Adjusted R2 value
+R2adj.2 <- RsquareAdj(dig.rda2)$adj.r.squared
+R2adj.2 #0.104
+
+# Permutation Test of the RDA
+AOV2a <- anova.cca(dig.rda2, step = 1000) #Global test of the RDA results
+AOV2b <- anova.cca(dig.rda2, by = "axis", step = 1000) #Tests of all canonical axes
+AOV2a
+AOV2b #RDA1 is significant (barely at 0.048) and RDA2 is close (0.068)
+
+
+plot(dig.rda2, scaling = 2, main = "Triplot RDA of Dig colony abundances  - scaling 2")
+spe.sc5 <- scores(dig.rda2, choices = 1:3, scaling = 2, display = "sp")
+arrows(0, 0, spe.sc5[,1], spe.sc5[,2], length = 0, lty = 1, col = "red")
+
+```
+
+#### Scaling 3
+```{r RDA colony count scaling 3, echo=FALSE}
+dig.col <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_ColonyCount_Data_Clean.csv", header = TRUE, row.names = 1)
+
+str(mpq.1) #The environmental data
+str(dig.col) #The colony count data
+
+##Remove non-numeric collumns of dataframes
+#Change environment & community to a numeric value only df
+com1 <- dig.col[ , 7:24]
+env1 <- mpq.1[,9:14]
+
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+
+mpq1 <- mpq.z
+
+#Standardize the digitization count data by adding 0.5 to all values (avoids 0's which hellinger hates)
+dig.count1 <- com1 + 0.5
+dig.count.hell <- decostand(dig.count1, "hellinger")
+
+#Conduct RDA
+dig.rda2 <- rda(dig.count.hell ~ ., mpq1)
+summary(dig.rda2)
+
+#RDA Outputs
+
+# - **Partitioning of variance**: the overall variance is partitioned into constrained and unconstrained fractions. The constrained fraction is the amount of variance of the Y matrix explained by the explanatory variables. Expressed as a proportion, it is equivalent to an R2 in multiple regression; in RDA this quantity is also called the bimultivariate redundancy statistic. However, this R2 is biased, like the unadjusted R2 of multiple regression. We will compute an adjusted R2 next. 
+
+# - **Eigenvalues and their contribution to the variance**: this analysis yielded 12 canonical axes (with eigenvalues labelled RDA1 to RDA12) and 16 additional, unconstrained axes for the residuals (with eigenvalues labelled PC1 to PC16). The results give the eigenvalues themselves, as well as the cumulative proportion of variance explained (for the RDA axes) or represented (for the residual axes). The last cumulative value is therefore 1. **The cumulative contribution to the variance obtained by the 12 canonical axes is the proportion of the total variance of the response data explained by the RDA.** It is the same value as the “Proportion constrained” presented above; it is 0.7271 in this example.
+
+
+#Obtaining Adjusted R2 value
+R2adj.2 <- RsquareAdj(dig.rda2)$adj.r.squared
+R2adj.2 #0.104
+
+# Permutation Test of the RDA
+AOV2a <- anova.cca(dig.rda2, step = 1000) #Global test of the RDA results
+AOV2b <- anova.cca(dig.rda2, by = "axis", step = 1000) #Tests of all canonical axes
+AOV2a
+AOV2b #RDA1 is significant (barely at 0.048) and RDA2 is close (0.068)
+
+plot(dig.rda2, scaling = 3, main = "Triplot RDA of Dig colony abundances  - scaling 2")
+spe.sc6 <- scores(dig.rda2, choices = 1:3, scaling = 3, display = "sp")
+arrows(0, 0, spe.sc6[,1], spe.sc6[,2], length = 0, lty = 1, col = "red")
+
+```
+
+
+
+
+```{r PCoA, eval = FALSE, include=FALSE}
+spe.bray <- vegdist(dig.simple.nmds.pc)
+spe.b.pcoa <- cmdscale(spe.bray, k=(nrow(dig.simple.nmds.pc)-1), eig=TRUE)
+
+ordiplot(scores(spe.b.pcoa)[,c(1,2)], type = "t", main="PCoA with species")
+abline(h=0, lty=3)
+abline(v=0, lty=3)
+
+#Add spp
+spe.wa <- wascores(spe.b.pcoa$points[,1:2],dig.simple.nmds.pc)
+text(spe.wa, rownames(spe.wa), cex=0.7, col="red")
+
+#----------- Other Method to do it
+spe.h.pcoa <- pcoa(dist(dig.hel))
+par(mfrow=c(1,2))
+biplot.pcoa(spe.h.pcoa, dig.hel, dir.axis2=-1)
+abline(h=0, lty=3)
+abline(v=0, lty=3)
+
+spe.std <- apply(dig.hel, 2, scale)
+biplot.pcoa(spe.h.pcoa, spe.std, dir.axis2=-1)
+abline(h=0, lty=3)
+abline(v=0, lty=3)
+
+
+```
+
+
+
+
+##################################################################################################
+# Linear Modelling
+##################################################################################################
+
+```{r VRM Metric Modelling, eval=FALSE, include=FALSE}
+mpq <- mpq.all
+colnames(mpq)
+
 m.1 <- lm(vrm ~ year, data = mpq)
 summary(m.1)
+
+# Check goodness of fit of global model
+r.squaredGLMM(m.1)
+
+# Make residual plots for the global model
+plot(modelr)
+qqnorm(resid(modelr))
+
 
 m.2 <- lm(vrm ~ hum_dist, data = mpq)
 summary(m.2)
 
-m.3 <- lm(vrm ~ year + hum_dist, data = mpq)
+m.2.1 <- lm(vrm ~ region, data = mpq)
+summary(m.2.1)
+
+m.3 <- lm(vrm ~ year + region, data = mpq)
 summary(m.3)
+plot(m.3)
+
 
 m.4 <- lm(vrm~year*hum_dist, data = mpq)
-summary(m.4)
+summary(m.4) #Incorporated within intercept: 2015 timepoint, Med disturbance, 
 
 ```
+
