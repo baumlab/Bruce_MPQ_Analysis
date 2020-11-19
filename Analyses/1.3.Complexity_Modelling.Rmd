@@ -88,9 +88,9 @@ mpq.8 <- subset(mpq.8, select = -c(DEM, area_2d))
 
 - This thesis has statistical components from two clear paths: Multivariate & Mixed-Effect Linear Modelling
 
-- For the multivariate analyses, I first computed multiple NMDS's to indicate drivers and then followed that up with RDA's to determine statistical significance of those same drivers.
+- Multivariate analyses: I first computed multiple NMDS's to indicate drivers and then followed that up with RDA's to determine statistical significance of those same drivers.
 
-- The linear modelling that is to follow will have the knowledge gained from the multivariate analyses on what the "driving forces" of the trends we are seeing are, which will then be used as key components during the model fitting process.
+- Linear Modelling: I will use the knowledge gained from the multivariate analyses on what the "driving forces" of the trends we are seeing and use them as key components during the linear mixed-effect model fitting process, similar to Jenn Magel. 
 
 ```{r Base R plotting, eval=FALSE, include=FALSE}
 #### PLOTTING IN BASE R ####
@@ -3413,7 +3413,6 @@ spe.sc1b <- scores(dig.rda1b, choices = 1:2, scaling = 1, display = "sp")
 arrows(0, 0, spe.sc1b[,1], spe.sc1b[,2], length = 0, lty = 1, col = "red") 
 
 ```
-
 
 
 ### 2. Colony Abundance {.tabset}
