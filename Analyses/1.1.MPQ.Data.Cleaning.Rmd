@@ -465,6 +465,12 @@ write.csv(slope1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dime
   
 ```
 
+### Habitat Volume
+```{r habitat volume data}
+#Load Data
+CC <- read.csv("BaumLab_CloudCompare_Data_Clean.csv", row.names = 1)
+
+```
 
 ### ArcMap Complexity Distributions
 ```{r distributions of complexity data, include=FALSE}
