@@ -43,6 +43,15 @@ setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 
 #1. Complexity Data
 mpq.1 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_1cm_Data_Clean.csv", header=TRUE, row.names=1)
+mpq <- read.csv("BaumLab_Complexity_Data_Clean.csv", header=TRUE, row.names=1)
+
+#Create subsets for each DEM
+mpq.4 <- subset (mpq, DEM == 4) 
+mpq.8 <- subset (mpq, DEM == 8) 
+
+#Delete our 2016 timepoints
+mpq.4 <- subset(mpq.4, year == 2015 | year == 2017 | year == 2019)
+mpq.8 <- subset(mpq.8, year == 2015 | year == 2017 | year == 2019)
 
 ####### <--------- ENVIRONMENTAL/COMPLEXITY Dataframes ----------> ##########
 #Delete DEM & area_2d collumns not needed anymore
@@ -572,7 +581,9 @@ library(corrplot)
 
 
 ```{r full classificaiton correlelogram, echo=FALSE}
-corrplot(c1, method="circle")
+corrplot(c1, method="circle") #DEM 1cm, all years
+
+
 
 
 #corrplot(c1, method="number")
@@ -937,6 +948,868 @@ ggarrange(p34, p35, p36, p37, labels = c("Pro.Curv~Live_Branching", "Pro.Curv~Li
 ggarrange(p38, p39, p40, labels = c("Pro.Curv~SoftCoral_Nodular", "Pro.Curv~Rubble", "Pro.Curv~Sand"), ncol = 2, nrow = 2)
 
 ```
+
+
+
+# Before (2015) Vs After (2017 + 2019) Correlations {.tabset}
+```{r split dataframe into before or after year at 1cm dem, include=FALSE}
+plotting1
+
+before <- subset(plotting1, year == 2015)
+after <- subset(plotting1, year ==2017 | year == 2019)
+
+#Get rid of extra metadata collumns
+before <- before[,-(33:34)] 
+before <- before[,-(9)]  #NCB no presence
+before <- before[,-(1:5)] 
+
+
+after <- after[,-(33:34)]  
+after <- after[,-(28)] #Drop NCE
+after <- after[,-(26)] #Drop NCS
+after <- after[,-(1:5)] 
+  
+  
+#Create Correlation Matrix
+before.c <- cor(before)
+after.c <- cor(after)
+```
+
+## Before
+```{r correlelogram before, echo=FALSE}
+corrplot(before.c, method="circle") #DEM 1cm, 2015
+#corrplot(before.c, method="number")
+```
+
+## After
+```{r corelelogram after, echo=FALSE}
+corrplot(after.c, method="circle") #DEM 1cm, 2015
+#corrplot(after.c, method="number")
+
+```
+
+# Before / After plots of key morphologies {.tabset}
+```{r rug before after key morphology plot creations, include=FALSE}
+#Datasets to use
+before
+after
+
+############### RUGOSITY ####################
+#DeadBranching
+b1 <- ggscatter(before, y = "rug", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a1 <- ggscatter(after, y = "rug", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveBranching
+b2 <- ggscatter(before, y = "rug", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+a2 <- ggscatter(after, y = "rug", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Dead Tabulate
+b3 <- ggscatter(before, y = "rug", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a3 <- ggscatter(after, y = "rug", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveTabulate
+b4 <- ggscatter(before, y = "rug", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a4 <- ggscatter(after, y = "rug", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Live Foliose
+b5 <- ggscatter(before, y = "rug", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a5 <- ggscatter(after, y = "rug", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Life Submassive
+b6 <- ggscatter(before, y = "rug", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a6 <- ggscatter(after, y = "rug", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a6a <- ggscatter(after, y = "rug", x = "DM",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+#Rubble
+b7 <- ggscatter(before, y = "rug", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a7 <- ggscatter(after, y = "rug", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Sand 
+b8 <- ggscatter(before, y = "rug", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a8 <- ggscatter(after, y = "rug", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+
+
+############### VRM ####################
+#DeadBranching
+b9 <- ggscatter(before, y = "vrm", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a9 <- ggscatter(after, y = "vrm", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveBranching
+b10 <- ggscatter(before, y = "vrm", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+a10 <- ggscatter(after, y = "vrm", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Dead Tabulate
+b11 <- ggscatter(before, y = "vrm", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a11 <- ggscatter(after, y = "vrm", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveTabulate
+b12 <- ggscatter(before, y = "vrm", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a12 <- ggscatter(after, y = "vrm", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.2)       # Add correlation coefficient
+
+#Live Foliose
+b13 <- ggscatter(before, y = "vrm", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
+a13 <- ggscatter(after, y = "vrm", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a13a <- ggscatter(after, y = "vrm", x = "DF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+#Life Submassive
+b14 <- ggscatter(before, y = "vrm", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a14 <- ggscatter(after, y = "vrm", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+a14a <- ggscatter(after, y = "vrm", x = "DM",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+#Rubble
+b15 <- ggscatter(before, y = "vrm", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a15 <- ggscatter(after, y = "vrm", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Sand 
+b16 <- ggscatter(before, y = "vrm", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a16 <- ggscatter(after, y = "vrm", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+
+############### Profile Curvature ####################
+#DeadBranching
+b17 <- ggscatter(before, y = "pro.curv", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a17 <- ggscatter(after, y = "pro.curv", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveBranching
+b18 <- ggscatter(before, y = "pro.curv", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+a18 <- ggscatter(after, y = "pro.curv", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.8)       # Add correlation coefficient
+
+#Dead Tabulate
+b19 <- ggscatter(before, y = "pro.curv", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a19 <- ggscatter(after, y = "pro.curv", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveTabulate
+b20 <- ggscatter(before, y = "pro.curv", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a20 <- ggscatter(after, y = "pro.curv", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.03)       # Add correlation coefficient
+
+#Live Foliose
+b21 <- ggscatter(before, y = "pro.curv", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
+a21 <- ggscatter(after, y = "pro.curv", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
+
+a21a <- ggscatter(after, y = "pro.curv", x = "DF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
+
+
+#Life Submassive
+b22 <- ggscatter(before, y = "pro.curv", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a22 <- ggscatter(after, y = "pro.curv", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Rubble
+b23 <- ggscatter(before, y = "pro.curv", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a23 <- ggscatter(after, y = "pro.curv", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Sand 
+b24 <- ggscatter(before, y = "pro.curv", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a24 <- ggscatter(after, y = "pro.curv", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+
+############### Profile Curvature ####################
+#DeadBranching
+b25 <- ggscatter(before, y = "plan.curv", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a25 <- ggscatter(after, y = "plan.curv", x = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveBranching
+b26 <- ggscatter(before, y = "plan.curv", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+a26 <- ggscatter(after, y = "plan.curv", x = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.8)       # Add correlation coefficient
+
+#Dead Tabulate
+b27 <- ggscatter(before, y = "plan.curv", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a27 <- ggscatter(after, y = "plan.curv", x = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#LiveTabulate
+b28 <- ggscatter(before, y = "plan.curv", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a28 <- ggscatter(after, y = "plan.curv", x = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.03)       # Add correlation coefficient
+
+#Live Foliose
+b29 <- ggscatter(before, y = "plan.curv", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
+a29 <- ggscatter(after, y = "plan.curv", x = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
+
+#Life Submassive
+b30 <- ggscatter(before, y = "plan.curv", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a30 <- ggscatter(after, y = "plan.curv", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Rubble
+b31 <- ggscatter(before, y = "plan.curv", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a31 <- ggscatter(after, y = "plan.curv", x = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#Sand 
+b32 <- ggscatter(before, y = "plan.curv", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+a32 <- ggscatter(after, y = "plan.curv", x = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+
+########### Curvature ##############
+b33 <- ggscatter(before, y = "curv", x = "LM",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+a33 <- ggscatter(after, y = "curv", x = "LM",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+```
+
+## Rugosity
+```{rug plots before after,echo=FALSE, message= FALSE}
+ggarrange(b1, a1, b2, a2, labels = c("B4: Rug~Dead_Branching", "After: Rug~Dead_Branching", "B4: Rug~Live_Branching", "After: Rug~Live_Branching"), ncol = 2, nrow = 2)
+
+ggarrange(b3, a3, b4, a4, labels = c("B4:Rug~Dead_Tabulate", "After:Rug~Dead_Tabulate", "B4:Rug~Live_Tabulate", "After:Rug~Live_Tabulate"), ncol = 2, nrow = 2)
+
+ggarrange(b5, a5, b6, a6, labels = c("B4:Rug~Live_Foliose", "After:Rug~Live_Foliose", "B4:Rug~Live_Submassive", "After:Rug~Live_Submassive"), ncol = 2, nrow = 2)
+
+ggarrange(b7, a7, b8, a8, labels = c("B4:Rug~Rubble", "After:Rug~Rubble", "B4:Rug~Sand", "After:Rug~Sand"), ncol = 2, nrow = 2)
+
+
+```
+
+## VRM
+```{r vrm plots before after, echo=FALSE, message= FALSE}
+
+ggarrange(b9, a9, b10, a10, labels = c("B4: VRM~Dead_Branching", "After: VRM~Dead_Branching", "B4: VRM~Live_Branching", "After: VRM~Live_Branching"), ncol = 2, nrow = 2)
+
+ggarrange(b11, a11, b12, a12, labels = c("B4:VRM~Dead_Tabulate", "After:VRM~Dead_Tabulate", "B4:VRM~Live_Tabulate", "After:VRM~Live_Tabulate"), ncol = 2, nrow = 2)
+
+ggarrange(b13, a13, b14, a14, labels = c("B4:VRM~Live_Foliose", "After:VRM~Live_Foliose", "B4:VRM~Live_Submassive", "After:VRM~Live_Submassive"), ncol = 2, nrow = 2)
+
+ggarrange(b15, a15, b16, a16, labels = c("B4:VRM~Rubble", "After:VRM~Rubble", "B4:VRM~Sand", "After:VRM~Sand"), ncol = 2, nrow = 2)
+
+
+```
+
+## Profile Curvature
+```{r pro curv plot before after, echo=FALSE, message= FALSE}
+ggarrange(b17, a17, b18, a18, labels = c("B4: pro.curv~Dead_Branching", "After: pro.curv~Dead_Branching", "B4: pro.curv~Live_Branching", "After: pro.curv~Live_Branching"), ncol = 2, nrow = 2)
+
+ggarrange(b19, a19, b20, a20, labels = c("B4:pro.curv~Dead_Tabulate", "After:pro.curv~Dead_Tabulate", "B4:pro.curv~Live_Tabulate", "After:pro.curv~Live_Tabulate"), ncol = 2, nrow = 2)
+
+ggarrange(b21, a21, b22, a22, labels = c("B4:pro.curv~Live_Foliose", "After:pro.curv~Live_Foliose", "B4:pro.curv~Live_Submassive", "After:pro.curv~Live_Submassive"), ncol = 2, nrow = 2)
+
+ggarrange(b23, a23, b24, a24, labels = c("B4:pro.curv~Rubble", "After:pro.curv~Rubble", "B4:pro.curv~Sand", "After:pro.curv~Sand"), ncol = 2, nrow = 2)
+
+
+```
+
+## Planform Curvature
+```{r plan curv plots before after, echo=FALSE, message= FALSE}
+ggarrange(b25, a25, b26, a26, labels = c("B4: plan.curv~Dead_Branching", "After: plan.curv~Dead_Branching", "B4: plan.curv~Live_Branching", "After: plan.curv~Live_Branching"), ncol = 2, nrow = 2)
+
+ggarrange(b27, a27, b28, a28, labels = c("B4:plan.curv~Dead_Tabulate", "After:plan.curv~Dead_Tabulate", "B4:plan.curv~Live_Tabulate", "After:plan.curv~Live_Tabulate"), ncol = 2, nrow = 2)
+
+ggarrange(b29, a29, b30, a30, labels = c("B4:plan.curv~Live_Foliose", "After:plan.curv~Live_Foliose", "B4:plan.curv~Live_Submassive", "After:plan.curv~Live_Submassive"), ncol = 2, nrow = 2)
+
+ggarrange(b31, a31, b32, a32, labels = c("B4:plan.curv~Rubble", "After:plan.curv~Rubble", "B4:plan.curv~Sand", "After:plan.curv~Sand"), ncol = 2, nrow = 2)
+
+```
+
+## Average Curvature
+```{r average curv plot before after, echo=FALSE, message= FALSE }
+ggarrange(b33, a33, labels = c("B4:Curv~LiveMassive", "After:Curv~LiveMassive"), ncol = 1, nrow = 2)
+
+```
+
+
+# Examining Changes of Live --> Dead morphology before and after heatwave {.tabset}
+
+## Rugosity
+```{r rug ~ morphologies live to dead, echo=FALSE, message= FALSE }
+ggarrange(b2, a1, labels = c("B4:Rug~Live_Branching", "After:Rug~Dead_Branching"), ncol = 1, nrow = 2) #Branching
+ 
+ggarrange(b4, a3, labels = c("B4:Rug~Live_Tabulate", "After:Rug~Dead_Tabulate"), ncol = 1, nrow = 2) #Tabulate
+
+ggarrange(b5, a21a, labels = c("B4:Rug~Live_Foliose", "After:Rug~Dead_Foliose"), ncol = 1, nrow = 2) #Foliose
+
+ggarrange(b6, a6a, labels = c("B4:Rug~Live_Submassive", "After:Rug~Dead_Massive"), ncol = 1, nrow = 2) #Submassive
+
+```
+
+## VRM
+```{r vrm ~ morphologies live to dead, echo=FALSE, message= FALSE }
+ggarrange(b10, a9, labels = c("B4:vrm~Live_Branching", "After:vrm~Dead_Branching"), ncol = 1, nrow = 2) #Branching
+ 
+ggarrange(b12, a11, labels = c("B4:vrm~Live_Tabulate", "After:vrm~Dead_Tabulate"), ncol = 1, nrow = 2) #Tabulate
+
+ggarrange(b13, a13a, labels = c("B4:vrm~Live_Foliose", "After:vrm~Dead_Foliose"), ncol = 1, nrow = 2) #Foliose
+
+ggarrange(b14, a14a, labels = c("B4:vrm~Live_Submassive", "After:vrm~Dead_Massive"), ncol = 1, nrow = 2) #Submassive
+
+```
+
+## Pro.Curv
+```{r pro ~ morphologies live to dead, echo=FALSE, message= FALSE }
+
+```
+
+## Plan.Curv
+```{r plan ~ morphologies live to dead, echo=FALSE, message= FALSE }
+
+```
+
+
+
+# Correlelograms by year across DEM's
+```{r split dataframe into indivdiual year/DEM combinitions up into year chunks and create a correlelogram for each year, include=FALSE}
+plotting1
+
+p.15 <- subset(plotting1, year == 2015)
+p.17 <- subset(plotting1, year ==2017)
+p.19 <- subset(plotting1, year ==2019)
+
+#Correlation for 2015
+cor.15 <- p.15[,-(1:5)] 
+cor.15 <- cor.15[,-(28:29)] 
+cor.15 <- cor.15[,-(4)] #Drop NonCoral Branching Collumn as it didn't exist then
+
+#Create Correlation Matrix
+c2 <- cor(cor.15)
+
+#Correlation for 2017
+cor.17 <- p.17[,-(1:5)] 
+cor.17 <- cor.17[,-(28:29)] 
+cor.17 <- cor.17[,-(4:5)] #Drop NCB, DC
+cor.17 <- cor.17[,-(21)]  #Drop NCE
+cor.17 <- cor.17[,-(19)] #Drop NCS
+cor.17 <- cor.17[,-(7)]  #Drop LT
+cor.17 <- cor.17[,-(5)]  #Drop LEC
+
+#Create Correlation Matrix
+c3 <- cor(cor.17)
+
+
+
+#Correlation for 2019
+cor.19 <- p.19[,-(1:5)] 
+cor.19 <- cor.19[,-(28:29)] 
+cor.19 <- cor.19[,-(23)] #Drop NCE
+cor.19 <- cor.19[,-(21)]  #Drop NCS
+cor.19 <- cor.19[,-(6)]  #Drop LC
+
+#Create Correlation Matrix
+c4 <- cor(cor.19)
+
+
+#<-------------------------------------------------------------------------->
+#4cm DEM
+plotting4 <- cbind(dig.corr.ordered, mpq.4)
+
+#Remove Duplicate collumns of metadata
+plotting4 <- plotting4[,-(42:48)] 
+plotting4 <- plotting4[,-(33:36)] 
+
+#Subset dataframe by year
+plotting4.15 <- subset(plotting4, year == 2015)
+plotting4.17 <- subset(plotting4, year == 2017)
+plotting4.19 <- subset(plotting4, year == 2019)
+
+#Remove last bit of metadate
+plotting4.15 <- plotting4.15[,-(1:5)] 
+plotting4.17 <- plotting4.17[,-(1:5)] 
+plotting4.19 <- plotting4.19[,-(1:5)] 
+
+
+#Remove collumns with 0 % cover at timepoint
+#2015
+plotting4.15  <- plotting4.15[,-4] #Remove NCV
+
+#2017
+plotting4.17 <- plotting4.17[,-(23)]  #Drop NCE
+plotting4.17 <- plotting4.17[,-(21)]  #Drop NCS
+plotting4.17 <- plotting4.17[,-(9)]  #Drop LT
+plotting4.17 <- plotting4.17[,-(7)]  #Drop LEC
+plotting4.17 <- plotting4.17[,-(4:5)]  #Drop NCB, DC
+
+#2019
+plotting4.19 <- plotting4.19[,-(23)]  #Drop NCE
+plotting4.19 <- plotting4.19[,-(21)]  #Drop NCS
+plotting4.19 <- plotting4.19[,-(6)]  #Drop LC
+
+#Create Correlation Matrix DEM 4cm 2015
+c4.15 <- cor(plotting4.15)
+c4.17 <- cor(plotting4.17)
+c4.19 <- cor(plotting4.19)
+
+
+
+#<-------------------------------------------------------------------------->
+#8cm DEM
+plotting8 <- cbind(dig.corr.ordered, mpq.8)
+
+#Remove Duplicate collumns of metadata
+plotting8 <- plotting8[,-(42:48)] 
+plotting8 <- plotting8[,-(33:36)] 
+
+#Subset dataframe by year
+plotting8.15 <- subset(plotting8, year == 2015)
+plotting8.17 <- subset(plotting8, year == 2017)
+plotting8.19 <- subset(plotting8, year == 2019)
+
+#Remove last bit of metadate
+plotting8.15 <- plotting8.15[,-(1:5)] 
+plotting8.17 <- plotting8.17[,-(1:5)] 
+plotting8.19 <- plotting8.19[,-(1:5)] 
+
+
+#Remove collumns with 0 % cover at timepoint
+#2015
+plotting8.15  <- plotting8.15[,-4] #Remove NCB
+
+#2017
+plotting8.17 <- plotting8.17[,-(23)]  #Drop NCE
+plotting8.17 <- plotting8.17[,-(21)]  #Drop NCS
+plotting8.17 <- plotting8.17[,-(9)]  #Drop LT
+plotting8.17 <- plotting8.17[,-(7)]  #Drop LEC
+plotting8.17 <- plotting8.17[,-(4:5)]  #Drop NCB, DC
+
+#2019
+plotting8.19 <- plotting8.19[,-(23)]  #Drop NCE
+plotting8.19 <- plotting8.19[,-(21)]  #Drop NCS
+plotting8.19 <- plotting8.19[,-(6)]  #Drop LC
+
+#Create Correlation Matrix DEM 4cm 2015
+c8.15 <- cor(plotting8.15)
+c8.17 <- cor(plotting8.17)
+c8.19 <- cor(plotting8.19)
+
+
+
+```
+
+### 2015 {.tabset}
+#### 1cm
+```{r 2015, echo=FALSE}
+corrplot(c2, method="circle") #DEM 1cm, 2015
+#corrplot(c2, method="number")
+
+```
+
+#### 4cm
+```{r 2015 4cm cor, echo=FALSE}
+corrplot(c4.15, method="circle") #DEM 1cm, 2019
+#corrplot(c4.15, method="number")
+
+```
+
+#### 8cm
+```{r 2015 8cm cor, echo=FALSE}
+corrplot(c8.15, method="circle") #DEM 1cm, 2019
+#corrplot(c8.15, method="number")
+
+```
+
+
+### 2017 {.tabset}
+#### 1cm 
+```{r 2017 1cm cor, echo=FALSE}
+corrplot(c3, method="circle") #DEM 1cm, 2017
+#corrplot(c3, method="number")
+
+```
+
+#### 4cm
+```{r 2017 4cm cor, echo=FALSE}
+corrplot(c4.17, method="circle") #DEM 4cm, 2018
+#corrplot(c4.17, method="number")
+
+
+```
+
+#### 8cm
+```{r 2017 8cm cor, echo=FALSE}
+corrplot(c8.17, method="circle") #DEM 4cm, 2017
+#corrplot(c8.17, method="number")
+
+```
+
+### 2019 {.tabset}
+
+#### 1cm
+
+```{r 2019 1cm cor, echo=FALSE}
+corrplot(c4, method="circle") #DEM 1cm, 2019
+corrplot(c4, method="number")
+
+
+```
+
+#### 4cm
+```{r 2019 4cm cor, echo=FALSE}
+corrplot(c4.19, method="circle") #DEM 4cm, 2019
+#corrplot(c4.19, method="number")
+
+
+```
+
+#### 8cm
+```{r 2019 8cm cor, echo=FALSE}
+corrplot(c8.19, method="circle", title = "2019, DEM 8cm") #DEM 8cm, 2019
+#corrplot(c8.19, method="number")
+
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Disregard everything below this point
