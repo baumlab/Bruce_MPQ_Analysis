@@ -383,8 +383,33 @@ levels(mpq$site.ppq)
 colnames(mpq)
 mpq <- subset(mpq, select = c ("year",  "hum_dist","region",  "pub.site", "site","site.ppq","ppq", "year.site.ppq", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv"))
 
+
+#Take a subset of the mpq data to only include 2015, 2017, 2019 years
+mpq1<- subset(mpq, year == 2015 | year == 2017 | year == 2019)
+mpq1 <- subset(mpq1, select = c ("year.site.ppq", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "year",  "hum_dist","region",  "pub.site", "site","site.ppq","ppq"))
+
+#Line up rows with digitization dataframe
+levels(mpq1$year.site.ppq)
+mpq1$year.site.ppq<- factor(mpq1$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+
+mpq2 <- mpq1[order(mpq1$year.site.ppq),]
+row.names(mpq2) <- 1:nrow(mpq2) #Changes the row names so that they are re-orderd 1-80
+
+
+mpq.1 <- subset(mpq2, DEM ==1) #1cm DEM
+row.names(mpq.1) <- 1:nrow(mpq.1) #Changes the row names so that they are re-orderd 1-80
+
+mpq.4 <- subset(mpq2, DEM ==4) #4cm DEM
+row.names(mpq.4) <- 1:nrow(mpq.4) #Changes the row names so that they are re-orderd 1-80
+
+mpq.8 <- subset(mpq2, DEM ==8) #8cm DEM
+row.names(mpq.8) <- 1:nrow(mpq.8) #Changes the row names so that they are re-orderd 1-80
+
+
+
+colnames(mpq)
 #Export csv file 
-write.csv(mpq, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_Data_Clean.csv")
+write.csv(mpq.1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_1cm_Data_Clean.csv")
 
 ### Look into converting planform & profile curv values into Z values
 
@@ -947,6 +972,9 @@ dig_sum_simple$prop_area <- (dig_sum_simple$Area / dig_sum_simple$Tot_Area)  #Ca
 
 #Create unique collumn site.ppq
 dig_sum_simple$site.ppq <- paste(dig_sum_simple$site, dig_sum_simple$ppq, sep=".")
+colnames(dig_sum_simple)
+dig.simple.final <- subset(dig_sum_simple, select = c("year", "hum_dist", "region","site", "ppq","site.ppq", "year.site.ppq", "status", "per_area", "prop_area"))
+
 
 #Convert to wide format
 dig_simple_per_w <- dcast(dig_sum_simple, year + hum_dist + region+ site + site.ppq + year.site.ppq ~status, value.var="per_area", fun.aggregate = sum) 
@@ -1096,6 +1124,7 @@ dig2.num.w
 
 ```
 
+
 #### C. Summarize Full dataframe
 ```{r Full dataframe summary}
 #Change area to numeric
@@ -1178,7 +1207,11 @@ dig.num.w1
 dig_simple_per_w 
 dig_simple_prop_w 
 
+dig.simple.final #long format
+
 ##### <------- Export Dataframes to use for nmds -----> ######
+write.csv(dig.simple.final, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Long_Cover_Data_Clean.csv")
+
 write.csv(dig_simple_per_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv")
 write.csv(dig_simple_prop_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PropCover_Data_Clean.csv")
 

@@ -139,6 +139,21 @@ plot(dig.spp.fit, p.max = 0.5, col = "black", cex = 0.7) # change the significan
 
 # Multivariate Analyses
 
+#Assessing Coliniearity in the MPQ Complexity Metrics
+
+```{r coliniearity}
+
+mpq.1#Data 
+env3a <- mpq.1[,9:14] #Data with only numeric values
+
+## Create a bivariate plot 
+source("panelutils.R")
+op <- par(mfrow=c(1,1), pty = "s")
+pairs(env3a, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+par(op) # Reset graphing window to default
+
+```
+
 # Fractal Dimension {.tabset}
 
 - Before getting into modelling, I want to update you on the fractal dimension results
@@ -3216,7 +3231,7 @@ str(dig) #The abundance data
 #Remove non-numeric collumns of dataframes
 #Change environment & community to a numeric value only df
 com.1a <- dig[ , 7:33]
-env.1 <- mpq.1[,9:14]
+env.1 <- mpq.1[,2:7]
 
 
 # Standardize predictor variables to Z scores
@@ -3224,6 +3239,7 @@ mpq.z <- env.1
 mpq.z$area_3d <- rescale(mpq.z$area_3d)
 mpq.z$rug <- rescale(mpq.z$rug)
 mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
 mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
 mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
 
@@ -3231,12 +3247,13 @@ mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
 dig.hel1 <- decostand(com.1a, "hellinger")
 
 #Conduct RDA
-dig.rda1 <- rda(dig.hel1 ~ ., mpq.z)
+par(mfrow=c(1,1))
+dig.rda1 <- rda(mpq.z ~ ., dig.hel1)
 summary(dig.rda1)
 
 #Obtaining Adjusted R2 value
 R2adj.1 <- RsquareAdj(dig.rda1)$adj.r.squared
-R2adj.1 #0.15
+R2adj.1 #0.69
 
 # Permutation Test of the RDA
 anova.cca(dig.rda1, step = 1000) #Global test of the RDA results
@@ -3246,10 +3263,27 @@ anova.cca(dig.rda1, by = "axis", step = 1000) #Tests of all canonical axes
 
 ```
 
-```{r percent cover rda scaling 1 plot, echo=FALSE}
+RDA 1 (65.8%) and 2 (6.2%) explain roughly 72% of the variance in the data, with an Adjusted R2 value backing that up of 69.1%. 
+
+The eigenvalue of PC1 is quite small (0.024), indicating that it does not describe any important residual structure in the response data (mpq complexity metrics).
+
+To describe this result in my discussion:
+Looking at Scaling 1: Which red arrows are pulling things around in orthogonal/perpendictular to one another? Answer: VRM/Rug, Pro/Plan Curv, and average curvature.
+
+Look at Scaling 2: Which morphologies are associated/located close by to each complexity metric?
+VRM/Area_3d/Rug=  Softcoral plating, live_encr_columnar, Live branching, live submassive, dead_branching, Live collumnar, live porities, Live_Digitate (?)
+Pro/Plan Curv= Rubble, Sand
+Average Curvature= Dead_Massive, Dead_Collumnar, others?
+
+```{r percent cover rda scaling 2 plot, echo=FALSE}
+plot(dig.rda1, scaling = 2, main = "Triplot RDA of dig.percent cover ~ complexity - scaling 2")
+spe.sc <- scores(dig.rda1, choices = 1:2, scaling = 2, display = "sp")
+arrows(0, 0, spe.sc[,1], spe.sc[,2], length = 0, lty = 1, col = "red") 
+
 plot(dig.rda1, scaling = 1, main = "Triplot RDA of dig.percent cover ~ complexity - scaling 1")
 spe.sc <- scores(dig.rda1, choices = 1:2, scaling = 1, display = "sp")
 arrows(0, 0, spe.sc[,1], spe.sc[,2], length = 0, lty = 1, col = "red") 
+
 
 ```
 
@@ -3593,34 +3627,6 @@ arrows(0, 0, spe.sc6[,1], spe.sc6[,2], length = 0, lty = 1, col = "red")
 
 
 
-
-```{r PCoA, eval = FALSE, include=FALSE}
-spe.bray <- vegdist(dig.simple.nmds.pc)
-spe.b.pcoa <- cmdscale(spe.bray, k=(nrow(dig.simple.nmds.pc)-1), eig=TRUE)
-
-ordiplot(scores(spe.b.pcoa)[,c(1,2)], type = "t", main="PCoA with species")
-abline(h=0, lty=3)
-abline(v=0, lty=3)
-
-#Add spp
-spe.wa <- wascores(spe.b.pcoa$points[,1:2],dig.simple.nmds.pc)
-text(spe.wa, rownames(spe.wa), cex=0.7, col="red")
-
-#----------- Other Method to do it
-spe.h.pcoa <- pcoa(dist(dig.hel))
-par(mfrow=c(1,2))
-biplot.pcoa(spe.h.pcoa, dig.hel, dir.axis2=-1)
-abline(h=0, lty=3)
-abline(v=0, lty=3)
-
-spe.std <- apply(dig.hel, 2, scale)
-biplot.pcoa(spe.h.pcoa, spe.std, dir.axis2=-1)
-abline(h=0, lty=3)
-abline(v=0, lty=3)
-
-
-```
-
 ## Extra NMDS code from Morgan {.tabset}
 
 - I was given this code and have saved it here to so that I can potentially produce a more "publishable" figure & save it for later.
@@ -3926,6 +3932,273 @@ ggplot() +
 
 
 
+
+
+
+
+```{r Base R plotting, eval=FALSE, include=FALSE}
+
+
+
+
+
+
+#### PLOTTING IN BASE R ####
+#Dataframes to use
+#Long format of dig.simple dataframe
+dig.simple <- read.csv("BaumLab_Digitization_Simple_Long_Cover_Data_Clean.csv", row.names = 1)
+
+dig.simple
+#Change environment & community to a numeric value only df
+com1 <- dig.simple[ ,8:10]
+env1 <- mpq.1[,9:14]
+
+#Standardize mpq data to Z scores
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+mpq.z <- mpq.z + 1.55 #Add a constant to allow NMDS to work
+
+#Check number of rows in each dataframe
+nrow(mpq.z)
+nrow(com1)
+
+
+#Dataframes to use:
+mpq.z
+com1
+
+
+mpq.nmds <- metaMDS(mpq.z, distance = "bray")
+mpq.nmds
+
+mpq.bray <- vegdist(mpq.z)
+mpq.nmds$stress
+
+plot(mpq.nmds, type = "t", main = paste("NMDS/Bray - Stress=", round(mpq.nmds$stress,3)))
+
+
+#Test to see the goodness of fit
+par(mfrow=c(1,2))
+stressplot(mpq.nmds, main = "Shepard Plot")
+gof = goodness(mpq.nmds)
+plot(mpq.nmds, type = "t", main = "Goodness of fit")
+points(mpq.nmds, display = "sites", cex = gof*200)
+
+
+spe.bray.ward <- hclust(mpq.bray, "ward")
+spe.bw.groups <- cutree(spe.bray.ward, k=4)
+grp.lev <- levels(factor(spe.bw.groups))
+
+
+par(mfrow=c(1,1))
+sit.sc <- scores(mpq.nmds)
+p <- ordiplot(sit.sc, type = "n", main = "NMDS/Bray - clusters Ward/Bray")
+for (i in 1:length(grp.lev)) {points(sit.sc[spe.bw.groups==i,], pch=(14-i), cex=2, col=i+1)}
+text(sit.sc, row.names(spe), pos=4, cex=0.7)
+ordicluster(p, spe.bray.ward, col="dark grey")
+
+#ordiellipse(mpq.nmds, groups = spe.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+ordihull(mpq.nmds, groups = spe.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+
+
+#Add vectors for environmental data to the NMDS plot
+env.nmds <- metaMDS(com1, distance = "bray")
+env.bray <- vegdist(env2)
+env.bray.ward <- hclust(spe.bray, "ward")
+env.bw.groups <- cutree(spe.bray.ward, k=4)
+grp.lev2 <- levels(factor(env.bw.groups))
+sit.sc2 <- scores(env.nmds)
+
+
+  
+  
+  
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(mpq.z, distance = "bray")
+
+
+
+par(mfrow=c(1,1)) #Changes plotting window to 1 row, 2 collumns
+plot(dig.mds,type="n") #plots empty plot
+points(dig.mds, display ="sites", col=c("blue", "green", "red", "purple")[as.numeric(mpq.1$region)])
+legend("topright", legend = c(levels(mpq.1$region)), pch = c(16, 16, 16), col = c("blue", "green", "red", "purple"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+
+#Working code
+####points(dig.mds, display ="sites", pch=c(16,8,17)[as.numeric(mpq.1$ppq)], col=c("blue", "green", "red", "purple")[as.numeric(mpq.1$region)])
+###legend("topright", legend = c(levels(mpq.1$hum_dist), levels(mpq.1$region)), pch = c(16, 8, 17), col = c("blue", "green", "red", "purple"), bty = "n", cex = 1) # displays symbol and colour legend
+
+
+#Add hulls for regions
+ordiplot(dig.mds, type = "n", main = "hulls")
+orditorp(dig.mds, display = "sites", labels = F, pch = c(16, 16, 16, 16) [as.numeric(mpq.1$region)], col = c("blue", "green", "red", "purple")
+[as.numeric(mpq.1$region)], cex = 1)
+ordihull(dig.mds, groups = mpq.1$region, draw = "polygon", lty = 1, col = "grey90")
+ordihull(dig.mds, groups = mpq.1$region, draw = "polygon", lty = 1, col = "grey90")
+legend("topright", legend = c(levels(mpq.1$region)), pch = c(16, 16, 16), col = c("blue", "green", "red", "purple"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+
+#Add hulls for disturbance category
+ordiplot(dig.mds, type = "n", main = "hulls")
+orditorp(dig.mds, display = "sites", labels = F, pch = c(16, 8, 10) [as.numeric(mpq.1$hum_dist)], col = c("blue", "green", "red")
+[as.numeric(mpq.1$hum_dist)], cex = 1)
+ordihull(dig.mds, groups = mpq.1$hum_dist, draw = "polygon", lty = 1, col = "grey90")
+legend("topright", legend = c(levels(mpq.1$hum_dist)), pch = c(16, 16, 16), col = c("blue", "green", "red"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+
+
+#<--------- Investigate the species which may drive the site distribution pattern (aka intrinsic variables) ------>
+dig.spp.fit <- envfit(dig.mds, dig, permutations = 999)
+head(dig.spp.fit)
+
+#Plot these intrinsic species
+ordiplot(dig.mds, type = "n", main = "Coral Colonies ~ Site")
+orditorp(dig.mds, display = "sites", labels = F, pch = c(16, 8, 10) [as.numeric(mpq.1$hum_dist)], col = c("blue", "green", "red")
+[as.numeric(mpq.1$hum_dist)], cex = 1)
+ordihull(dig.mds, groups = mpq.1$hum_dist, draw = "polygon", lty = 1, col = "grey95")
+legend("topright", legend = c(levels(mpq.1$hum_dist)), pch = c(16, 8, 10), col = c("blue", "green", "red"), bty = "n", cex = 1) # displays symbol and colour legend
+legend("topleft", "stress = 0.1533825", bty = "n", cex = 1) # displays legend text of stress value 
+plot(dig.spp.fit, p.max = 0.5, col = "black", cex = 0.7) # change the significance level of species shown with p.max
+```
+
+
+
+```{r Coarse percent cover By Region, include=FALSE}
+#Dataframes to use
+#Long format of dig.simple dataframe
+dig.simple <- read.csv("BaumLab_Digitization_Simple_Long_Cover_Data_Clean.csv", row.names = 1)
+
+dig.simple
+#Change environment & community to a numeric value only df
+com1 <- dig.simple[ ,8:10]
+env1 <- mpq.1[,9:14]
+
+#Standardize mpq data to Z scores
+# Standardize predictor variables to Z scores
+mpq.z <- env1
+mpq.z$rug <- rescale(mpq.z$rug)
+mpq.z$vrm <- rescale(mpq.z$vrm)
+mpq.z$curv <- rescale(mpq.z$curv)
+mpq.z$pro.curv <- rescale(mpq.z$pro.curv)
+mpq.z$plan.curv <- rescale(mpq.z$plan.curv)
+mpq.z$area_3d <- rescale(mpq.z$area_3d)
+
+mpq.z <- mpq.z + 1.55 #Add a constant to allow NMDS to work
+
+#Check number of rows in each dataframe
+nrow(mpq.z)
+nrow(com1)
+
+str(mpq.1)
+
+#Run MDS and envfit functions
+dig.pc.mds <- metaMDS(mpq.z, distance = "bray")
+
+dig.spp.fit <- envfit(dig.pc.mds, com1, permutations = 999) # this fits species vectors
+
+#Stress of NMDS
+dig.pc.mds #0.099
+
+#Determine the significant the different variables measured
+dig.spp.fit #Benthic Morphologies all significant (soft coral, hard coral, macroalage all significant)
+
+#To plot the output from the mds using ggplot a new datasheet needs to be created which contains the x,y points for each site. You can do this by calling the scores of you mds.
+site.scrs <- as.data.frame(scores(dig.pc.mds, display = "sites")) #save NMDS results into dataframe
+#site.scrs <- cbind(site.scrs, morphology = dig.simple.per.cover$morphology) #add grouping variable "Management" to dataframe
+#site.scrs <- cbind(site.scrs, year = dig.simple.per.cover$year) #add grouping variable of cluster grouping to dataframe
+#site.scrs <- cbind(site.scrs, Site = rownames(site.scrs)) #add site names as variable if you want to display on plot
+
+head(site.scrs)
+
+#A new dataset containing species data also needs to be made to look at species vectors.
+#This is not necessary if you don’t want to show the species on the final graph.
+spp.scrs <- as.data.frame(scores(dig.spp.fit, display = "vectors")) #save species intrinsic values into dataframe
+spp.scrs <- cbind(spp.scrs, status = rownames(spp.scrs)) #add species names to dataframe
+spp.scrs <- cbind(spp.scrs, pval = dig.spp.fit$vectors$pvals) #add pvalues to dataframe so you can select species which are significant
+#spp.scrs<- cbind(spp.scrs, abrev = abbreviate(spp.scrs$Species, minlength = 6)) #abbreviate species names
+sig.spp.scrs <- subset(spp.scrs, pval<=0.05) #subset data to show species significant at 0.05
+head(spp.scrs)
+
+#To show environmental extrinsic variables another datasheet needs to be created
+env.scores.mpq <- as.data.frame(scores(mpq.envfit, display = "vectors")) #extracts relevant scores from envifit
+env.scores.mpq <- cbind(env.scores.mpq, env.variables = rownames(env.scores.mpq)) #and then gives them their names
+
+env.scores.mpq <- cbind(env.scores.mpq, pval = mpq.envfit$vectors$pvals) # add pvalues to dataframe
+sig.env.scrs <- subset(env.scores.mpq, pval<=0.05) #subset data to show variables significant at 0.05
+
+head(env.scores.mpq)
+
+#Prepping plot to plot
+nmds.plot.coarse <- ggplot(site.scrs, aes(x=NMDS1, y=NMDS2))+ #sets up the plot
+  geom_point(aes(NMDS1, NMDS2, colour = factor(site.scrs$region), shape = factor(site.scrs$year)), size = 2)+
+  coord_fixed()+
+  theme_classic()+ 
+  theme(panel.background = element_rect(fill = NA, colour = "black", size = 1, linetype = "solid"))+
+  labs(colour = "Region", shape = "Year")+ # add legend labels for Management and Landuse
+  theme(legend.position = "right", legend.text = element_text(size = 12), legend.title = element_text(size = 12), axis.text = element_text(size = 10)) # add legend at right of plot
+
+nmds.plot.coarse + labs(title = "Basic ordination plot") #displays plot
+
+
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+  labs(title = "Ordination with Coral Morphologies")
+
+
+#Adding vectors of Significant Complexity Metrics
+nmds.plot.coarse+
+  geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant env variables
+  ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)+ #add labels for env variables
+  labs(title="Ordination with Complexity Metrics") 
+
+
+### Adding Ellipses (for region)
+#Function for ellipsess 
+veganCovEllipse <- function (cov, center = c(0, 0), scale = 1, npoints = 100) 
+{
+  theta <- (0:npoints) * 2 * pi/npoints
+  Circle <- cbind(cos(theta), sin(theta))
+  t(center + scale * t(Circle %*% chol(cov)))
+}
+ 
+#data for ellipse, in this case using the management factor
+df_ell.dig.management <- data.frame() #sets up a data frame before running the function.
+for(g in levels(site.scrs$region)){
+  df_ell.dig.management <- rbind(df_ell.dig.management, cbind(as.data.frame(with(site.scrs [site.scrs$region==g,],
+                                                         veganCovEllipse(cov.wt(cbind(NMDS1,NMDS2),wt=rep(1/length(NMDS1),length(NMDS1)))$cov,center=c(mean(NMDS1),mean(NMDS2))))) ,region=g))
+}
+ 
+# data for labelling the ellipse
+NMDS.mean.dig=aggregate(site.scrs[ ,c("NMDS1", "NMDS2")], 
+                         list(group = site.scrs$region), mean)
+ 
+# data for labelling the ellipse
+NMDS.mean=aggregate(site.scrs[,c("NMDS1", "NMDS2")], 
+                    list(group = site.scrs$region), mean)
+
+#Plot the elipses
+nmds.plot.coarse+ 
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, group = region)) #this is the ellipse, seperate ones by region 
+
+
+#Plot all together with elipses
+#Adding vectors of significant species to plot
+nmds.plot.coarse+
+geom_path(data = df_ell.dig.management, aes(x = NMDS1, y = NMDS2, colour = region)) +
+  geom_segment(data = sig.spp.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "grey10", lwd=0.3) + #add vector arrows of significant species
+  ggrepel::geom_text_repel(data = sig.spp.scrs, aes(x=NMDS1, y=NMDS2, label = Morphologies), cex = 3, direction = "both", segment.size = 0.25)+ #add labels for species, use ggrepel::geom_text_repel so that labels do not overlap
+labs(title = "Ordination with Coarse Coral Morphologies % Cover") + geom_segment(data = sig.env.scrs, aes(x = 0, xend=NMDS1, y=0, yend=NMDS2), arrow = arrow(length = unit(0.25, "cm")), colour = "black", lwd=0.9) + ggrepel::geom_text_repel(data = sig.env.scrs, aes(x=NMDS1, y=NMDS2, label = env.variables), cex = 4, direction = "both", segment.size = 0.25)
+
+```
 
 
 

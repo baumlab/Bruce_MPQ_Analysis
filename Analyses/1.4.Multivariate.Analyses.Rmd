@@ -1,0 +1,1629 @@
+---
+title: "1.4 Morphology Correlation Plots"
+author: "Kevin Bruce"
+date: "20/11/2020"
+output: html_document
+---
+
+```{r Load the packages and load MPQ data, include=FALSE}
+rm(list = ls()) #This clears the environment
+dev.off()
+
+#Load in Packages
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+library(ade4)
+library(MASS)
+library(ellipse)
+library(FactoMineR)
+library(arm)
+library(ape)
+#library(PCNM)
+library(ggrepel)
+#library(vegan3d)
+#library(rgl)
+library(FactoMineR)
+library(ggpubr)
+
+
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+
+#1. Complexity Data
+mpq.1 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_1cm_Data_Clean.csv", header=TRUE, row.names=1)
+
+####### <--------- ENVIRONMENTAL/COMPLEXITY Dataframes ----------> ##########
+#Delete DEM & area_2d collumns not needed anymore
+names(mpq.1)
+mpq.1 <- subset(mpq.1, select = -c(DEM, area_2d))
+mpq.1
+
+
+#2. Entire Dataframe digitization colony counts
+dig.col <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_ColonyCount_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Reorder to matchup with environmental dataframe
+dig.col <- subset(dig.col, select = c("year.site.ppq", "Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting","Live_Encrusting_Columnar","Live_Foliose",     "Live_FreeLiving", "Live_Massive","Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive",  "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching","year", "hum_dist", "region", "site", "site.ppq"))
+
+
+#Entire digitization % cover dataframe
+dig <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+dig.simple <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+
+###### <--------- Transformations --------> ######
+#1. Environmental/Complexity Data
+#Standardize envrionmental data to Z scores
+env <- mpq.1
+env$rug <- rescale(env$rug)
+env$vrm <- rescale(env$vrm)
+env$curv <- rescale(env$curv)
+env$pro.curv <- rescale(env$pro.curv)
+env$plan.curv <- rescale(env$plan.curv)
+env$area_3d <- rescale(env$area_3d)
+
+#Fix Row Names
+#row.names(env)=env$site.ppq
+
+# Make the environmental dataframe only numeric complexity values
+env.s <- env[,2:7]
+
+#2. Digitization Percent Cover data
+dig #Percent cover no lumping
+dig.simple #percent cover, lumped data
+
+
+#Make it numeric only
+dig.n <- dig[,7:33]
+dig.simple.n <- dig.simple[,7:13]
+
+#Make a new dataframe of transformed percent cover data
+dig.h <- decostand(dig.n, "hellinger")
+dig.stand <- decostand(dig.n, "standardize")
+dig.norm <- decostand(dig.n, "normalize")
+
+dig.simple.h <- decostand(dig.simple.n, "hellinger")
+
+#Break down digitization data by year
+dig.15 <- subset(dig, year == 2015)
+dig.17 <- subset(dig, year == 2017)
+dig.19 <- subset(dig, year == 2019)
+
+#Make it numeric only
+dig.15n <- dig.15[,7:33]
+dig.17n <- dig.17[,7:33]
+dig.19n <- dig.19[,7:33]
+
+#Remove variables that have 0 variance within the timepoint
+dig.15nv <- dig.15n[,apply(dig.15n, 2, var, na.rm=TRUE) != 0] #Removes Non-coral branching
+dig.17nv <- dig.17n[,apply(dig.17n, 2, var, na.rm=TRUE) != 0] #6 categories (Dead_Collumnar, Live_enc_col, Live_tabulate, NonCoral_Enc, NonCoral_Submassive, NonCoral_Branching)
+dig.19nv <- dig.19n[,apply(dig.19n, 2, var, na.rm=TRUE) != 0] #3 categories (Live_Collumnar, NonCoral_Enc, NonCoral_Submassive)
+
+
+### Take out rubble as it was driving the PCA axes
+dig.c <- dig[,-29]
+dig.cn <- dig.c[,7:32]
+```
+
+```{r Biplots, eval=FALSE, include=FALSE}
+#--------------------------Coarse Morphological groupings ---------------------------------------------
+##GGplot PCA code
+coarse.n.pca <- prcomp(dig.simple.n)
+ggbiplot(coarse.n.pca) #63.9% + 25.8% = 89.7% of variation explained in PC1&2
+
+coarse.h.pca <- prcomp(dig.simple.h)
+ggbiplot(coarse.h.pca) #58.9% + 20.8% = 79.7% of variation explained in PC 1&2
+
+#--------------------------Total Morphological groupings ---------------------------------------------
+##GGplot PCA code
+dig.n.pca <- prcomp(dig.n)
+ggbiplot(dig.n.pca) #63.6% + 14.5% = 78.1% of variation explained in PC1&2
+
+dig.h.pca <- prcomp(dig.h)
+ggbiplot(dig.h.pca) #44.6% + 17.3% = 61.9% of variation explained in PC1&2
+
+
+#--------------------------2015 Morphological groupings ---------------------------------------------
+##GGplot 2015 PCA code
+pca.15 <- prcomp(dig.15nv)
+ggbiplot(pca.15) #71.7% + 16.7%= 88.4% of variation explained in PC1&2
+
+##GGplot 2017 PCA code
+pca.17 <- prcomp(dig.17nv)
+ggbiplot(pca.17) #58% + 18.2%= 76.2% of variation explained in PC1&2
+
+##GGplot 2019 PCA code
+pca.19 <- prcomp(dig.19nv)
+ggbiplot(pca.19) #91.4% + 5% = 96.4% of variation explained in PC1&2
+
+
+#--------------------------Removed Rubble PCA Morphological groupings ---------------------------------------------
+##GGplot 2015 PCA code
+pca.norubble <- prcomp(dig.cn)
+ggbiplot(pca.norubble) #71.7% + 16.7%= 88.4% of variation explained in PC1&2
+
+
+
+
+#### Check for colinearity
+dig.coral <- dig[,-(25:30)] #remove non_corals morph
+dig.coral <- dig.coral[,-27] #remove final non-coral morph
+
+#Make Numeric (col 7-26)
+dig.coral.f <- dig.coral[,7:26]
+
+#Look at bivariate plot
+source("panelutils.R")
+op <- par(mfrow=c(1,1), pty = "s")
+pairs(dig.coral.f, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+par(op) #Reset graphing window to default
+
+
+###### <----------------CORRELELOGRAM --------->
+library(corrgram)
+corrgram(dig.coral.f, order=TRUE, lower.panel=panel.shade,
+  upper.panel=panel.pie, text.panel=panel.txt,
+  main="Coral Morphology Correlations")
+
+####PCoA of entire dataframe
+spe.bray <- vegdist(spe.d)
+
+
+#<----------------------PCoA for coarse morphological classification
+dig.stand1 <- dig.stand + 2 #Add a constand so that PCoA doesn't have negative values
+dig.norm
+
+morph.pcoa <- vegdist(dig.norm, "bray")
+res <- pcoa(morph.pcoa)
+res$values
+biplot(res) #Negative eigenvalues are present... need to correct for that
+
+
+#Projecting species on biplot
+par(mfrow=c(1,2))
+biplot(res, dig.stand1)
+
+
+
+```
+
+# Correlelogram of coral morphologies
+```{r correlelogram creation, include=FALSE}
+#CREATE CORRELELOGRAM DATAFRAME WITH ABBREV OF MORPHOLOGIES
+dig.cor <- dig
+
+colnames(dig.cor)
+
+#Change Names of collumns
+colnames(dig.cor)[which(names(dig.cor)=="Dead_Branching")] <- "DB"
+colnames(dig.cor)[which(names(dig.cor)=="Dead_Columnar")] <- "DC"
+colnames(dig.cor)[which(names(dig.cor)=="Dead_Foliose")] <- "DF"
+colnames(dig.cor)[which(names(dig.cor)=="Dead_Massive")] <- "DM"
+colnames(dig.cor)[which(names(dig.cor)=="Dead_SoftCoral")] <- "DS"
+colnames(dig.cor)[which(names(dig.cor)=="Dead_Tabulate")] <- "DT"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Branching")] <- "LB"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Columnar")] <- "LC"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Digitate")] <- "LD"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Encrusting")] <- "LE"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Encrusting_Columnar")] <- "LEC"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Foliose")] <- "LF"
+colnames(dig.cor)[which(names(dig.cor)=="Live_FreeLiving")] <- "LFL"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Massive")] <- "LM"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Massive_Grooved")] <- "LMG"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Porites")] <- "LP"
+colnames(dig.cor)[which(names(dig.cor)=="Live_SubMassive")] <- "LS"
+colnames(dig.cor)[which(names(dig.cor)=="Live_Tabulate")] <- "LT"
+colnames(dig.cor)[which(names(dig.cor)=="Macroalgae")] <- "M"
+colnames(dig.cor)[which(names(dig.cor)=="NonCoral_Encrusting")] <- "NCE"
+colnames(dig.cor)[which(names(dig.cor)=="NonCoral_Massive")] <- "NCM"
+colnames(dig.cor)[which(names(dig.cor)=="NonCoral_SubMassive")] <- "NCS"
+colnames(dig.cor)[which(names(dig.cor)=="Rubble")] <- "R"
+colnames(dig.cor)[which(names(dig.cor)=="Sand")] <- "S"
+colnames(dig.cor)[which(names(dig.cor)=="SoftCoral_Nodular")] <- "SCN"
+colnames(dig.cor)[which(names(dig.cor)=="SoftCoral_Plating")] <- "SCP"
+colnames(dig.cor)[which(names(dig.cor)=="NonCoral_Branching")] <- "NCB"
+
+#Re-order dataframe so that correlation matrix of similar morphologies are clustered together
+dig.corr.ordered <- subset(dig.cor, select = c("year","hum_dist","region" ,"site","site.ppq",
+ "DB", "LB", "LD", "NCB", "DC" , "LC",  "LEC",  "DT",  "LT", "DF",  "LF",  "DS", "SCN", "SCP", "DM", "LM" ,"LMG","LP", "NCM", "LS",  "NCS",  "LE", "NCE", "LFL", "M",  "R",  "S"))
+
+#Re-ordered and named dataframe
+dig.corr.ordered
+
+#Make a subset of only numeric values
+dig.cor.numeric <- dig.corr.ordered [,6:32]
+
+#<----------------CORRELELOGRAM --------->
+library(corrgram)
+
+```
+
+```{r correlelogram plot, echo=FALSE}
+corrgram(dig.cor.numeric, lower.panel=panel.shade,upper.panel=panel.pie, text.panel=panel.txt, main="Coral Morphology Correlations")
+```
+
+
+# Correlation Plots between morphologies and complexity metrics
+## A. Coarse Morphologies ~ Complexity  {.tabset}
+```{r rug by coarse morphologies, include=FALSE}
+library(ggpubr)
+mpq.1
+dig.simple.per.cover <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+#Add in new collumn for all coral (dead and alive)
+dig.simple.per.cover$allcoral <- 1
+dig.simple.per.cover$allcoral <- dig.simple.per.cover$Dead + dig.simple.per.cover$HardCoral
+
+#Create single dataframe to draw information from
+coarse <- cbind(dig.simple.per.cover, mpq.1)
+
+#Remove Duplicate collumns of metadata (year,site,etc.)
+coarse1 <- coarse[,-(22:28)]
+
+#### Rugoisty & Coarse categories 
+pA <- ggscatter(coarse1, x = "rug", y = "Dead",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pB <- ggscatter(coarse1, x = "rug", y = "HardCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pC <- ggscatter(coarse1, x = "rug", y = "SoftCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pD <- ggscatter(coarse1, x = "rug", y = "allcoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pE <- ggscatter(coarse1, x = "rug", y = "Rubble",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pF <- ggscatter(coarse1, x = "rug", y = "Sand",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+pG <- ggscatter(coarse1, x = "rug", y = "Macroalgae",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+pH <- ggscatter(coarse1, x = "rug", y = "Non.Coral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+# -------- VRM ~ Coarse Morphologies
+pI <- ggscatter(coarse1, y = "vrm", x = "Dead",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pJ <- ggscatter(coarse1, y = "vrm", x = "HardCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pK <- ggscatter(coarse1, y = "vrm", x = "SoftCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pL <- ggscatter(coarse1, y = "vrm", x = "allcoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+pM <- ggscatter(coarse1, y = "vrm", x = "Rubble",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pN <- ggscatter(coarse1, y = "vrm", x = "Sand",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pO <- ggscatter(coarse1, y = "vrm", x = "Macroalgae",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pP <- ggscatter(coarse1, y = "vrm", x = "Non.Coral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#<-------------- Profile Curvature -------->
+pAA <- ggscatter(coarse1, y = "pro.curv", x = "Dead",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAB <- ggscatter(coarse1, y = "pro.curv", x = "HardCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAC <- ggscatter(coarse1, y = "pro.curv", x = "SoftCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAD <- ggscatter(coarse1, y = "pro.curv", x = "allcoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAE <- ggscatter(coarse1, y = "pro.curv", x = "Rubble",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAF <- ggscatter(coarse1, y = "pro.curv", x = "Sand",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAG <- ggscatter(coarse1, y = "pro.curv", x = "Macroalgae",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAH <- ggscatter(coarse1, y = "pro.curv", x = "Non.Coral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#<------------Planform Curvature -------->
+pAI <- ggscatter(coarse1, y = "plan.curv", x = "Dead",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAJ <- ggscatter(coarse1, y = "plan.curv", x = "HardCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+pAK <- ggscatter(coarse1, y = "plan.curv", x = "SoftCoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+pAL <- ggscatter(coarse1, y = "plan.curv", x = "allcoral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAM <- ggscatter(coarse1, y = "plan.curv", x = "Rubble",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+pAN <- ggscatter(coarse1, y = "plan.curv", x = "Sand",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+pAO <- ggscatter(coarse1, y = "plan.curv", x = "Macroalgae",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+pAP <- ggscatter(coarse1, y = "plan.curv", x = "Non.Coral",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+```
+
+### Rugosity
+```{r rug by morphologies, echo=FALSE, message= FALSE}
+ggarrange(pA, pB, pC, pD, labels = c("Rug ~ DeadCoral", "Rug~HardCoral", "Rug~SoftCoral", " Rug~AllCoral"), ncol = 2, nrow = 2)
+
+ggarrange(pE, pF, pG, pH, labels = c("Rug ~ Rubble", "Rug~Sand", "Rug~Macroalgae", "Rug~Non.Coral"), ncol = 2, nrow = 2)
+
+```
+
+### VRM
+```{r vrm by morphologies, echo=FALSE, message= FALSE}
+library(ggpubr)
+ggarrange(pI, pJ, pK, pL, labels = c("VRM ~ DeadCoral", "VRM~HardCoral", "VRM~SoftCoral", " VRM~AllCoral"), ncol = 2, nrow = 2) + geom_smooth()
+
+ggarrange(pM, pN, pO, pP, labels = c("VRM ~ Rubble", "VRM~Sand", "VRM~Macroalgae", "VRM~Non.Coral"), ncol = 2, nrow = 2)
+
+
+
+```
+
+### Profile Curvature
+```{r pro by morphologies, echo=FALSE,message= FALSE}
+library(ggpubr)
+ggarrange(pAA, pAB, pAC, pAD, labels = c("Pro.Curv~DeadCoral", "Pro.Curv~HardCoral", "Pro.Curv~SoftCoral", " Pro.Curv~AllCoral"), ncol = 2, nrow = 2)
+
+ggarrange(pAE, pAF, pAG, pAH, labels = c("Pro.Curv~Rubble", "Pro.Curv~Sand", "Pro.Curv~Macroalgae", " Pro.Curv~Non.Coral"), ncol = 2, nrow = 2)
+
+
+```
+
+
+### Planform Curvature
+```{r plan by morphologies, echo=FALSE, message= FALSE}
+library(ggpubr)
+ggarrange(pAI, pAJ, pAK, pAL, labels = c("Plan.Curv~DeadCoral", "Plan.Curv~HardCoral", "Plan.Curv~SoftCoral", " Plan.Curv~AllCoral"), ncol = 2, nrow = 2)
+
+ggarrange(pAM, pAN, pAO, pAP, labels = c("Plan.Curv~Rubble", "Plan.Curv~Sand", "Plan.Curv~Macroalgae", " Plan.Curv~Non.Coral"), ncol = 2, nrow = 2)
+
+
+```
+
+
+## B. Full Morphological Classification 
+
+I first did a large correleleogram with morphologies & compleixty metrics to highlight key correlations. I then plotted those key correlations (Correlation > 0.4) separately below in the correlation plots by the distinct complexity metric 
+
+```{r correleleogram setup, include=FALSE}
+mpq.1
+dig.corr.ordered
+
+#Create single dataframe to draw information from
+plotting <- cbind(dig.corr.ordered,mpq.1 )
+
+#Remove Duplicate collumns of metadata (year,site,etc.)
+plotting1 <- plotting[,-(40:46)] 
+
+
+### See which correlations are imporant to delve into further
+plotting1
+colnames(plotting1)
+
+rug.c <- plotting1[,-(33:34)]
+rug.cc <- rug.c[,-(1:5)]  
+
+rug.cc
+
+c1 <- cor(rug.cc)
+head(round(c1,2))
+
+library(corrplot)
+
+```
+
+
+```{r full classificaiton correlelogram, echo=FALSE}
+corrplot(c1, method="circle")
+
+
+#corrplot(c1, method="number")
+
+```
+
+### Correlation Plots {.tabset}
+```{r making of the correlations, include=FALSE}
+#### RUGOSITY & BRANCHING ####
+p1 <- ggscatter(plotting1, x = "rug", y = "DB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p2 <- ggscatter(plotting1, x = "rug", y = "LB",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p3 <- ggscatter(plotting1, x = "rug", y = "LD",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1)       # Add correlation coefficient
+
+p4 <- ggscatter(plotting1, x = "rug", y = "LC",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+#### RUGOSITY & Tabulate & Foliose ####
+p5 <- ggscatter(plotting1, x = "rug", y = "DT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p6 <- ggscatter(plotting1, x = "rug", y = "LT",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p7 <- ggscatter(plotting1, x = "rug", y = "DF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p8 <- ggscatter(plotting1, x = "rug", y = "LF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#### RUGOSITY & Massive ####
+p9 <- ggscatter(plotting1, x = "rug", y = "DM",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p10 <- ggscatter(plotting1, x = "rug", y = "LM",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p11 <- ggscatter(plotting1, x = "rug", y = "LMG",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p12 <- ggscatter(plotting1, x = "rug", y = "LP",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+#### RUGOSITY & Abiotic ####
+p13 <- ggscatter(plotting1, x = "rug", y = "R",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p14 <- ggscatter(plotting1, x = "rug", y = "S",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p15 <- ggscatter(plotting1, x = "rug", y = "M",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p16 <- ggscatter(plotting1, x = "rug", y = "LFL",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+#### RUGOSITY & Others ####
+p17 <- ggscatter(plotting1, x = "rug", y = "LE",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p18 <- ggscatter(plotting1, x = "rug", y = "LEC",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p19 <- ggscatter(plotting1, x = "rug", y = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+p20 <- ggscatter(plotting1, x = "rug", y = "SCN",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
+# ###Top Correlations for Rugosity (Either postive or negative)
+# ggarrange(p1, p2, p6, p8, labels = c("Rug ~ Dead_Branching", "Rug~Live_Branching", "Rug~Live_Tabulate", "Rug~Live_Foliose"), ncol = 2, nrow = 2)
+# 
+# ggarrange(p19, p13, p14, labels = c("Rug ~ Live_SubMassive", "Rug~Rubble", "Rug~Sand"), ncol = 2, nrow = 2)
+
+
+
+########################
+###### VRM ##############
+
+p21 <- ggscatter(plotting1, x = "LB", y = "vrm",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p22 <- ggscatter(plotting1, x = "LT", y = "vrm",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p23 <- ggscatter(plotting1, x = "LF", y = "vrm",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p24 <- ggscatter(plotting1, x = "LS", y = "vrm",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+
+p25 <- ggscatter(plotting1, x = "R", y = "vrm",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p26 <- ggscatter(plotting1, x = "S", y = "vrm",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+
+
+#######################
+##### Pro Curv #######
+#####################
+
+p27 <- ggscatter(plotting1, x = "LB", y = "pro.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p28 <- ggscatter(plotting1, x = "LT", y = "pro.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p29 <- ggscatter(plotting1, x = "LF", y = "pro.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p30 <- ggscatter(plotting1, x = "SCN", y = "pro.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p31 <- ggscatter(plotting1, x = "LS", y = "pro.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p32 <- ggscatter(plotting1, x = "R", y = "pro.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p33 <- ggscatter(plotting1, x = "S", y = "pro.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+
+#######################
+##### Plan Curv #######
+#####################
+
+p34 <- ggscatter(plotting1, x = "LB", y = "plan.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p35 <- ggscatter(plotting1, x = "LT", y = "plan.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p36 <- ggscatter(plotting1, x = "LF", y = "plan.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p37 <- ggscatter(plotting1, x = "SCN", y = "plan.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p38 <- ggscatter(plotting1, x = "LS", y = "plan.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p39 <- ggscatter(plotting1, x = "R", y = "plan.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+p40 <- ggscatter(plotting1, x = "S", y = "plan.curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+############# CURV #############
+p41 <- ggscatter(plotting1, x = "LM", y = "curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+p42 <- ggscatter(plotting1, x = "LE", y = "curv",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.2)       # Add correlation coefficient
+
+```
+
+####  Surface Complexity
+```{r Surface complexity by morphologies,echo=FALSE, message= FALSE}
+library(ggpubr)
+ggarrange(p1, p2, p6, p8, labels = c("Rug ~ Dead_Branching", "Rug~Live_Branching", "Rug~Live_Tabulate", "Rug~Live_Foliose"), ncol = 2, nrow = 2)
+
+ggarrange(p19, p13, p14, labels = c("Rug ~ Live_Submassive", "Rug~Rubble", "Rug~Sand"), ncol = 2, nrow = 2)
+
+```
+
+#### VRM
+```{r vrm complex,echo=FALSE, message= FALSE}
+ggarrange(p21, p22, p23, p24, labels = c("VRM~Live_Branching", "VRM~Live_Tabulate", "VRM~Live_Foliose", "VRM~Live_Submassive"), ncol = 2, nrow = 2)
+
+ggarrange(p25, p26, labels = c("VRM~Rubble", "VRM~Sand"), ncol = 1, nrow = 2)
+
+```
+
+#### Curv
+```{r curv complex, echo=FALSE, message= FALSE}
+ggarrange(p41, p42, labels = c("Curv~Live_Massive", "Curv~Live_Encrusting"), ncol = 1, nrow = 2)
+
+
+```
+
+#### Profile Curvature
+```{r pro.curv complex,echo=FALSE, message= FALSE}
+ggarrange(p27, p28, p29, p31, labels = c("Pro.Curv~Live_Branching", "Pro.Curv~Live_Tabulate", "Pro.Curv~Live_Foliose", "Pro.Curv~SubMassive"), ncol = 2, nrow = 2)
+
+ggarrange(p30, p32, p33, labels = c("Pro.Curv~SoftCoral_Nodular", "Pro.Curv~Rubble", "Pro.Curv~Sand"), ncol = 2, nrow = 2)
+
+
+```
+
+#### Planform Curvature
+``` {r plan.curv complex,echo=FALSE, message= FALSE}
+ggarrange(p34, p35, p36, p37, labels = c("Pro.Curv~Live_Branching", "Pro.Curv~Live_Tabulate", "Pro.Curv~Live_Foliose", "Pro.Curv~SubMassive"), ncol = 2, nrow = 2)
+
+ggarrange(p38, p39, p40, labels = c("Pro.Curv~SoftCoral_Nodular", "Pro.Curv~Rubble", "Pro.Curv~Sand"), ncol = 2, nrow = 2)
+
+```
+
+
+# Disregard everything below this point
+
+This was the PCA data that I was playing around with earlier in the week. Please disregard. 
+
+.
+.
+.
+.
+.
+.
+.
+..
+.
+..
+.
+.
+.
+..
+.
+.
+.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r pca following Datacamp instructions, eval=FALSE, include=FALSE}
+#Included in Johns lecutre
+knitr::include_graphics("pca_ex_1.png", dpi = 10) 
+knitr::include_graphics("pca_ex_2.png", dpi = 10) 
+knitr::include_graphics("pca_ex_3.png", dpi = 10) 
+
+#Data to use
+env #MPQ Environmental data transformed to Z scores
+spe.h #Colony Count Data hellinger transformed
+
+#### RUN A PCA ####
+source("panelutils.R")
+
+#PCA of environmental variables
+env.pca <- prcomp(env.per, center = TRUE, scale = TRUE)
+summary(env.pca) #PC1 = 70% variation explained | PC2 = 17% variation explained
+
+str(env.pca) #Tells us the center point ($center), scaling ($scale), and standard deveiation (sdev) of each Principle component
+
+#Plot the PCA
+library(devtools)
+library(ggbiplot)
+
+ggbiplot(env.pca)
+
+#To have the row names as datapoint names
+ggbiplot(env.pca, labels=rownames(env))
+
+#Group the results based on year
+env.year <- c(rep("2015",26), rep("2017",30), rep("2019", 24))
+# env.region <- c(rep("N.Lagoon",27), rep("S.Lagoon", 27), rep("BOW",11), rep("Vaskes", 15)) <- doesnt' want to work for some reason....
+ggbiplot(env.pca,ellipse=TRUE,  labels=rownames(env), groups=env.year)
+
+#Results: #2015 is characterized by high vrm and 3d area values, whereas ??? Doesnt' make tonnes of sense
+
+#Plot PC axes 3 and 4
+ggbiplot(env.pca,ellipse=TRUE,choices=c(3,4),   labels=rownames(env), groups=env.year)
+
+
+
+
+
+```
+
+```{r pca in datacamp for ab data, eval=FALSE, include=FALSE}
+#PCA of environmental variables
+spe.pca <- prcomp(spe.h[,c(2:7)], center = TRUE, scale = TRUE)
+summary(spe.pca) #PC1 = 27% variation explained | PC2 = 19% variation explained
+
+str(env.pca) #Tells us the center point ($center), scaling ($scale), and standard deveiation (sdev) of each Principle component
+
+#Plot the PCA
+library(devtools)
+library(ggbiplot)
+
+ggbiplot(spe.pca)
+
+#To have the row names as datapoint names
+ggbiplot(spe.pca, labels=rownames(spe.h))
+
+#Group the results based on year
+spe.year <- c(rep("2015",26), rep("2017",30), rep("2019", 24))
+# env.region <- c(rep("N.Lagoon",27), rep("S.Lagoon", 27), rep("BOW",11), rep("Vaskes", 15)) <- doesnt' want to work for some reason....
+ggbiplot(spe.pca,ellipse=TRUE,  labels=rownames(spe.h), groups=spe.year)
+
+#Results: #2015 is characterized by high vrm and 3d area values, whereas ??? Doesnt' make tonnes of sense
+
+#Plot PC axes 3 and 4
+ggbiplot(spe.pca,ellipse=TRUE,choices=c(3,4),   labels=rownames(spe.h), groups=spe.year)
+
+
+
+
+```
+
+### Pearson Linear Coeffients for ENV (mpq complexity) data
+
+
+
+
+
+### NMDS of complexity metrics only, clumped by morphology
+
+#### Principal Component Analysis (PCA)
+
+# Environmental Data: A single PC axis should be reported give the results from Broken Stick/Kaiser Guttman tests
+
+# Species Abundance Data: 6 PC Axes are should be chosen, given results from Broken Stick/Kaiser Guttman methods (Eigenvalues all are really small)
+
+```{r pca in base r, eval=FALSE, include=FALSE}
+
+colnames(env)
+
+#Included in Johns lecutre
+knitr::include_graphics("pca_ex_1.png", dpi = 10) 
+knitr::include_graphics("pca_ex_2.png", dpi = 10) 
+knitr::include_graphics("pca_ex_3.png", dpi = 10) 
+
+#Data to use
+env #MPQ Environmental data
+spe #Colony Count Data
+
+#### RUN A PCA ####
+source("panelutils.R")
+
+
+op <- par(mfrow=c(1,1), pty = "s")
+pairs(env, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+par(op) #Reset graphing window to default
+
+#Create a bivariate plot of newly transformed environmental data
+op <- par(mfrow=c(1,1), pty = "s")
+pairs(, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+par(op) #Reset graphing window to default
+
+
+
+#PCA code
+env.pca <- rda(env.c, scale = TRUE) #scale = TRUE calls to standardize the variables
+env.pca
+
+#See how many PCA axes should be reported 
+ev <- env.pca$CA$eig
+source("evplot.R") # activate special **evplot()** function, which is available in Laulima (saves you tons of code!)
+evplot(ev)
+
+## PCA biplots of sites and variables
+source("cleanplot.pca.R")
+cleanplot.pca(env.pca, point = TRUE)  # includes points for sites and arrowheads
+
+#<------------------------------------------->#
+## Combining clustering with ordination results
+env.w <- hclust(dist(scale(env.c)), "ward")
+env.w
+head(env.w)
+
+## Cut the dendrogram to yield 4 groups
+gr <- cutree(env.w, k = 3)
+gr1 <- levels(factor(gr))
+
+## Get site scores using "Scaling 1" method
+sit.sc1 <- scores(env.pca, display = "wa", scaling =1)
+
+#### RESULTS OF ENV DATA ARE GROUPED BASED ON SIMILARITY OF ROWS, with rows the # (its sites in the Doubs dataset)
+## Plot the sites with cluster symbols and colors using "Scaling 1" method
+par(op) # Reset graphing window to default
+p <- plot(env.pca, display = "wa", scaling = 1, type = "n", main = "PCA correlation with clusters")
+abline(v = 0, lty = "dotted")
+abline(h = 0, lty = "dotted")
+for (i in 1:length(gr1)) {points(sit.sc1[gr==i,], pch = (14 + i), cex = 2, col = i+1)}
+text(sit.sc1, row.names(env$year.site.ppq), cex = 0.7, pos = 3)
+
+## Add the dendrogram
+ordicluster(p, env.w, col = "dark grey")
+
+#<------------------------------------------->#
+## Let's do some cluster analysis of the species data
+spe #community data matrix as only numerical values
+
+
+#First, normalize the matrix
+com1n <- decostand(spe, "normalize")
+
+#Use Ward clustering analysis to identify k groups
+spe.ch <- vegdist(com1n, "euc") # generate chord distances for normalized species data
+
+spe.ch.ward <- hclust(spe.ch, method="ward") # compute ward's minimum variance clustering
+
+#**Plot `spe.ch.ward` to see the dendrogram**
+k <- 4 # we are **choosing** to create 4 groups (*this is heuristic!*)
+spebc.ward.g <- cutree(spe.ch.ward, k)
+
+plot(spebc.ward.g) #Plot `spebc.ward.g` to see the groups
+
+
+
+## PCA on Transformed Species Data
+
+#PCA is a linear method that preserves the Euclidean distance among sites, thus it is not naturally adapted to the analysis of species abundance data. 
+#However, transforming these after Legendre and Gallagher (2001) alleviates this problem!
+
+#Let's use the Hellinger transformation on the fish data so we can conduct a PCA for these variables. 
+
+## PCA on the fish abundance data
+
+#First we need to apply the hellinger transformation on the species abundance data
+spe.h <- decostand(spe, "hellinger") #Non-normalized species data
+spe.h.pca <- rda(spe.h)
+spe.h.pca
+
+## Plot the eigenvalues and % of variance explained for each axis
+ev <- spe.h.pca$CA$eig
+evplot(ev)
+
+## Plot the PCA biplots
+cleanplot.pca(spe.h.pca, ahead = 0)
+```
+
+#Results:
+- ENV plot: Given the site data of all the environmental data is graphed, the curvature values are driving some sites 1 way, whereas VRM/Rugosity are propelling/pulling other sites in a direction almost directly orthogonal to those of the curvature values
+- SPE plot: Upwards of 6 PC axes should be reported, with all PC eigengvalues all incredibly small (albeit decreasing as we progress down PC chain). Ex: PC1 = 0.05149 VS PC4 = 0.02470
+Large contributors to species abundances plotted in 3D space (IE: Their vectors come outside the plotted circle) are: Live corals: Massive, Porites, Encrusting, SubMassive, Foliose, Branching
+
+
+#Following Fuller et al.'s (2020) approach, PCA's were conducted on each site to see driving env variables of colony counts
+```{r Site 5 PCA, eval=FALSE, include=FALSE}
+#Data to use
+env.5 #MPQ Environmental data
+spe.h #Hellinger transformed Colony Count Data
+
+#### RUN A PCA ####
+source("panelutils.R")
+
+#Create a bivariate plot of raw data
+op <- par(mfrow=c(1,1), pty = "s")
+pairs(env.5, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+par(op) #Reset graphing window to default
+
+#PCA code
+env.5.pca <- rda(env.5, scale = TRUE) #scale = TRUE calls to standardize the variables
+env.5.pca
+
+#See how many PCA axes should be reported 
+ev5 <- env.5.pca$CA$eig
+source("evplot.R") # activate special **evplot()** function, which is available in Laulima (saves you tons of code!)
+evplot(ev5)
+
+## PCA biplots of sites and variables
+source("cleanplot.pca.R")
+cleanplot.pca(env.5.pca, point = TRUE)  # includes points for sites and arrowheads
+
+
+#
+rankindex(environment, species001, indices = c("euc", "man", "gow",
+"bra", "kul"),stepacross= FALSE, method = "spearman")
+
+
+#####
+
+#Data to use
+env.15 #MPQ Environmental data
+spe.h #Hellinger transformed Colony Count Data
+
+#### RUN A PCA ####
+source("panelutils.R")
+
+#Create a bivariate plot of raw data
+op <- par(mfrow=c(1,1), pty = "s")
+pairs(env.15, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+par(op) #Reset graphing window to default
+
+#PCA code
+env.15.pca <- rda(env.15, scale = TRUE) #scale = TRUE calls to standardize the variables
+env.15.pca
+
+#See how many PCA axes should be reported 
+ev15 <- env.15.pca$CA$eig
+source("evplot.R") # activate special **evplot()** function, which is available in Laulima (saves you tons of code!)
+evplot(ev15)
+
+## PCA biplots of sites and variables
+source("cleanplot.pca.R")
+cleanplot.pca(env.15.pca, point = TRUE)  # includes points for sites and arrowheads
+
+
+#<------------------------------------------->#
+## Combining clustering with ordination results
+env.w <- hclust(dist(scale(env.c)), "ward")
+env.w
+head(env.w)
+
+## Cut the dendrogram to yield 4 groups
+gr <- cutree(env.w, k = 3)
+gr1 <- levels(factor(gr))
+
+## Get site scores using "Scaling 1" method
+sit.sc1 <- scores(env.pca, display = "wa", scaling =1)
+
+#### RESULTS OF ENV DATA ARE GROUPED BASED ON SIMILARITY OF ROWS, with rows the # (its sites in the Doubs dataset)
+## Plot the sites with cluster symbols and colors using "Scaling 1" method
+par(op) # Reset graphing window to default
+p <- plot(env.pca, display = "wa", scaling = 1, type = "n", main = "PCA correlation with clusters")
+abline(v = 0, lty = "dotted")
+abline(h = 0, lty = "dotted")
+for (i in 1:length(gr1)) {points(sit.sc1[gr==i,], pch = (14 + i), cex = 2, col = i+1)}
+text(sit.sc1, row.names(env$year.site.ppq), cex = 0.7, pos = 3)
+
+## Add the dendrogram
+ordicluster(p, env.w, col = "dark grey")
+
+#<------------------------------------------->#
+## Let's do some cluster analysis of the species data
+spe.h #community data matrix as only numerical values
+
+
+
+
+## PCA on Transformed Species Data
+#PCA is a linear method that preserves the Euclidean distance among sites, thus it is not naturally adapted to the analysis of species abundance data. 
+#However, transforming these after Legendre and Gallagher (2001) alleviates this problem!
+
+#Let's use the Hellinger transformation on the fish data so we can conduct a PCA for these variables. 
+
+## PCA on the fish abundance data
+
+#### Site 5 ####
+#First we need to apply the hellinger transformation on the species abundance data
+spe.5h.pca <- rda(spe.5h)
+spe.5h.pca
+
+## Plot the eigenvalues and % of variance explained for each axis
+ev5h <- spe.5h.pca$CA$eig
+evplot(ev5h)
+
+## Plot the PCA biplots
+cleanplot.pca(spe.5h.pca, ahead = 0)
+
+
+#### SITE 15 ####
+#First we need to apply the hellinger transformation on the species abundance data
+spe.15h.pca <- rda(spe.15h)
+spe.15h.pca
+
+## Plot the eigenvalues and % of variance explained for each axis
+ev15h <- spe.15h.pca$CA$eig
+evplot(ev15h)
+
+## Plot the PCA biplots
+cleanplot.pca(spe.15h.pca, ahead = 0)
+
+```
+
+
+
+
+
+
+#PCOA
+```{r PCoA, eval=FALSE, include=FALSE}
+par(op) # Reset graphing window to default
+
+library(GGally)
+ggpairs(env.s) ## It's multivaribale regression
+
+
+#Data
+env #Environmental data that is transformed
+spe
+
+#Drop row for KI17 Site 27 MPQ2
+env.d <- env[-28,]
+spe.d <- spe[-28,]
+
+
+#PCoA for coarse morphological classification
+#PCoA
+spe.bray <- vegdist(spe.d)
+spe.b.pcoa <- cmdscale(spe.bray, k=(nrow(spe.d)-1), eig=TRUE)
+
+#Plot the sites and weighted average projection of species
+ordiplot(scores(spe.b.pcoa) [,c(1,2)], type="t", main="PCoA with species")
+abline(h=0, lty=3)
+abline(v=0, lty=3)
+spe.wa <- wascores(spe.b.pcoa$points[,1:2], spe.d)
+text(spe.wa, rownames(spe.wa), cex=0.7, col="red")
+
+## Principle Coordinate Analysis; We can add an *a posteriori* projection of environmental variables to further our understanding of the data
+spe.pcoa.env <- envfit(spe.bray, env.d)
+plot(spe.pcoa.env)
+
+```
+
+```{r base R NMDS, eval=FALSE, include=FALSE}
+#The NMDS procedure is iterative and takes place over several steps:
+
+#1. Define the original positions of communities in multidimensional space.
+#2. Specify the number of reduced dimensions (typically 2).
+#3. Construct an initial configuration of the samples in 2-dimensions.
+#4. Regress distances in this initial configuration against the observed (measured) distances.
+
+#Dataframes
+env #Environmental data that is transformed
+spe #Colony Counts
+
+#Drop row for KI17 Site 27 MPQ2
+env.d <- env[-28,]
+spe.d <- spe[-28,]
+
+#Add constant to environmental data to avoid nmds errors
+env.d <- env.d + 1.6
+
+#Check if the dataframes have same # of rows
+nrow(spe.d) #80
+nrow(env.d) #80
+
+## Nonmetric Multidimensional Scaling with Doubs data
+spe.nmds <- metaMDS(spe.d, distance = "bray")
+spe.nmds #1624
+spe.bray <- vegdist(spe.d)
+spe.nmds$stress
+plot(spe.nmds, type = "t", main = paste("NMDS/Bray - Stress=", round(spe.nmds$stress,3)))
+
+#Compare fit in Shepard & GOF Diagrams
+par(mfrow=c(1,2))
+stressplot(spe.nmds, main = "Shepard Plot") #Shepard Plot
+gof = goodness(spe.nmds)
+plot(spe.nmds, type = "t", main = "Goodness of fit") #GOF
+points(spe.nmds, display = "sites", cex = gof*200)
+
+#Understanding these two diagram's results:
+#Shepard = Large scatter around the line suggests that original dissimilarities are not well preserved in the reduced number of dimensions.
+#GOF = Poorly fitted sites have larger bubbles in the goodness of fit analysis
+
+#Add information from clustering results to the ordination plot
+spe.bray.ward <- hclust(spe.bray, "ward")
+spe.bw.groups <- cutree(spe.bray.ward, k=4)
+grp.lev <- levels(factor(spe.bw.groups))
+
+## Combine clustering with NMDS result
+par(op)
+sit.sc <- scores(spe.nmds)
+p <- ordiplot(sit.sc, type = "n", main = "NMDS/Bray - clusters Ward/Bray")
+for (i in 1:length(grp.lev)) {points(sit.sc[spe.bw.groups==i,], pch=(14-i), cex=2, col=i+1)}
+text(sit.sc, row.names(spe), pos=4, cex=0.7)
+ordicluster(p, spe.bray.ward, col="dark grey")
+
+## Add ellipses and hulls to the NMDS plot
+ordihull(spe.nmds, groups = spe.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+
+## Add vectors for abundance data to the NMDS plot
+spe.fit <- envfit(spe.nmds, spe.d, permutations = 999)
+plot(spe.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+
+## Add vectors for environmental data to the NMDS plot
+#First, make new objects for an NMDS of the environmental data
+env.nmds <- metaMDS(env.d, distance = "bray")
+env.nmds #0.10
+env.bray <- vegdist(env.d)
+env.bray.ward <- hclust(spe.bray, "ward")
+env.bw.groups <- cutree(spe.bray.ward, k=6)
+grp.lev2 <- levels(factor(env.bw.groups))
+sit.sc2 <- scores(env.nmds)
+
+# ## Make a new plot and add vectors for environmental data to the NMDS plot
+# p2 <- ordiplot(sit.sc2, type = "n", main = "NMDS/Bray - clusters Ward/Bray")
+# for (i in 1:length(grp.lev)) {points(sit.sc2[env.bw.groups==i,], pch=(3-i), cex=2, col=i+8)}
+# text(sit.sc2, row.names(mpq.z), pos=4, cex=0.7)
+# 
+# ## Add vectors for environmental data to the NMDS plot
+# ordiellipse(env.nmds, groups = env.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+# env.fit <- envfit(spe.nmds, env3, permutations = 999)
+# plot(env.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+
+## Plot it all together
+par(op)
+sit.sc <- scores(spe.nmds)
+p3 <- ordiplot(sit.sc, type = "n", main = "NMDS/Bray - clusters Ward/Bray")
+for (i in 1:length(grp.lev)) {points(sit.sc[spe.bw.groups==i,], pch=(14-i), cex=2, col=i+1)}
+text(sit.sc, row.names(spe), pos=4, cex=0.7)
+ordicluster(p, spe.bray.ward, col="dark grey")
+
+## Add ellipses and hulls to the NMDS plot
+ordihull(spe.nmds, groups = spe.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+
+## Add vectors for abundance data to the NMDS plot
+spe.fit <- envfit(spe.nmds, spe.d, permutations = 999)
+plot(spe.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+## Add vectors for environmental data to the NMDS plot
+env.fit <- envfit(spe.nmds, env.d, permutations = 999)
+plot(env.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+```
+
+
+```{r base R NMDS switching env and spe dataframes, eval=FALSE, include=FALSE}
+
+# ***This dataframe is different than the one above in that I plotted the complexity data in the ordination, then grouped it into 6 groups (thinking 1 for each complexity metric), and assigned significant species vectors on top of that of the coral data
+
+
+
+#The NMDS procedure is iterative and takes place over several steps:
+
+#1. Define the original positions of communities in multidimensional space.
+#2. Specify the number of reduced dimensions (typically 2).
+#3. Construct an initial configuration of the samples in 2-dimensions.
+#4. Regress distances in this initial configuration against the observed (measured) distances.
+
+#Dataframes
+env #Environmental data that is transformed
+spe #Colony Counts
+
+#Drop row for KI17 Site 27 MPQ2
+env.d <- env[-28,]
+spe.d <- spe[-28,]
+
+#Add constant to environmental data to avoid nmds errors
+env.d <- env.d + 1.6
+
+#Check if the dataframes have same # of rows
+nrow(spe.d) #80
+nrow(env.d) #80
+
+## Nonmetric Multidimensional Scaling with Doubs data
+spe.nmds <- metaMDS(env.d, distance = "bray")
+spe.nmds 
+spe.bray <- vegdist(env.d)
+spe.nmds$stress #0.1
+plot(spe.nmds, type = "t", main = paste("NMDS/Bray - Stress=", round(spe.nmds$stress,3)))
+
+#Compare fit in Shepard & GOF Diagrams
+par(mfrow=c(1,2))
+stressplot(spe.nmds, main = "Shepard Plot") #Shepard Plot
+gof = goodness(spe.nmds)
+plot(spe.nmds, type = "t", main = "Goodness of fit") #GOF
+points(spe.nmds, display = "sites", cex = gof*200)
+
+#Understanding these two diagram's results:
+#Shepard = Large scatter around the line suggests that original dissimilarities are not well preserved in the reduced number of dimensions.
+#GOF = Poorly fitted sites have larger bubbles in the goodness of fit analysis
+
+#Add information from clustering results to the ordination plot
+spe.bray.ward <- hclust(spe.bray, "ward")
+spe.bw.groups <- cutree(spe.bray.ward, k=6)
+grp.lev <- levels(factor(spe.bw.groups))
+
+## Combine clustering with NMDS result
+par(op)
+sit.sc <- scores(spe.nmds)
+p <- ordiplot(sit.sc, type = "n", main = "NMDS/Bray - clusters Ward/Bray")
+for (i in 1:length(grp.lev)) {points(sit.sc[spe.bw.groups==i,], pch=(14-i), cex=2, col=i+1)}
+text(sit.sc, row.names(spe), pos=4, cex=0.7)
+ordicluster(p, spe.bray.ward, col="dark grey")
+
+## Add ellipses and hulls to the NMDS plot
+ordihull(spe.nmds, groups = spe.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+
+## Add vectors for abundance data to the NMDS plot
+spe.fit <- envfit(spe.nmds, env.d, permutations = 999)
+plot(spe.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+# ordiellipse(env.nmds, groups = env.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+env.fit <- envfit(spe.nmds, spe.d, permutations = 999)
+plot(env.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+
+## Add vectors for environmental data to the NMDS plot
+#First, make new objects for an NMDS of the environmental data
+env.nmds <- metaMDS(env.d, distance = "bray")
+env.nmds #0.10
+env.bray <- vegdist(env.d)
+env.bray.ward <- hclust(spe.bray, "ward")
+env.bw.groups <- cutree(spe.bray.ward, k=6)
+grp.lev2 <- levels(factor(env.bw.groups))
+sit.sc2 <- scores(env.nmds)
+
+# ## Make a new plot and add vectors for environmental data to the NMDS plot
+# p2 <- ordiplot(sit.sc2, type = "n", main = "NMDS/Bray - clusters Ward/Bray")
+# for (i in 1:length(grp.lev)) {points(sit.sc2[env.bw.groups==i,], pch=(3-i), cex=2, col=i+8)}
+# text(sit.sc2, row.names(mpq.z), pos=4, cex=0.7)
+# 
+# ## Add vectors for environmental data to the NMDS plot
+# ordiellipse(env.nmds, groups = env.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+env.fit <- envfit(spe.nmds, spe.d, permutations = 999)
+plot(env.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+
+## Plot it all together
+par(op)
+sit.sc <- scores(spe.nmds)
+p3 <- ordiplot(sit.sc, type = "n", main = "NMDS/Bray - clusters Ward/Bray")
+for (i in 1:length(grp.lev)) {points(sit.sc[spe.bw.groups==i,], pch=(14-i), cex=2, col=i+1)}
+text(sit.sc, row.names(spe), pos=4, cex=0.7)
+ordicluster(p, spe.bray.ward, col="dark grey")
+
+## Add ellipses and hulls to the NMDS plot
+ordihull(spe.nmds, groups = spe.bw.groups, draw = "polygon", lty = 1, col = "grey90")
+
+## Add vectors for abundance data to the NMDS plot
+spe.fit <- envfit(spe.nmds, spe.d, permutations = 999)
+plot(spe.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+## Add vectors for environmental data to the NMDS plot
+env.fit <- envfit(spe.nmds, env.d, permutations = 999)
+plot(env.fit, p.max = 0.01, col = "black", cex = 0.7)
+
+```
+
+
+```{r RDA on newer data, eval=FALSE, include=FALSE}
+
+#Conduct it on the environmental data BY 
+env.s #Standardized environmental dta
+spe.h #Hellinger transformed species data
+
+
+#Create a bivariate plot of newly transformed environmental data
+op <- par(mfrow=c(1,1), pty = "s")
+pairs(env.s, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+
+par(op) #Reset graphing window to default
+pairs(spe.h, panel = panel.smooth, diag.panel = panel.hist, main = "Bivariate Plot with Histograms and Smooth Curves")
+par(op) #Reset graphing window to default
+
+
+
+
+###RDA on environmental parameters explained by species counts present
+#Conduct RDA
+rda1 <- rda(env.s ~ ., spe.h)
+summary(rda1)
+
+#Obtaining Adjusted R2 value
+R2adj1 <- RsquareAdj(rda1)$adj.r.squared
+R2adj1 #0.622
+
+# Permutation Test of the RDA
+anova.cca(rda1, step = 1000) #Global test of the RDA results              P < 0.01
+anova.cca(rda1, by = "axis", step = 1000) #Tests of all canonical axes    RDA1 only significant
+
+#Plot
+par( mfrow = c(1,1) )
+plot(rda1, scaling = 1, main = "Triplot RDA of dig.percent cover ~ complexity  - scaling 2")
+spe.sc <- scores(rda1, choices = 1:2, scaling = 2, display = "sp")
+arrows(0, 0, spe.sc[,1], spe.sc[,2], length = 0, lty = 1, col = "red")
+
+
+
+###RDA on species count present explained by complexity data
+#Conduct RDA
+rda2 <- rda(spe.h ~ ., env.s)
+summary(rda2)
+
+#Obtaining Adjusted R2 value
+R2adj2 <- RsquareAdj(rda2)$adj.r.squared
+R2adj2 #0.2569561
+
+# Permutation Test of the RDA
+anova.cca(rda2, step = 1000) #Global test of the RDA results              P < 0.001
+anova.cca(rda2, by = "axis", step = 1000) #Tests of all canonical axes    RDA1&2 Significant
+
+#Plot
+par( mfrow = c(1,1) )
+plot(rda2, scaling = 1, main = "Triplot RDA of dig.percent cover ~ complexity  - scaling 2")
+spe.sc2 <- scores(rda2, choices = 1:2, scaling = 1, display = "sp")
+arrows(0, 0, spe.sc2[,1], spe.sc2[,2], length = 0, lty = 1, col = "red")
+
+```
+
