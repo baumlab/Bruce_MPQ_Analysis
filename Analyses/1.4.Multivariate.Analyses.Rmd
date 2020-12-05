@@ -3,6 +3,7 @@ title: "1.4 Morphology Correlation Plots"
 author: "Kevin Bruce"
 date: "20/11/2020"
 output: html_document
+
 ---
 
 ```{r Load the packages and load MPQ data, include=FALSE}
@@ -36,6 +37,7 @@ library(ggrepel)
 #library(rgl)
 library(FactoMineR)
 library(ggpubr)
+library(corrplot)
 
 
 #Set the Working Directory
@@ -255,12 +257,10 @@ dig.corr.ordered
 #Make a subset of only numeric values
 dig.cor.numeric <- dig.corr.ordered [,6:32]
 
-#<----------------CORRELELOGRAM --------->
-library(corrgram)
-
 ```
 
 ```{r correlelogram plot, echo=FALSE}
+library(corrgram)
 corrgram(dig.cor.numeric, lower.panel=panel.shade,upper.panel=panel.pie, text.panel=panel.txt, main="Coral Morphology Correlations")
 ```
 
@@ -507,6 +507,78 @@ pAP <- ggscatter(coarse1, y = "plan.curv", x = "Non.Coral",
 
 ```
 
+```{r coarse cors at each timepoint across dems, include=FALSE}
+######### Before/After correlelograms ##########
+#1cm DEM
+coarse1.b <- subset(coarse1, year == 2015)
+coarse1.a <- subset(coarse1, year == 2017)
+coarse1.aa <- subset(coarse1, year == 2019)
+
+#remove collumns 15, 16 and 1-6
+coarse1.b <- coarse1.b[,-(15:16)]
+coarse1.b <- coarse1.b[,-(1:6)]
+
+coarse1.a <- coarse1.a[,-(15:16)]
+coarse1.a <- coarse1.a[,-(1:6)]
+
+coarse1.aa <- coarse1.aa[,-(15:16)]
+coarse1.aa <- coarse1.aa[,-(1:6)]
+
+colnames(coarse1.b)
+colnames(coarse1.a)
+colnames(coarse1.aa)
+
+#Prepare a correlaton matrix
+coarse1.b.cor <- cor(coarse1.b)
+coarse1.a.cor <- cor(coarse1.a)
+coarse1.aa.cor <- cor(coarse1.aa)
+
+
+#head(round(coarse1.1.cor,2)) #to check if you want
+
+#Correlelograms
+corrplot(coarse1.b.cor, method="number") #2015
+corrplot(coarse1.a.cor, method="number") #2017
+corrplot(coarse1.aa.cor, method="number") #2019
+
+
+
+
+
+
+#8cm DEM
+coarse8.b <- subset(coarse8, year == 2015)
+coarse8.a <- subset(coarse8, year == 2017)
+coarse8.aa <- subset(coarse8, year == 2019)
+
+#remove collumns 15, 16 and 1-6
+coarse8.b <- coarse8.b[,-(15:18)]
+coarse8.b <- coarse8.b[,-(1:6)]
+
+coarse8.a <- coarse8.a[,-(15:18)]
+coarse8.a <- coarse8.a[,-(1:6)]
+
+coarse8.aa <- coarse8.aa[,-(15:18)]
+coarse8.aa <- coarse8.aa[,-(1:6)]
+
+colnames(coarse1.b)
+colnames(coarse1.a)
+colnames(coarse1.aa)
+
+#Prepare a correlaton matrix
+coarse8.b.cor <- cor(coarse8.b)
+coarse8.a.cor <- cor(coarse8.a)
+coarse8.aa.cor <- cor(coarse8.aa)
+
+#Correlelograms
+corrplot(coarse8.b.cor, method="number") #2015
+corrplot(coarse8.a.cor, method="number") #2017
+corrplot(coarse8.aa.cor, method="number") #2019
+
+
+```
+
+
 ### Rugosity
 ```{r rug by morphologies, echo=FALSE, message= FALSE}
 ggarrange(pA, pB, pC, pD, labels = c("Rug ~ DeadCoral", "Rug~HardCoral", "Rug~SoftCoral", " Rug~AllCoral"), ncol = 2, nrow = 2)
@@ -547,8 +619,195 @@ ggarrange(pAM, pAN, pAO, pAP, labels = c("Plan.Curv~Rubble", "Plan.Curv~Sand", "
 
 ```
 
+###Correlelograms shown across DEM's
+```{r coarse cors across dems, include=FALSE}
+#1cm DEM
+coarse1 #remove collumns 15, 16 and 1-6
+coarse1.1 <- coarse1[,-(15:16)]
+coarse1.1 <- coarse1.1[,-(1:6)]
 
-## B. Full Morphological Classification 
+colnames(coarse1.1)
+
+#Prepare a correlaton matrix
+coarse1.1.cor <- cor(coarse1.1)
+head(round(coarse1.1.cor,2))
+
+#Correlelograms
+corrplot(coarse1.1.cor, method="circle") #DEM 1cm, all years
+corrplot(coarse1.1.cor, method="number")
+
+#4cm DEM
+#Create single dataframe to draw information from
+coarse4 <- cbind(dig.simple.per.cover, mpq.4)
+
+#Remove Duplicate collumns of metadata (year,site,etc.)
+coarse4 <- coarse4[,-(24:30)]
+
+
+colnames(coarse4) #remove collumns 15, 16 and 1-6
+coarse4.4 <- coarse4[,-(15:18)]
+coarse4.4 <- coarse4.4[,-(1:6)]
+
+colnames(coarse4.4)
+
+#Prepare a correlaton matrix
+coarse4.4.cor <- cor(coarse4.4)
+head(round(coarse4.4.cor,2))
+
+#Correlelograms
+corrplot(coarse4.4.cor, method="circle") #DEM 1cm, all years
+corrplot(coarse4.4.cor, method="number")
+
+
+
+
+#8cm DEM
+#Create single dataframe to draw information from
+coarse8 <- cbind(dig.simple.per.cover, mpq.8)
+
+#Remove Duplicate collumns of metadata (year,site,etc.)
+coarse8 <- coarse8[,-(24:30)]
+
+
+colnames(coarse8) #remove collumns 15, 16 and 1-6
+coarse8.8 <- coarse8[,-(15:18)]
+coarse8.8 <- coarse8.8[,-(1:6)]
+
+colnames(coarse8.8)
+
+#Prepare a correlaton matrix
+coarse8.8.cor <- cor(coarse8.8)
+head(round(coarse8.8.cor,2))
+
+#Correlelograms
+corrplot(coarse8.8.cor, method="circle") #DEM 1cm, all years
+corrplot(coarse8.8.cor, method="number")
+
+```
+
+
+## B. Lumping Live Massive Categories together
+```{r}
+dig2 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simplified_Wide_PerCover_Data_Clean.csv", header = TRUE, row.names = 1)
+
+colnames(dig.cor)
+
+#Change Names of collumns
+colnames(dig2)[which(names(dig2)=="Dead_Branching")] <- "DB"
+colnames(dig2)[which(names(dig2)=="Dead_Columnar")] <- "DC"
+colnames(dig2)[which(names(dig2)=="Dead_Foliose")] <- "DF"
+colnames(dig2)[which(names(dig2)=="Dead_Massive")] <- "DM"
+colnames(dig2)[which(names(dig2)=="Dead_SoftCoral")] <- "DS"
+colnames(dig2)[which(names(dig2)=="Dead_Tabulate")] <- "DT"
+colnames(dig2)[which(names(dig2)=="Live_Branching")] <- "LB"
+colnames(dig2)[which(names(dig2)=="Live_Columnar")] <- "LC"
+colnames(dig2)[which(names(dig2)=="Live_Digitate")] <- "LD"
+colnames(dig2)[which(names(dig2)=="Live_Encrusting")] <- "LE"
+colnames(dig2)[which(names(dig2)=="Live_Encrusting_Columnar")] <- "LEC"
+colnames(dig2)[which(names(dig2)=="Live_Foliose")] <- "LF"
+colnames(dig2)[which(names(dig2)=="Live_FreeLiving")] <- "LFL"
+colnames(dig2)[which(names(dig2)=="Live_Massive")] <- "LM"
+colnames(dig2)[which(names(dig2)=="Live_SubMassive")] <- "LS"
+colnames(dig2)[which(names(dig2)=="Live_Tabulate")] <- "LT"
+colnames(dig2)[which(names(dig2)=="Macroalgae")] <- "M"
+colnames(dig2)[which(names(dig2)=="NonCoral_Encrusting")] <- "NCE"
+colnames(dig2)[which(names(dig2)=="NonCoral_Massive")] <- "NCM"
+colnames(dig2)[which(names(dig2)=="NonCoral_SubMassive")] <- "NCS"
+colnames(dig2)[which(names(dig2)=="Rubble")] <- "R"
+colnames(dig2)[which(names(dig2)=="Sand")] <- "S"
+colnames(dig2)[which(names(dig2)=="SoftCoral_Nodular")] <- "SCN"
+colnames(dig2)[which(names(dig2)=="SoftCoral_Plating")] <- "SCP"
+colnames(dig2)[which(names(dig2)=="NonCoral_Branching")] <- "NCB"
+
+#Re-order dataframe so that correlation matrix of similar morphologies are clustered together
+dig2.ordered <- subset(dig2, select = c("year","hum_dist","region" ,"site","site.ppq",
+ "DB", "LB", "LD", "NCB", "DC" , "LC",  "LEC",  "DT",  "LT", "DF",  "LF",  "DS", "SCN", "SCP", "DM", "LM" , "NCM", "LS",  "NCS",  "LE", "NCE", "LFL", "M",  "R",  "S"))
+
+#Re-ordered and named dataframe
+dig2.ordered
+
+#Make a subset of only numeric values
+dig2.cor.numeric <- dig2.ordered [,6:30]
+
+#<----------------CORRELELOGRAM --------->
+library(corrgram)
+
+
+
+corrgram(dig2.cor.numeric, lower.panel=panel.shade,upper.panel=panel.pie, text.panel=panel.txt, main="Coral Morphology Correlations")
+
+
+#Add in complexity metrics
+
+#Create single dataframe to draw information from
+dig2rug <- cbind(dig2.ordered,mpq.1 )
+
+#Remove Duplicate collumns of metadata (year,site,etc.)
+dig2rug1 <- dig2rug[,-(38:44)] 
+
+colnames(dig2rug1)
+
+dig2rug1 <- dig2rug1[,-(31:32)]
+dig2rug1 <- dig2rug1[,-(1:5)]  
+
+dig2rug1
+
+correl.dig2 <- cor(dig2rug1)
+head(round(correl.dig2,2))
+
+library(corrplot)
+
+corrgram(correl.dig2, lower.panel=panel.shade,upper.panel=panel.pie, text.panel=panel.txt, main="Coral Morphology Correlations")
+
+
+corrplot(correl.dig2, method="number")
+
+
+
+
+#### TRY AGAIN FOR 4cm DEM
+dig2.rug4 <- cbind(dig2.ordered,mpq.4)
+
+#Remove Duplicate collumns of metadata (year,site,etc.)
+dig2rug4 <- dig2.rug4[,-(40:46)] 
+
+colnames(dig2rug4)
+
+dig2rug4 <- dig2rug4[,-(31:34)]
+dig2rug4 <- dig2rug4[,-(1:5)]  
+
+dig2rug4
+
+correl.dig2.4 <- cor(dig2rug4)
+head(round(correl.dig2.4,2))
+
+corrplot(correl.dig2.4, method="number")
+
+
+#### 8cm DEM
+dig2.rug8 <- cbind(dig2.ordered,mpq.8)
+
+#Remove Duplicate collumns of metadata (year,site,etc.)
+dig2rug8 <- dig2.rug8[,-(40:46)] 
+
+colnames(dig2.rug8)
+
+dig2rug8 <- dig2rug8[,-(31:34)]
+dig2rug8 <- dig2rug8[,-(1:5)]  
+
+dig2rug8
+
+dig2.rug8.cor <- cor(dig2rug8)
+head(round(dig2.rug8.cor,2))
+
+
+corrplot(dig2.rug8.cor, method="number")
+
+
+
+```
+
+## C. Full Morphological Classification 
 
 I first did a large correleleogram with morphologies & compleixty metrics to highlight key correlations. I then plotted those key correlations (Correlation > 0.4) separately below in the correlation plots by the distinct complexity metric 
 
@@ -1341,6 +1600,14 @@ a22 <- ggscatter(after, y = "pro.curv", x = "LS",
                 #shape = "cyl"                   # Change point shape by groups "cyl"
                 )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
 
+a22a <- ggscatter(after, y = "pro.curv", x = "DM",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+
 #Rubble
 b23 <- ggscatter(before, y = "pro.curv", x = "R",
                 add = "reg.line",               # Add regression line
@@ -1443,6 +1710,13 @@ a29 <- ggscatter(after, y = "plan.curv", x = "LF",
                 #shape = "cyl"                   # Change point shape by groups "cyl"
                 )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
 
+a29a <- ggscatter(after, y = "plan.curv", x = "DF",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 0.5)       # Add correlation coefficient
+
 #Life Submassive
 b30 <- ggscatter(before, y = "plan.curv", x = "LS",
                 add = "reg.line",               # Add regression line
@@ -1451,6 +1725,13 @@ b30 <- ggscatter(before, y = "plan.curv", x = "LS",
                 #shape = "cyl"                   # Change point shape by groups "cyl"
                 )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
 a30 <- ggscatter(after, y = "plan.curv", x = "LS",
+                add = "reg.line",               # Add regression line
+                conf.int = TRUE,                # Add confidence interval
+                #color = "cyl", palette = "jco", # Color by groups "cyl"
+                #shape = "cyl"                   # Change point shape by groups "cyl"
+                )+ stat_cor(label.x = 1.4)       # Add correlation coefficient
+
+a30a <- ggscatter(after, y = "plan.curv", x = "DM",
                 add = "reg.line",               # Add regression line
                 conf.int = TRUE,                # Add confidence interval
                 #color = "cyl", palette = "jco", # Color by groups "cyl"
@@ -1591,11 +1872,25 @@ ggarrange(b14, a14a, labels = c("B4:vrm~Live_Submassive", "After:vrm~Dead_Massiv
 
 ## Pro.Curv
 ```{r pro ~ morphologies live to dead, echo=FALSE, message= FALSE }
+ggarrange(b18, a17, labels = c("B4:pro.curv~Live_Branching", "After:pro.curv~Dead_Branching"), ncol = 1, nrow = 2) #Branching
+ 
+ggarrange(b20, a19, labels = c("B4:pro.curv~Live_Tabulate", "After:pro.curv~Dead_Tabulate"), ncol = 1, nrow = 2) #Tabulate
+
+ggarrange(b21, a21a, labels = c("B4:pro.curv~Live_Foliose", "After:pro.curv~Dead_Foliose"), ncol = 1, nrow = 2) #Foliose
+
+ggarrange(b22, a22a, labels = c("B4:pro.curv~Live_Submassive", "After:pro.curv~Dead_Massive"), ncol = 1, nrow = 2) #Submassive
 
 ```
 
 ## Plan.Curv
 ```{r plan ~ morphologies live to dead, echo=FALSE, message= FALSE }
+ggarrange(b26, a25, labels = c("B4:plan.curv~Live_Branching", "After:plan.curv~Dead_Branching"), ncol = 1, nrow = 2) #Branching
+ 
+ggarrange(b28, a27, labels = c("B4:plan.curv~Live_Tabulate", "After:plan.curv~Dead_Tabulate"), ncol = 1, nrow = 2) #Tabulate
+
+ggarrange(b29, a29a, labels = c("B4:plan.curv~Live_Foliose", "After:plan.curv~Dead_Foliose"), ncol = 1, nrow = 2) #Foliose
+
+ggarrange(b30, a30a, labels = c("B4:plan.curv~Live_Submassive", "After:plan.curv~Dead_Massive"), ncol = 1, nrow = 2) #Submassive
 
 ```
 
@@ -1802,6 +2097,49 @@ corrplot(c8.19, method="circle", title = "2019, DEM 8cm") #DEM 8cm, 2019
 
 
 
+# Fractal Dimension
+```{r fractal dimension correlations}
+frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv", row.names = 1)
+
+#drop 2016 years
+frac.1 <- subset(frac, year == 2015 | year == 2017 | year == 2019)
+
+
+#Re-order the collumns of Fractal Dimension dataframe so that it merges nicely with the digitization data
+levels(frac.1$year.site.ppq)
+levels(dig.corr.ordered$year.site.ppq)
+
+
+colnames(frac)
+
+frac1 <- subset(frac.1, select = c("fractal.dimension", "year.site.ppq"))
+
+dig.corr.ordered #digitization dataframe
+frac1 #fractal dimension
+
+nrow(frac1)
+nrow(dig.corr.ordered)
+
+#Bind together
+frac.dig <- cbind(dig.corr.ordered, frac1)
+
+#Drop non-numeric rows
+
+
+
+
+#Prepare a correlaton matrix
+frac.cor <- cor(frac.dig)
+head(round(coarse4.4.cor,2))
+
+#Correlelograms
+corrplot(coarse4.4.cor, method="circle") #DEM 1cm, all years
+corrplot(coarse4.4.cor, method="number")
+
+
+
+
+```
 
 
 

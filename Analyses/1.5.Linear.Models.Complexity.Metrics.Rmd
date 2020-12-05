@@ -1,0 +1,218 @@
+---
+title: "1.5.Linear.Models.Complexity.Metrics"
+author: "Kevin Bruce"
+date: "Last compiled on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+---
+ 
+#Load Packages/Data
+```{r Load the packages and load MPQ data, include=FALSE}
+rm(list = ls()) #This clears the environment
+dev.off()
+
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+library(ade4)
+library(MASS)
+library(ellipse)
+library(FactoMineR)
+library(arm)
+library(ape)
+library(ggrepel)
+library(FactoMineR)
+library(ggpubr)
+library(corrplot)
+library(Matrix)
+library(lme4)
+library(TMB)
+library(glmmTMB)
+library(bbmle)
+
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+
+### 1. Habitat Volume Data
+cc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_Updated.csv",header=TRUE, row.names=1)
+
+#Fix ordering of levels of Habitat Volume Data
+
+
+
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+### 2. Fractal Dimension Data
+#frac <- read.csv("")
+
+
+
+
+    
+
+#Complexity Data
+mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_updated.csv", header=TRUE)
+
+
+#Correct levels of hum_dist
+levels(mpq$hum_dist)
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(mpq$hum_dist)
+
+#Levels for DEM
+levels(mpq$DEM)
+mpq$DEM <- factor(mpq$DEM, levels = c("1", "4", "8"))
+levels(mpq$DEM)
+
+
+#Create subsets for each DEM
+mpq.1 <- subset (mpq, DEM == 1) 
+mpq.4 <- subset (mpq, DEM == 4) 
+mpq.8 <- subset (mpq, DEM == 8) 
+
+
+
+```
+
+ 
+```{r Exploratory plots Vrm, eval=FALSE, include=FALSE}
+mpq #Dataset
+mpq.num <- mpq[,16:21] #numeric datagrame only
+
+#Check the distribution of the complexity metric
+hist(mpq$vrm)   #Pretty normal looking honestly....
+mpq$vlog<- log(mpq$vrm) *(-1)
+hist(mpq$vlog)   #Pretty normal looking honestly....
+
+levels(mpq$year)
+str(mpq$year)
+
+#Look for outliers via Cleveland dotplot
+dotchart(mpq$vrm, ylab = "Order of operations", xlab = "Concenration", main= "VRM Cleveland Dotplot")
+dotchart(mpq$vrm, groups = factor(mpq$year), ylab = "Year", xlab = "Concentration", main ="VRM Cleveland Dotplot", pch=mpq$year)
+
+#pairplot
+pairs(mpq.num) #AREA_3d and rug are collinear it appears, with curvature values very similar
+
+#Boxplots 
+boxplot(vrm ~ factor(year), varwidth = TRUE, data = mpq)
+plot(vrm~site, data = mpq)
+
+
+```
+
+# 1. VRM
+## Fixed Effect Models {.tabset}
+### Investigating categorical Hum_Dist Vs. various regions
+
+Ultimately, this is to check and see whether different levels of wave energy/etc. found in select regions plays a role on the complexity around the atoll
+
+1. VRM ~ year and human disturbance gradient (categorical- 3 levels)
+
+2. VRM ~ year and island side (leeward/windward)
+
+3. VRM ~ year and region 3 (3 options: South Shore, Leeward, Windward)
+
+4. VRM ~ year and region 4 (4 options (I only have 3 though): Vaskess Bay, BOW, Leeward)) --> Should perform similarly to region.3
+
+
+I didn't include:
+
+- Region.full: It sorts Site 32 as "Mid-Lagoon", which would be the only site in that category
+
+- Region.kb: this follows the human disturbance gradient too closely, so will complicate the results
+
+
+Results:
+- Region.3 and Region.4 are equal in terms of AIC, so can progress forward with either one
+
+```{r fixed effect models}
+#Models looking at disturbance gradient and if interaction between year&disturbance fit better
+vrm1 <- glm(vrm ~ year + hum_dist, data = mpq) #Hum_Dist = Categorical
+vrm2 <- glm(vrm ~ year + hdist.cont, data = mpq)
+vrm3 <- glm(vrm ~ year * hum_dist, data = mpq)
+vrm4 <- glm(vrm~year*hdist.cont, data = mpq)
+
+AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1
+summary(vrm1)
+
+
+
+#Categorical human disturbance against region, then categorical interaction with year
+#Models without interaction of disturbance added with different regions
+vrm5 <- glm(vrm ~ year + hum_dist + island.side, data = mpq)
+vrm6 <- glm(vrm ~ year + hum_dist + region.3, data = mpq)
+vrm7 <- glm(vrm~ year + hum_dist + region.4, data = mpq)
+vrm8 <- glm(vrm ~ year*hum_dist + island.side, data = mpq)
+vrm9 <- glm(vrm ~ year*hum_dist + region.3, data = mpq)
+vrm10 <- glm(vrm~year*hum_dist + region.4, data = mpq)
+
+AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10) #AIC's the same based on if interaction is present or not (interaction makes it worse
+
+#Continuous human disturbance against region, then Continuous disturbance interaction with year
+vrm11 <- glm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
+vrm12  <- glm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq)
+vrm13 <- glm(vrm~year + sqrt.hdist.cont + region.4, data = mpq)
+vrm14 <- glm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
+vrm15 <- glm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq)
+vrm16 <- glm(vrm~year*sqrt.hdist.cont + region.4, data = mpq)
+
+AIC(vrm11, vrm12, vrm13, vrm14, vrm15, vrm16) #AIC's the same based on if interaction is present or 
+
+#AIC's for all
+AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16) #All models using continuous human disturbance fit best, with lowest AIC = 12, 13 (delta AIC < 3 for all 11-16 models)
+
+#So interaction between human disturbance and year not best fit when looking at it like this....
+
+
+```
+
+## Adding in site as a random effects {.tabset}
+### Human disturbance interaction with year
+```{r interactions}
+#Continuous disturbance
+#no interaction
+vrm17 <- glm(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq)
+vrm18 <- glm(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+#with interaction
+vrm19 <- glm(vrm~year*sqrt.hdist.cont + region.3 + (1|site), data = mpq)
+vrm20 <- glm(vrm~year*sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+
+AIC(vrm17, vrm18, vrm19, vrm20) #all are within AIC 2, so any are useable
+
+#Categorical disturbance
+#no interaction
+vrm21 <- glm(vrm~year + hum_dist + region.3 + (1|site), data = mpq)
+vrm22 <- glm(vrm~year + hum_dist + region.4 + (1|site), data = mpq)
+#with interaction
+vrm23 <- glm(vrm~year*hum_dist + region.3 + (1|site), data = mpq)
+vrm24 <- glm(vrm~year*hum_dist + region.4 + (1|site), data = mpq)
+
+AIC(vrm21, vrm22, vrm23, vrm24) #vrm21/22 are best (no interaction)
+
+#Lets compare only region 4's with categorical vs continuous
+AIC(vrm18, vrm20, vrm22, vrm24) #vrm18,20 are better fits (18 is best)
+
+```
+
+# Final findings:
+- Sqrt transformed continuous disturbance fits better than categorical (for now)
+- No interactions are significantly better than their non-interaction counterparts, so best to leave out for simplicity sake?
+
+Final Working Model:
+*VRM ~ year + sqrt.hdist.cont + region.4 + (1|site)*
+

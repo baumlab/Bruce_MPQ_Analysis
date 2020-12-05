@@ -43,7 +43,7 @@ CC.new <- read.csv("BaumLab_CloudCompare_Final.csv")
 #Change colnames for the collumns
 colnames(CC.new)[which(names(CC.new)=="Hum_Dist")] <- "hum_dist"
 colnames(CC.new)[which(names(CC.new)=="Period")] <- "timepoint"
-colnames(CC.new)[which(names(CC.new)=="MPQ")] <- "mpq"
+colnames(CC.new)[which(names(CC.new)=="MPQ")] <- "ppq"
 colnames(CC.new)[which(names(CC.new)=="Site")] <- "site"
 colnames(CC.new)[which(names(CC.new)=="Volume")] <- "volume.change"
 colnames(CC.new)[which(names(CC.new)=="Added.Volume")] <- "volume.added"
@@ -77,37 +77,121 @@ for(i in c(1:nrow(CC.new))) {
     CC.new$hum_dist[i] <- "Very Low"
   }}
 
-#2. Create a collumn for region & fill it with values
-CC.new$region <- "a"
+#2. Create 4 subsections for the region collumn:
+#2a: Side of island (2 levels)
+CC.new$island.side <- "a"
 
 #Assign Region values
 for(i in c(1:nrow(CC.new))) {
   if(CC.new$site[i]=="5") {
-    CC.new$region[i] <- "Vaskes"
+    CC.new$island.side[i] <- "Leeward"
   } else if(CC.new$site[i]=="19") {
-    CC.new$region[i] <- "BOW"
+    CC.new$island.side[i] <- "Windward"
   } else if(CC.new$site[i]=="15") {
-    CC.new$region[i] <- "BOW"
+    CC.new$island.side[i] <- "Windward"
   } else if(CC.new$site[i]=="8") {
-    CC.new$region[i] <- "S.Lagoon"
+    CC.new$island.side[i] <- "Leeward"
   } else if(CC.new$site[i]=="34") {
-    CC.new$region[i] <- "S.Lagoon"
+    CC.new$island.side[i] <- "Leeward"
   } else if(CC.new$site[i]=="35") {
-   CC.new$region[i] <- "S.Lagoon"
+   CC.new$island.side[i] <- "Leeward"
   } else if(CC.new$site[i]=="27") {
-   CC.new$region[i] <- "N.Lagoon"
+   CC.new$island.side[i] <- "Leeward"
   } else if(CC.new$site[i]=="30") {
-   CC.new$region[i] <- "N.Lagoon"
+   CC.new$island.side[i] <- "Leeward"
   } else if(CC.new$site[i]=="32") {
-    CC.new$region[i] <- "N.Lagoon"
+    CC.new$island.side[i] <- "Leeward"
   } else if(CC.new$site[i]=="37") {
-    CC.new$region[i] <- "Vaskes"
+    CC.new$island.side[i] <- "Leeward"
+  }}
+
+#2b. Region.3 = 3 levels
+CC.new$region.3 <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(CC.new))) {
+  if(CC.new$site[i]=="5") {
+    CC.new$region.3[i] <- "South Shore"
+  } else if(CC.new$site[i]=="19") {
+    CC.new$region.3[i] <- "Windward"
+  } else if(CC.new$site[i]=="15") {
+    CC.new$region.3[i] <- "Windward"
+  } else if(CC.new$site[i]=="8") {
+    CC.new$region.3[i] <- "Leeward"
+  } else if(CC.new$site[i]=="34") {
+    CC.new$region.3[i] <- "Leeward"
+  } else if(CC.new$site[i]=="35") {
+   CC.new$region.3[i] <- "Leeward"
+  } else if(CC.new$site[i]=="27") {
+   CC.new$region.3[i] <- "Leeward"
+  } else if(CC.new$site[i]=="30") {
+   CC.new$region.3[i] <- "Leeward"
+  } else if(CC.new$site[i]=="32") {
+    CC.new$region.3[i] <- "Leeward"
+  } else if(CC.new$site[i]=="37") {
+    CC.new$region.3[i] <- "South Shore"
+  }}
+
+#2c. Region.4 = 4 levels
+CC.new$region.4 <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(CC.new))) {
+  if(CC.new$site[i]=="5") {
+    CC.new$region.4[i] <- "Vaskess Bay"
+  } else if(CC.new$site[i]=="19") {
+    CC.new$region.4[i] <- "Bay of Wrecks"
+  } else if(CC.new$site[i]=="15") {
+    CC.new$region.4[i] <- "Bay of Wrecks"
+  } else if(CC.new$site[i]=="8") {
+    CC.new$region.4[i] <- "Leeward"
+  } else if(CC.new$site[i]=="34") {
+    CC.new$region.4[i] <- "Leeward"
+  } else if(CC.new$site[i]=="35") {
+   CC.new$region.4[i] <- "Leeward"
+  } else if(CC.new$site[i]=="27") {
+   CC.new$region.4[i] <- "Leeward"
+  } else if(CC.new$site[i]=="30") {
+   CC.new$region.4[i] <- "Leeward"
+  } else if(CC.new$site[i]=="32") {
+    CC.new$region.4[i] <- "Leeward"
+  } else if(CC.new$site[i]=="37") {
+    CC.new$region.4[i] <- "Vaskess Bay"
+  }}
+
+
+#2d. Full Region Breakdown (5 levels)
+#2c. Region.4 = 4 levels
+CC.new$region.full <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(CC.new))) {
+  if(CC.new$site[i]=="5") {
+    CC.new$region.full[i] <- "Vaskess Bay"
+  } else if(CC.new$site[i]=="19") {
+    CC.new$region.full[i] <- "Bay of Wrecks"
+  } else if(CC.new$site[i]=="15") {
+    CC.new$region.full[i] <- "Bay of Wrecks"
+  } else if(CC.new$site[i]=="8") {
+    CC.new$region.full[i] <- "South Lagoon"
+  } else if(CC.new$site[i]=="34") {
+    CC.new$region.full[i] <- "South Lagoon"
+  } else if(CC.new$site[i]=="35") {
+   CC.new$region.full[i] <- "South Lagoon"
+  } else if(CC.new$site[i]=="27") {
+   CC.new$region.full[i] <- "North Lagoon"
+  } else if(CC.new$site[i]=="30") {
+   CC.new$region.full[i] <- "North Lagoon"
+  } else if(CC.new$site[i]=="32") {
+    CC.new$region.full[i] <- "Mid Lagoon"
+  } else if(CC.new$site[i]=="37") {
+    CC.new$region.full[i] <- "Vaskess Bay"
   }}
 
 #3 Assign publication name to site
 CC.new$pub.site <- "a"
 
-#Assign Region values
+#Assign pub site values
 for(i in c(1:nrow(CC.new))) {
   if(CC.new$site[i]=="5") {
     CC.new$pub.site[i] <- "VL3"
@@ -131,62 +215,73 @@ for(i in c(1:nrow(CC.new))) {
     CC.new$pub.site[i] <- "VL4"
   }}
 
+colnames(CC.new)
 
 #Remove the extra collums in the cloudcompare data that aren't necessary
-CC.new <- subset(CC.new, select = c("region", "timepoint","hum_dist", "site", "pub.site" ,"mpq", "volume.change"))
+CC.new <- subset(CC.new, select = c("pub.site","site", "ppq","hum_dist", "island.side" ,"region.3", "region.4", "region.full", "Initial.Timepoint", "Final.Timepoint", "timepoint", "volume.change"))
 colnames(CC.new)
 CC.new
 
 
+
 #Change levels of sites to match disturbance level
 CC.new$site <- factor(CC.new$site, levels = c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
+
 
 #Check structure of CC
 str(CC.new)   ###human_dist is a factor, which we need to change to a character
 
 #Change hum_dist and mpq to a character
 CC.new$hum_dist <- as.character(CC.new$hum_dist)
-CC.new$mpq <- as.character(CC.new$mpq)
+CC.new$ppq <- as.character(CC.new$ppq)
 CC.new$site <- as.character(CC.new$site)
 
 str(CC.new)
 
 #Assign levels to CC$hum_dist
 levels(CC.new$hum_dist)
-CC.new$hum_dist <- factor(CC.new$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+CC.new$hum_dist <- factor(CC.new$hum_dist, levels = c("Very High","Medium", "Very Low"))
 levels(CC.new$hum_dist)
 
-
-#Change timepoint information from A, B,C to year differences
-CC.new$timepoint <- factor(CC.new$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
-CC.new
-
 #Create new collumn to bind two dataframes together with (after creating 2017-2019 calculated dataframe)
-CC.new$ID <- paste(CC.new$pub.site, CC.new$mpq, sep=".")
+CC.new$ID <- paste(CC.new$pub.site, CC.new$ppq, sep=".")
 
 CC.new$timeblock <- "blank"
 
+# #for loop to assign "timeblock" values to timepoints to make future for loop easier
+# for(i in 1:length(CC.new$timepoint)) {
+#   if(CC.new$timepoint[i] == "2015-2017"){
+#     CC.new$timeblock[i] <- 1 } 
+#   if(CC.new$timepoint[i] == "2017-2019"){
+#     CC.new$timeblock[i] <- 3 }
+#   if(CC.new$timepoint[i] == "2015-2019"){
+#     CC.new$timeblock[i] <- 2 }
+#   }
+
 #for loop to assign "timeblock" values to timepoints to make future for loop easier
 for(i in 1:length(CC.new$timepoint)) {
-  if(CC.new$timepoint[i] == "2015-2017"){
+  if(CC.new$timepoint[i] == "A"){
     CC.new$timeblock[i] <- 1 } 
-  if(CC.new$timepoint[i] == "2017-2019"){
+  if(CC.new$timepoint[i] == "B"){
     CC.new$timeblock[i] <- 3 }
-  if(CC.new$timepoint[i] == "2015-2019"){
+  if(CC.new$timepoint[i] == "C"){
     CC.new$timeblock[i] <- 2 }
   }
 
+#Remove unneeded collumns
+CC.new.1 <- CC.new[,-(9:10)]
+
 #Calculate 2017-2019 Timepoint
 #Create new dataframe
-CC.new.2 <- as.data.frame(matrix(data=NA,ncol=9, nrow=50))
+CC.new.2 <- as.data.frame(matrix(data=NA,ncol=12, nrow=50))
 
-colnames(CC.new.2) <- colnames(CC.new)
+colnames(CC.new.2) <- colnames(CC.new.1)
 
-ID.variables <- unique(CC.new$ID)
+ID.variables <- unique(CC.new.1$ID)
 
 #forloop
 for(i in 1:length(ID.variables)) {
-  xx <- subset(CC.new, ID == ID.variables[i])
+  xx <- subset(CC.new.1, ID == ID.variables[i])
   after <- xx %>% filter(timeblock == 3)
   if(length(after$timepoint) > 0) next
   before <- xx %>% filter(timeblock == 1)
@@ -194,12 +289,15 @@ for(i in 1:length(ID.variables)) {
   before_value <- before$volume.change[1]
   full_value <- full$volume.change[1]
   after_value <- full_value - before_value
-  CC.new.2$region[i] <- before$region[1]
+  CC.new.2$island.side[i] <- before$island.side[1]
   CC.new.2$timepoint[i] <- "2017-2019"
   CC.new.2$hum_dist[i] <- before$hum_dist[1]
   CC.new.2$site[i] <- before$site[1]
   CC.new.2$pub.site[i] <- before$pub.site[1]
-  CC.new.2$mpq[i] <- before$mpq[1]
+  CC.new.2$ppq[i] <- before$ppq[1]
+  CC.new.2$region.3[i] <- before$region.3[1]
+  CC.new.2$region.4[i] <- before$region.4[1]
+  CC.new.2$region.full[i] <- before$region.full[1]
   CC.new.2$volume.change[i] <- after_value
   CC.new.2$ID[i] <- before$ID[1]
   CC.new.2$timeblock[i] <- 3  
@@ -208,9 +306,28 @@ for(i in 1:length(ID.variables)) {
 
 CC.new.2.1 <- CC.new.2 %>% drop_na()
 
+#Change structure around of new df
+CC.new.2.1$hum_dist <- as.factor(CC.new.2.1$hum_dist)
+CC.new.2.1$hum_dist <- factor(CC.new.2.1$hum_dist, levels = c("Very High","Medium", "Very Low"))
+levels(CC.new.2.1$hum_dist)
+
+#Change timepoint information from A, B,C to year differences
+CC.new.2.1$timepoint <- factor(CC.new.2.1$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+
+str(CC.new.1)
+levels(CC.new.1$timepoint)
+
+str(CC.new.2.1)
+
+CC.new.2.1$timepoint <- "B"
+
+#Change timepoint information from A, B,C to year differences
+CC.new$timepoint <- factor(CC.new$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+CC.new
+
 
 #Bind two together
-CC.total <- rbind(CC.new, CC.new.2.1)
+CC.total <- rbind(CC.new.1, CC.new.2.1)
 
 #Fix human disturbance values
 for(i in c(1:nrow(CC.total))) {
@@ -238,8 +355,52 @@ for(i in c(1:nrow(CC.total))) {
 
 CC.total
 
+#Convert Timepoint to year range
+CC.total$timepoint <- factor(CC.total$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+CC.total
+
+#Add in continuous human disturbance gradient scores
+CC.total$hdist.cont <- 1
+
+#Input values 
+for(i in c(1:nrow(CC.total))) {
+  if(CC.total$site[i]=="5") {
+    CC.total$hdist.cont[i] <- "0"
+  } else if(CC.total$site[i]=="19") {
+    CC.total$hdist.cont[i] <- "0"
+  } else if(CC.total$site[i]=="15") {
+    CC.total$hdist.cont[i] <- "0"
+  } else if(CC.total$site[i]=="8") {
+    CC.total$hdist.cont[i] <- "1212.82819"
+  } else if(CC.total$site[i]=="34") {
+    CC.total$hdist.cont[i] <- "1212.82819"
+  } else if(CC.total$site[i]=="35") {
+   CC.total$hdist.cont[i] <- "1212.82819"
+  } else if(CC.total$site[i]=="27") {
+   CC.total$hdist.cont[i] <- "7276"
+  } else if(CC.total$site[i]=="30") {
+   CC.total$hdist.cont[i] <- "5085.68478"
+  } else if(CC.total$site[i]=="32") {
+    CC.total$hdist.cont[i] <- "4860.7457"
+  } else if(CC.total$site[i]=="37") {
+    CC.total$hdist.cont[i] <- "0"
+  }}
+
+
+#Create Final Output file to model
+CC.final <- CC.total[,-(11:12)]
+
+#Square Root transform the h.dist continuous variable
+CC.final$sqrt.hdist.cont <- 1
+str(CC.final$hdist.cont) 
+CC.final$hdist.cont <- as.numeric(CC.final$hdist.cont) #Make continuous value a numeric
+CC.final$sqrt.hdist.cont <- sqrt(CC.final$hdist.cont)
+
+colnames(CC.final)
+CC.final <- subset(CC.final, select = c("pub.site", "site", "ppq", "hum_dist", "hdist.cont","sqrt.hdist.cont", "island.side", "region.3", "region.4", "region.full", "timepoint", "volume.change"))
+
 #Export Clean Data as a csv
-write.csv(CC.total, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean.csv")
+write.csv(CC.final, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_Updated.csv")
 ```
 
 # ArcMap Complexity
@@ -301,31 +462,31 @@ for(i in c(1:nrow(mpq))) {
     mpq$hum_dist[i] <- "Very Low"
   }}
 
-#2. Create a collumn for region & fill it with values
-mpq$region <- "a"
+#2. Create a collumn for my region assignments & fill it with values
+mpq$region.kb <- "a"
 
 #Assign Region values
 for(i in c(1:nrow(mpq))) {
   if(mpq$site[i]=="5") {
-    mpq$region[i] <- "Vaskes"
+    mpq$region.kb[i] <- "Vaskes"
   } else if(mpq$site[i]=="19") {
-    mpq$region[i] <- "BOW"
+    mpq$region.kb[i] <- "BOW"
   } else if(mpq$site[i]=="15") {
-    mpq$region[i] <- "BOW"
+    mpq$region.kb[i] <- "BOW"
   } else if(mpq$site[i]=="8") {
-    mpq$region[i] <- "S.Lagoon"
+    mpq$region.kb[i] <- "S.Lagoon"
   } else if(mpq$site[i]=="34") {
-    mpq$region[i] <- "S.Lagoon"
+    mpq$region.kb[i] <- "S.Lagoon"
   } else if(mpq$site[i]=="35") {
-   mpq$region[i] <- "S.Lagoon"
+   mpq$region.kb[i] <- "S.Lagoon"
   } else if(mpq$site[i]=="27") {
-   mpq$region[i] <- "N.Lagoon"
+   mpq$region.kb[i] <- "N.Lagoon"
   } else if(mpq$site[i]=="30") {
-   mpq$region[i] <- "N.Lagoon"
+   mpq$region.kb[i] <- "N.Lagoon"
   } else if(mpq$site[i]=="32") {
-    mpq$region[i] <- "N.Lagoon"
+    mpq$region.kb[i] <- "N.Lagoon"
   } else if(mpq$site[i]=="37") {
-    mpq$region[i] <- "Vaskes"
+    mpq$region.kb[i] <- "Vaskes"
   }}
 
 #3 Assign publication name to site
@@ -355,61 +516,215 @@ for(i in c(1:nrow(mpq))) {
     mpq$pub.site[i] <- "VL4"
   }}
 
-#Create unique collumn name site.ppq
-mpq$site.ppq <- paste(mpq$site, mpq$ppq, sep=".")
+# #Create unique collumn name site.ppq
+# mpq$site.ppq <- paste(mpq$site, mpq$ppq, sep=".")
 
 
 #Create dataframe with only columns I require
-mpq.temp <- subset(mpq, select = c("year", "region","hum_dist","site" ,"site.ppq", "pub.site", "ppq", "DEM", "area_2d", "area_3d", "rug", "slope", "vrm", "curv", "pro.curv", "plan.curv"))
+mpq.temp <- subset(mpq, select = c("year","hum_dist","site", "pub.site", "ppq", "DEM", "area_2d", "area_3d", "rug", "slope", "vrm", "curv", "pro.curv", "plan.curv", "region.kb"))
 
 #Switch dataframe name back to mpq
 mpq <- mpq.temp
 str(mpq)
 
-#Create unique colname
-mpq$year.site.ppq <- paste(mpq$year, mpq$site, mpq$ppq, sep = ".")
+# #Create unique colname
+# mpq$year.site.ppq <- paste(mpq$year, mpq$site, mpq$ppq, sep = ".")
 
 #Change descriptors to factors (Ex: Year, region, disturbance)
-mpq$region <- as.factor(mpq$region) 
-levels(mpq$region)
+# mpq$region <- as.factor(mpq$region) 
+# levels(mpq$region)
 mpq$hum_dist <- as.factor(mpq$hum_dist) 
 mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
 mpq$site <- factor(mpq$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
-mpq$site.ppq<- factor(mpq$site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "35.1", "35.2", "35.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
+#mpq$site.ppq<- factor(mpq$site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "35.1", "35.2", "35.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
 levels(mpq$hum_dist)
-levels(mpq$site.ppq)
+#levels(mpq$site.ppq)
 
 #Reorder the dataframe
 colnames(mpq)
-mpq <- subset(mpq, select = c ("year",  "hum_dist","region",  "pub.site", "site","site.ppq","ppq", "year.site.ppq", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv"))
+mpq <- subset(mpq, select = c ("year",  "hum_dist",  "pub.site", "site","ppq", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "region.kb"))
 
 
 #Take a subset of the mpq data to only include 2015, 2017, 2019 years
 mpq1<- subset(mpq, year == 2015 | year == 2017 | year == 2019)
-mpq1 <- subset(mpq1, select = c ("year.site.ppq", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "year",  "hum_dist","region",  "pub.site", "site","site.ppq","ppq"))
+mpq1 <- subset(mpq1, select = c("year", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "hum_dist", "pub.site", "site","ppq"))
 
 #Line up rows with digitization dataframe
-levels(mpq1$year.site.ppq)
-mpq1$year.site.ppq<- factor(mpq1$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
-
-mpq2 <- mpq1[order(mpq1$year.site.ppq),]
-row.names(mpq2) <- 1:nrow(mpq2) #Changes the row names so that they are re-orderd 1-80
+#levels(mpq1$year.site.ppq)
+#mpq1$year.site.ppq<- factor(mpq1$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
 
 
-mpq.1 <- subset(mpq2, DEM ==1) #1cm DEM
+#How to rename dataframes if I want to break them up by DEM
+mpq.1 <- subset(mpq1, DEM ==1) #1cm DEM
 row.names(mpq.1) <- 1:nrow(mpq.1) #Changes the row names so that they are re-orderd 1-80
 
-mpq.4 <- subset(mpq2, DEM ==4) #4cm DEM
+mpq.4 <- subset(mpq1, DEM ==4) #4cm DEM
 row.names(mpq.4) <- 1:nrow(mpq.4) #Changes the row names so that they are re-orderd 1-80
 
-mpq.8 <- subset(mpq2, DEM ==8) #8cm DEM
+mpq.8 <- subset(mpq1, DEM ==8) #8cm DEM
 row.names(mpq.8) <- 1:nrow(mpq.8) #Changes the row names so that they are re-orderd 1-80
 
 
 
+mpq
+
+#Add in region collumns according to KI publication records
+#2. Create 4 subsections for the region collumn:
+#2a: Side of island (2 levels)
+mpq$island.side <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$island.side[i] <- "Leeward"
+  } else if(mpq$site[i]=="19") {
+    mpq$island.side[i] <- "Windward"
+  } else if(mpq$site[i]=="15") {
+    mpq$island.side[i] <- "Windward"
+  } else if(mpq$site[i]=="8") {
+    mpq$island.side[i] <- "Leeward"
+  } else if(mpq$site[i]=="34") {
+    mpq$island.side[i] <- "Leeward"
+  } else if(mpq$site[i]=="35") {
+   mpq$island.side[i] <- "Leeward"
+  } else if(mpq$site[i]=="27") {
+   mpq$island.side[i] <- "Leeward"
+  } else if(mpq$site[i]=="30") {
+   mpq$island.side[i] <- "Leeward"
+  } else if(mpq$site[i]=="32") {
+    mpq$island.side[i] <- "Leeward"
+  } else if(mpq$site[i]=="37") {
+    mpq$island.side[i] <- "Leeward"
+  }}
+
+#2b. Region.3 = 3 levels
+mpq$region.3 <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$region.3[i] <- "South Shore"
+  } else if(mpq$site[i]=="19") {
+    mpq$region.3[i] <- "Windward"
+  } else if(mpq$site[i]=="15") {
+    mpq$region.3[i] <- "Windward"
+  } else if(mpq$site[i]=="8") {
+    mpq$region.3[i] <- "Leeward"
+  } else if(mpq$site[i]=="34") {
+    mpq$region.3[i] <- "Leeward"
+  } else if(mpq$site[i]=="35") {
+   mpq$region.3[i] <- "Leeward"
+  } else if(mpq$site[i]=="27") {
+   mpq$region.3[i] <- "Leeward"
+  } else if(mpq$site[i]=="30") {
+   mpq$region.3[i] <- "Leeward"
+  } else if(mpq$site[i]=="32") {
+    mpq$region.3[i] <- "Leeward"
+  } else if(mpq$site[i]=="37") {
+    mpq$region.3[i] <- "South Shore"
+  }}
+
+#2c. Region.4 = 4 levels
+mpq$region.4 <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$region.4[i] <- "Vaskess Bay"
+  } else if(mpq$site[i]=="19") {
+    mpq$region.4[i] <- "Bay of Wrecks"
+  } else if(mpq$site[i]=="15") {
+    mpq$region.4[i] <- "Bay of Wrecks"
+  } else if(mpq$site[i]=="8") {
+    mpq$region.4[i] <- "Leeward"
+  } else if(mpq$site[i]=="34") {
+    mpq$region.4[i] <- "Leeward"
+  } else if(mpq$site[i]=="35") {
+   mpq$region.4[i] <- "Leeward"
+  } else if(mpq$site[i]=="27") {
+   mpq$region.4[i] <- "Leeward"
+  } else if(mpq$site[i]=="30") {
+   mpq$region.4[i] <- "Leeward"
+  } else if(mpq$site[i]=="32") {
+    mpq$region.4[i] <- "Leeward"
+  } else if(mpq$site[i]=="37") {
+    mpq$region.4[i] <- "Vaskess Bay"
+  }}
+
+
+#2d. Full Region Breakdown (5 levels)
+#2c. Region.4 = 4 levels
+mpq$region.full <- "a"
+
+#Assign Region values
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$region.full[i] <- "Vaskess Bay"
+  } else if(mpq$site[i]=="19") {
+    mpq$region.full[i] <- "Bay of Wrecks"
+  } else if(mpq$site[i]=="15") {
+    mpq$region.full[i] <- "Bay of Wrecks"
+  } else if(mpq$site[i]=="8") {
+    mpq$region.full[i] <- "South Lagoon"
+  } else if(mpq$site[i]=="34") {
+    mpq$region.full[i] <- "South Lagoon"
+  } else if(mpq$site[i]=="35") {
+   mpq$region.full[i] <- "South Lagoon"
+  } else if(mpq$site[i]=="27") {
+   mpq$region.full[i] <- "North Lagoon"
+  } else if(mpq$site[i]=="30") {
+   mpq$region.full[i] <- "North Lagoon"
+  } else if(mpq$site[i]=="32") {
+    mpq$region.full[i] <- "Mid Lagoon"
+  } else if(mpq$site[i]=="37") {
+    mpq$region.full[i] <- "Vaskess Bay"
+  }}
+
+#Add in continuous human disturbance gradient scores
+mpq$hdist.cont <- 1
+
+#Input values 
+for(i in c(1:nrow(mpq))) {
+  if(mpq$site[i]=="5") {
+    mpq$hdist.cont[i] <- "0"
+  } else if(mpq$site[i]=="19") {
+    mpq$hdist.cont[i] <- "0"
+  } else if(mpq$site[i]=="15") {
+    mpq$hdist.cont[i] <- "0"
+  } else if(mpq$site[i]=="8") {
+    mpq$hdist.cont[i] <- "1212.82819"
+  } else if(mpq$site[i]=="34") {
+    mpq$hdist.cont[i] <- "1212.82819"
+  } else if(mpq$site[i]=="35") {
+   mpq$hdist.cont[i] <- "1212.82819"
+  } else if(mpq$site[i]=="27") {
+   mpq$hdist.cont[i] <- "7276"
+  } else if(mpq$site[i]=="30") {
+   mpq$hdist.cont[i] <- "5085.68478"
+  } else if(mpq$site[i]=="32") {
+    mpq$hdist.cont[i] <- "4860.7457"
+  } else if(mpq$site[i]=="37") {
+    mpq$hdist.cont[i] <- "0"
+  }}
+
+
 colnames(mpq)
+mpq$hdist.cont <- as.numeric(mpq$hdist.cont)
+
+#Square Root transform the h.dist continuous variable
+mpq$sqrt.hdist.cont <- 1
+mpq$sqrt.hdist.cont <- sqrt(mpq$hdist.cont) 
+
+#Reorder dataframe to export for future analyses
+mpq1 <- subset(mpq, select = c("year", "pub.site", "site", "ppq", "hum_dist", "hdist.cont","sqrt.hdist.cont","island.side", "region.3", "region.4", "region.full", "region.kb", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv"))
+
+head(mpq1)
+colnames(mpq1)
+
+str(mpq1)
 #Export csv file 
 write.csv(mpq.1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_1cm_Data_Clean.csv")
+write.csv(mpq1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_updated.csv")
 
 ### Look into converting planform & profile curv values into Z values
 
@@ -432,15 +747,23 @@ write.csv(mpq.1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_1c
 
 
 #Create new dataframe to house fractal dimension data
-frac <- mpq
+frac <- mpq1
+
+#Drop Complexity measures
+frac <- frac[,-(13:17)]
+frac <- frac[,-(11)]
 
 #And make a single DEM category to link back all metadata to
 frac.1 <- subset(mpq, DEM == 1)
 
-nrow(frac)
+#Create unique col name
+frac.1$year.site.ppq <- paste(frac.1$year, frac.1$site, frac.1$ppq, sep = ".")
+
 nrow(frac.1)
+nrow(frac)
 
 str(frac)
+
 frac$DEM <- as.numeric(frac$DEM)
 
 #Change DEM scale from cm to meters
@@ -449,15 +772,17 @@ frac$resolution <- frac$DEM / 100
 #Do math each row to get the frac.val
 frac$frac.val <- 1
 
+str(frac)
+
 #Now do the math via  a for loop
 for(i in 1:nrow(frac)){
 frac$frac.val[i] = (log(frac$area_3d[i])/log(frac$resolution[i]))
 }
 
 #Make a table for the slopes
-slope <- as.data.frame(matrix(data=NA, nrow=length(unique(frac$year.site.ppq)), ncol= 2))
+slope <- as.data.frame(matrix(data=NA, nrow=length(unique(frac.1$year.site.ppq)), ncol= 2))
 colnames(slope) <- c("year.site.ppq", "slope.val")
-slope$year.site.ppq <- unique(frac$year.site.ppq)
+slope$year.site.ppq <- unique(frac.1$year.site.ppq)
 slope$year <- frac.1$year
 slope$hum_dist <- frac.1$hum_dist
 slope$region <- frac.1$region
@@ -465,15 +790,21 @@ slope$pub.site <- frac.1$pub.site
 slope$site <- frac.1$site
 slope$site.ppq <- frac.1$site.ppq
 slope$ppq <- frac.1$ppq
+slope$island.side <- frac.1$island.side
+slope$region.3 <- frac.1$region.3
+slope$region.4 <- frac.1$region.4
+slope$region.full <- frac.1$region.full
 
 
+
+#### It is refusing to make any slope values for the 2016 data....
 for (i in 1:nrow(slope)){
   xx <- subset(frac, year.site.ppq == slope$year.site.ppq[i])
   lm_i <- lm(resolution ~ frac.val, xx)
   slope_i <- coef(lm_i)[[2]]
   slope$slope.val[i] <- slope_i
-  
 }
+
 
 slope$fractal.dimension <- 2- slope$slope.val
 
@@ -490,12 +821,6 @@ write.csv(slope1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dime
   
 ```
 
-### Habitat Volume
-```{r habitat volume data}
-#Load Data
-CC <- read.csv("BaumLab_CloudCompare_Data_Clean.csv", row.names = 1)
-
-```
 
 ### ArcMap Complexity Distributions
 ```{r distributions of complexity data, include=FALSE}
