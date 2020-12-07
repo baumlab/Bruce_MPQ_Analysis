@@ -412,7 +412,7 @@ summary {
 
 <h1 class="title toc-ignore">1.5.Linear.Models.Complexity.Metrics</h1>
 <h4 class="author">Kevin Bruce</h4>
-<h4 class="date">Last compiled on 04 December, 2020</h4>
+<h4 class="date">Last compiled on 07 December, 2020</h4>
 
 </div>
 
@@ -423,25 +423,25 @@ summary {
 <div id="a.-investigating-categorical-hum_dist-vs-continuous-square-root-transformed-hum_dist" class="section level2">
 <h2>A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist</h2>
 <pre class="r"><code>#Models looking at disturbance gradient and if interaction between year&amp;disturbance fit better
-vrm1 &lt;- glm(vrm ~ year + hum_dist, data = mpq) #Hum_Dist = Categorical
-vrm2 &lt;- glm(vrm ~ year + hdist.cont, data = mpq)
-vrm3 &lt;- glm(vrm ~ year * hum_dist, data = mpq)
-vrm4 &lt;- glm(vrm~year*hdist.cont, data = mpq)
+vrm1 &lt;- lm(vrm ~ year + hum_dist, data = mpq) #Hum_Dist = Categorical
+vrm2 &lt;- lm(vrm ~ year + sqrt.hdist.cont, data = mpq)
+vrm3 &lt;- lm(vrm ~ year * hum_dist, data = mpq)
+vrm4 &lt;- lm(vrm~year*sqrt.hdist.cont, data = mpq)
 
-AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1</code></pre>
+AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1/vrm2</code></pre>
 <pre><code>##      df       AIC
 ## vrm1  8 -2115.320
-## vrm2  7 -2083.150
+## vrm2  7 -2114.935
 ## vrm3 16 -2108.720
-## vrm4 11 -2078.388</code></pre>
+## vrm4 11 -2112.940</code></pre>
 <pre class="r"><code>summary(vrm1)</code></pre>
 <pre><code>## 
 ## Call:
-## glm(formula = vrm ~ year + hum_dist, data = mpq)
+## lm(formula = vrm ~ year + hum_dist, data = mpq)
 ## 
-## Deviance Residuals: 
-##       Min         1Q     Median         3Q        Max  
-## -0.035231  -0.010375  -0.001141   0.008558   0.050755  
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.035231 -0.010375 -0.001141  0.008558  0.050755 
 ## 
 ## Coefficients:
 ##                    Estimate Std. Error t value Pr(&gt;|t|)    
@@ -455,13 +455,32 @@ AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1</code></pre>
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
-## (Dispersion parameter for gaussian family taken to be 0.0002218855)
+## Residual standard error: 0.0149 on 374 degrees of freedom
+## Multiple R-squared:  0.4036, Adjusted R-squared:  0.3941 
+## F-statistic: 42.19 on 6 and 374 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>summary(vrm2)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = vrm ~ year + sqrt.hdist.cont, data = mpq)
 ## 
-##     Null deviance: 0.139151  on 380  degrees of freedom
-## Residual deviance: 0.082985  on 374  degrees of freedom
-## AIC: -2115.3
+## Residuals:
+##       Min        1Q    Median        3Q       Max 
+## -0.030008 -0.010794 -0.001725  0.008823  0.053242 
 ## 
-## Number of Fisher Scoring iterations: 2</code></pre>
+## Coefficients:
+##                   Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)      8.035e-02  1.941e-03  41.391  &lt; 2e-16 ***
+## year2016a       -1.461e-02  2.535e-03  -5.766 1.70e-08 ***
+## year2016b       -1.483e-02  2.390e-03  -6.206 1.44e-09 ***
+## year2017        -1.588e-02  2.312e-03  -6.869 2.69e-11 ***
+## year2019        -5.762e-03  2.440e-03  -2.361   0.0187 *  
+## sqrt.hdist.cont -3.383e-04  2.504e-05 -13.510  &lt; 2e-16 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.01492 on 375 degrees of freedom
+## Multiple R-squared:  0.3999, Adjusted R-squared:  0.3919 
+## F-statistic: 49.98 on 5 and 375 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 <div id="b.-investigate-region-and-human-disturbance-cont-and-categorical" class="section level2">
 <h2>B. Investigate region and human disturbance (cont and categorical)</h2>
@@ -484,12 +503,12 @@ AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1</code></pre>
 </ul>
 <pre class="r"><code>#Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
-vrm5 &lt;- glm(vrm ~ year + hum_dist + island.side, data = mpq)
-vrm6 &lt;- glm(vrm ~ year + hum_dist + region.3, data = mpq)
-vrm7 &lt;- glm(vrm~ year + hum_dist + region.4, data = mpq)
-vrm8 &lt;- glm(vrm ~ year*hum_dist + island.side, data = mpq)
-vrm9 &lt;- glm(vrm ~ year*hum_dist + region.3, data = mpq)
-vrm10 &lt;- glm(vrm~year*hum_dist + region.4, data = mpq)
+vrm5 &lt;- lm(vrm ~ year + hum_dist + island.side, data = mpq) 
+vrm6 &lt;- lm(vrm ~ year + hum_dist + region.3, data = mpq)
+vrm7 &lt;- lm(vrm~ year + hum_dist + region.4, data = mpq)
+vrm8 &lt;- lm(vrm ~ year*hum_dist + island.side, data = mpq)
+vrm9 &lt;- lm(vrm ~ year*hum_dist + region.3, data = mpq)
+vrm10 &lt;- lm(vrm~year*hum_dist + region.4, data = mpq)
 
 AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10) #AIC&#39;s the same based on if interaction is present or not (interaction makes it worse</code></pre>
 <pre><code>##       df       AIC
@@ -500,12 +519,12 @@ AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10) #AIC&#39;s the same based on if interac
 ## vrm9  17 -2127.444
 ## vrm10 17 -2127.444</code></pre>
 <pre class="r"><code>#Continuous human disturbance against region, then Continuous disturbance interaction with year
-vrm11 &lt;- glm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
-vrm12  &lt;- glm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq)
-vrm13 &lt;- glm(vrm~year + sqrt.hdist.cont + region.4, data = mpq)
-vrm14 &lt;- glm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
-vrm15 &lt;- glm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq)
-vrm16 &lt;- glm(vrm~year*sqrt.hdist.cont + region.4, data = mpq)
+vrm11 &lt;- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
+vrm12  &lt;- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq)
+vrm13 &lt;- lm(vrm~year + sqrt.hdist.cont + region.4, data = mpq)
+vrm14 &lt;- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
+vrm15 &lt;- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq)
+vrm16 &lt;- lm(vrm~year*sqrt.hdist.cont + region.4, data = mpq)
 
 AIC(vrm11, vrm12, vrm13, vrm14, vrm15, vrm16) #AIC&#39;s the same based on if interaction is present or </code></pre>
 <pre><code>##       df       AIC
@@ -530,125 +549,293 @@ AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16
 ## vrm14 12 -2145.314
 ## vrm15 13 -2146.641
 ## vrm16 13 -2146.641</code></pre>
+<pre class="r"><code>#VRM 12, 13 are the best, however 14,15,16 are also wihtin Delta AIC &lt;3</code></pre>
 </div>
 <div id="c.-with-random-effect-1site" class="section level2">
 <h2>C. With Random Effect (1|site)</h2>
 <ul>
-<li>Adding to previous model iterations with both human disturbances, some with interactions between year&amp;hum_dist, and various regions of “best fit” (region3 and region4 only)</li>
+<li>Adding to previous model iterations with both human disturbances, some with interactions between year&amp;hum_dist, and various regions of “best fit” (island.side and region4 only)</li>
 </ul>
 <pre class="r"><code>#Continuous disturbance
 #no interaction
-vrm17 &lt;- glm(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq)
-vrm18 &lt;- glm(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
-#with interaction
-vrm19 &lt;- glm(vrm~year*sqrt.hdist.cont + region.3 + (1|site), data = mpq)
-vrm20 &lt;- glm(vrm~year*sqrt.hdist.cont + region.4 + (1|site), data = mpq)
-summary(vrm20)</code></pre>
-<pre><code>## 
-## Call:
-## glm(formula = vrm ~ year * sqrt.hdist.cont + region.4 + (1 | 
-##     site), data = mpq)
-## 
-## Deviance Residuals: 
-##       Min         1Q     Median         3Q        Max  
-## -0.033972  -0.009744  -0.001234   0.008521   0.047936  
-## 
-## Coefficients: (1 not defined because of singularities)
-##                             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)                9.149e-02  2.905e-03  31.499  &lt; 2e-16 ***
-## year2016a                 -1.111e-02  4.289e-03  -2.590 0.009972 ** 
-## year2016b                 -1.598e-02  3.621e-03  -4.415 1.33e-05 ***
-## year2017                  -2.056e-02  3.372e-03  -6.096 2.74e-09 ***
-## year2019                  -4.103e-03  4.067e-03  -1.009 0.313677    
-## sqrt.hdist.cont           -2.385e-04  6.324e-05  -3.771 0.000189 ***
-## region.4Leeward           -1.930e-02  3.296e-03  -5.857 1.04e-08 ***
-## region.4Vaskess Bay       -1.378e-02  2.902e-03  -4.749 2.93e-06 ***
-## 1 | siteTRUE                      NA         NA      NA       NA    
-## year2016a:sqrt.hdist.cont -3.519e-05  8.192e-05  -0.430 0.667769    
-## year2016b:sqrt.hdist.cont  3.023e-05  7.380e-05   0.410 0.682332    
-## year2017:sqrt.hdist.cont   1.381e-04  7.078e-05   1.951 0.051802 .  
-## year2019:sqrt.hdist.cont   2.400e-05  7.943e-05   0.302 0.762646    
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
-## 
-## (Dispersion parameter for gaussian family taken to be 0.0002017775)
-## 
-##     Null deviance: 0.139151  on 380  degrees of freedom
-## Residual deviance: 0.074456  on 369  degrees of freedom
-## AIC: -2146.6
-## 
-## Number of Fisher Scoring iterations: 2</code></pre>
-<pre class="r"><code>AIC(vrm17, vrm18, vrm19, vrm20) #all are within AIC 2, so any are useable</code></pre>
-<pre><code>##       df       AIC
-## vrm17  9 -2148.127
-## vrm18  9 -2148.127
-## vrm19 13 -2146.641
-## vrm20 13 -2146.641</code></pre>
-<pre class="r"><code>#Categorical disturbance
-#no interaction
-vrm21 &lt;- glm(vrm~year + hum_dist + region.3 + (1|site), data = mpq)
-vrm22 &lt;- glm(vrm~year + hum_dist + region.4 + (1|site), data = mpq)
-#with interaction
-vrm23 &lt;- glm(vrm~year*hum_dist + region.3 + (1|site), data = mpq)
-vrm24 &lt;- glm(vrm~year*hum_dist + region.4 + (1|site), data = mpq)
+vrm17 &lt;- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
+vrm18 &lt;- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm19 &lt;- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq)
+vrm20 &lt;- lmer(vrm~year + hum_dist + (1|site), data = mpq)
 
-AIC(vrm21, vrm22, vrm23, vrm24) #vrm21/22 are best (no interaction)</code></pre>
+AIC(vrm17, vrm18, vrm19, vrm20) #VRM19 best fit, but vrm20 is close </code></pre>
 <pre><code>##       df       AIC
-## vrm21  9 -2135.755
-## vrm22  9 -2135.755
-## vrm23 17 -2127.444
-## vrm24 17 -2127.444</code></pre>
-<pre class="r"><code>#Lets compare only region 4&#39;s with categorical vs continuous
-AIC(vrm18, vrm20, vrm22, vrm24) #vrm18,20 are better fits (18 is best)</code></pre>
+## vrm17  9 -2131.358
+## vrm18 10 -2122.238
+## vrm19  8 -2137.576
+## vrm20  9 -2136.116</code></pre>
+<pre class="r"><code>#Results of best fitting models
+summary(vrm19)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: vrm ~ year + sqrt.hdist.cont + (1 | site)
+##    Data: mpq
+## 
+## REML criterion at convergence: -2153.6
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.5133 -0.6836 -0.0664  0.6124  3.2049 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  site     (Intercept) 8.143e-05 0.009024
+##  Residual             1.608e-04 0.012681
+## Number of obs: 381, groups:  site, 10
+## 
+## Fixed effects:
+##                   Estimate Std. Error t value
+## (Intercept)      7.955e-02  4.482e-03  17.747
+## year2016a       -1.323e-02  2.168e-03  -6.101
+## year2016b       -1.483e-02  2.031e-03  -7.304
+## year2017        -1.495e-02  1.987e-03  -7.523
+## year2019        -2.744e-03  2.133e-03  -1.286
+## sqrt.hdist.cont -3.425e-04  9.332e-05  -3.670
+## 
+## Correlation of Fixed Effects:
+##             (Intr) yer2016 yr2016b yr2017 yr2019
+## year2016a   -0.196                              
+## year2016b   -0.226  0.468                       
+## year2017    -0.257  0.475   0.511               
+## year2019    -0.223  0.466   0.476   0.510       
+## sqrt.hdst.c -0.698 -0.021   0.000   0.021 -0.004</code></pre>
+<pre class="r"><code>summary(vrm20)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: vrm ~ year + hum_dist + (1 | site)
+##    Data: mpq
+## 
+## REML criterion at convergence: -2154.1
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.5283 -0.6985 -0.0691  0.6283  3.1899 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  site     (Intercept) 9.266e-05 0.009626
+##  Residual             1.608e-04 0.012680
+## Number of obs: 381, groups:  site, 10
+## 
+## Fixed effects:
+##                    Estimate Std. Error t value
+## (Intercept)        0.081178   0.005148  15.770
+## year2016a         -0.013207   0.002169  -6.090
+## year2016b         -0.014830   0.002030  -7.304
+## year2017          -0.014954   0.001987  -7.525
+## year2019          -0.002709   0.002134  -1.270
+## hum_distMedium    -0.018474   0.007545  -2.448
+## hum_distVery High -0.024687   0.007544  -3.272
+## 
+## Correlation of Fixed Effects:
+##             (Intr) yer2016 yr2016b yr2017 yr2019 hm_dsM
+## year2016a   -0.167                                     
+## year2016b   -0.197  0.468                              
+## year2017    -0.229  0.474   0.511                      
+## year2019    -0.194  0.466   0.476   0.510              
+## hum_distMdm -0.639 -0.016   0.000   0.020 -0.004       
+## hm_dstVryHg -0.639 -0.020   0.000   0.020 -0.004  0.436</code></pre>
+<pre class="r"><code>anova(vrm19, vrm20)</code></pre>
+<pre><code>## refitting model(s) with ML (instead of REML)</code></pre>
+<pre><code>## Data: mpq
+## Models:
+## vrm19: vrm ~ year + sqrt.hdist.cont + (1 | site)
+## vrm20: vrm ~ year + hum_dist + (1 | site)
+##       npar     AIC     BIC logLik deviance Chisq Df Pr(&gt;Chisq)
+## vrm19    8 -2207.5 -2176.0 1111.8  -2223.5                    
+## vrm20    9 -2205.7 -2170.2 1111.8  -2223.7 0.122  1     0.7269</code></pre>
+<pre class="r"><code>#With interactions
+vrm21 &lt;- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq)
+vrm22 &lt;- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm23 &lt;- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq)
+vrm24 &lt;- lmer(vrm~year * hum_dist + (1|site), data = mpq)
+
+AIC(vrm21, vrm22, vrm23, vrm24) #VRM23 best fit</code></pre>
 <pre><code>##       df       AIC
-## vrm18  9 -2148.127
-## vrm20 13 -2146.641
-## vrm22  9 -2135.755
-## vrm24 17 -2127.444</code></pre>
-<pre class="r"><code>summary(vrm20) #Site random effect is NA.... I think this is because its fitting 1 | site FALSE into the intercept --&gt; What structure should site be in my dataframe? I have it currently as an integer, but when I changed it to character the glm&#39;s didn&#39;t run.</code></pre>
-<pre><code>## 
-## Call:
-## glm(formula = vrm ~ year * sqrt.hdist.cont + region.4 + (1 | 
-##     site), data = mpq)
+## vrm21 13 -2058.224
+## vrm22 14 -2049.105
+## vrm23 12 -2064.131
+## vrm24 17 -2053.037</code></pre>
+<pre class="r"><code>#Results of best fitting models
+summary(vrm23)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: vrm ~ year * sqrt.hdist.cont + (1 | site)
+##    Data: mpq
 ## 
-## Deviance Residuals: 
-##       Min         1Q     Median         3Q        Max  
-## -0.033972  -0.009744  -0.001234   0.008521   0.047936  
+## REML criterion at convergence: -2088.1
 ## 
-## Coefficients: (1 not defined because of singularities)
-##                             Estimate Std. Error t value Pr(&gt;|t|)    
-## (Intercept)                9.149e-02  2.905e-03  31.499  &lt; 2e-16 ***
-## year2016a                 -1.111e-02  4.289e-03  -2.590 0.009972 ** 
-## year2016b                 -1.598e-02  3.621e-03  -4.415 1.33e-05 ***
-## year2017                  -2.056e-02  3.372e-03  -6.096 2.74e-09 ***
-## year2019                  -4.103e-03  4.067e-03  -1.009 0.313677    
-## sqrt.hdist.cont           -2.385e-04  6.324e-05  -3.771 0.000189 ***
-## region.4Leeward           -1.930e-02  3.296e-03  -5.857 1.04e-08 ***
-## region.4Vaskess Bay       -1.378e-02  2.902e-03  -4.749 2.93e-06 ***
-## 1 | siteTRUE                      NA         NA      NA       NA    
-## year2016a:sqrt.hdist.cont -3.519e-05  8.192e-05  -0.430 0.667769    
-## year2016b:sqrt.hdist.cont  3.023e-05  7.380e-05   0.410 0.682332    
-## year2017:sqrt.hdist.cont   1.381e-04  7.078e-05   1.951 0.051802 .  
-## year2019:sqrt.hdist.cont   2.400e-05  7.943e-05   0.302 0.762646    
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.6301 -0.7065 -0.0909  0.6561  3.2179 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  site     (Intercept) 8.219e-05 0.009066
+##  Residual             1.604e-04 0.012663
+## Number of obs: 381, groups:  site, 10
+## 
+## Fixed effects:
+##                             Estimate Std. Error t value
+## (Intercept)                8.098e-02  4.798e-03  16.878
+## year2016a                 -1.215e-02  3.830e-03  -3.172
+## year2016b                 -1.598e-02  3.228e-03  -4.952
+## year2017                  -1.890e-02  3.079e-03  -6.140
+## year2019                  -2.730e-03  3.729e-03  -0.732
+## sqrt.hdist.cont           -3.779e-04  1.029e-04  -3.673
+## year2016a:sqrt.hdist.cont -1.665e-05  7.309e-05  -0.228
+## year2016b:sqrt.hdist.cont  3.023e-05  6.578e-05   0.459
+## year2017:sqrt.hdist.cont   1.119e-04  6.397e-05   1.749
+## year2019:sqrt.hdist.cont   2.240e-06  7.215e-05   0.031
+## 
+## Correlation of Fixed Effects:
+##             (Intr) yer2016 yr2016b yr2017 yr2019 sqrt.. yr2016:s.. yr2016b:..
+## year2016a   -0.281                                                           
+## year2016b   -0.336  0.421                                                    
+## year2017    -0.388  0.438   0.524                                            
+## year2019    -0.339  0.410   0.433   0.528                                    
+## sqrt.hdst.c -0.740  0.208   0.249   0.287  0.251                             
+## yr2016:sq..  0.234 -0.823  -0.350  -0.364 -0.341 -0.286                      
+## yr2016b:s..  0.262 -0.328  -0.778  -0.408 -0.337 -0.320  0.450               
+## yr2017:sq..  0.296 -0.335  -0.400  -0.763 -0.403 -0.349  0.461      0.514    
+## yr2019:sq..  0.278 -0.336  -0.355  -0.433 -0.820 -0.321  0.441      0.456    
+##             y2017:
+## year2016a         
+## year2016b         
+## year2017          
+## year2019          
+## sqrt.hdst.c       
+## yr2016:sq..       
+## yr2016b:s..       
+## yr2017:sq..       
+## yr2019:sq..  0.516</code></pre>
+<pre class="r"><code>anova(vrm21, vrm23)</code></pre>
+<pre><code>## refitting model(s) with ML (instead of REML)</code></pre>
+<pre><code>## Data: mpq
+## Models:
+## vrm23: vrm ~ year * sqrt.hdist.cont + (1 | site)
+## vrm21: vrm ~ year * sqrt.hdist.cont + island.side + (1 | site)
+##       npar     AIC     BIC logLik deviance Chisq Df Pr(&gt;Chisq)  
+## vrm23   12 -2204.6 -2157.2 1114.3  -2228.6                      
+## vrm21   13 -2207.7 -2156.4 1116.8  -2233.7 5.158  1    0.02314 *
 ## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>#Combine all together
+AIC(vrm17, vrm18, vrm19, vrm20,vrm21, vrm22, vrm23, vrm24) #VRM19 best fit, but vrm20 is close </code></pre>
+<pre><code>##       df       AIC
+## vrm17  9 -2131.358
+## vrm18 10 -2122.238
+## vrm19  8 -2137.576
+## vrm20  9 -2136.116
+## vrm21 13 -2058.224
+## vrm22 14 -2049.105
+## vrm23 12 -2064.131
+## vrm24 17 -2053.037</code></pre>
+<pre class="r"><code>#Best fit model = vrm19
+
+#Results
+# Interaction between year and human disturbance (which Jen did) doesn&#39;t make the models fit better
+# Best fitting model has no region values within it (with continous human disturbance model slightly better than categorical one)
+
+#Variance is supper low with the site intercept random effect ---&gt; Perhaps means we can leave without?
+
+AIC(vrm1, vrm2, vrm19, vrm20) #Models still fit better with site as a random effect</code></pre>
+<pre><code>##       df       AIC
+## vrm1   8 -2115.320
+## vrm2   7 -2114.935
+## vrm19  8 -2137.576
+## vrm20  9 -2136.116</code></pre>
+<pre class="r"><code>#End Result: vrm19/vrm20 models are best fit 
+summary(vrm19)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: vrm ~ year + sqrt.hdist.cont + (1 | site)
+##    Data: mpq
 ## 
-## (Dispersion parameter for gaussian family taken to be 0.0002017775)
+## REML criterion at convergence: -2153.6
 ## 
-##     Null deviance: 0.139151  on 380  degrees of freedom
-## Residual deviance: 0.074456  on 369  degrees of freedom
-## AIC: -2146.6
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.5133 -0.6836 -0.0664  0.6124  3.2049 
 ## 
-## Number of Fisher Scoring iterations: 2</code></pre>
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  site     (Intercept) 8.143e-05 0.009024
+##  Residual             1.608e-04 0.012681
+## Number of obs: 381, groups:  site, 10
+## 
+## Fixed effects:
+##                   Estimate Std. Error t value
+## (Intercept)      7.955e-02  4.482e-03  17.747
+## year2016a       -1.323e-02  2.168e-03  -6.101
+## year2016b       -1.483e-02  2.031e-03  -7.304
+## year2017        -1.495e-02  1.987e-03  -7.523
+## year2019        -2.744e-03  2.133e-03  -1.286
+## sqrt.hdist.cont -3.425e-04  9.332e-05  -3.670
+## 
+## Correlation of Fixed Effects:
+##             (Intr) yer2016 yr2016b yr2017 yr2019
+## year2016a   -0.196                              
+## year2016b   -0.226  0.468                       
+## year2017    -0.257  0.475   0.511               
+## year2019    -0.223  0.466   0.476   0.510       
+## sqrt.hdst.c -0.698 -0.021   0.000   0.021 -0.004</code></pre>
+<pre class="r"><code>summary(vrm20)</code></pre>
+<pre><code>## Linear mixed model fit by REML [&#39;lmerMod&#39;]
+## Formula: vrm ~ year + hum_dist + (1 | site)
+##    Data: mpq
+## 
+## REML criterion at convergence: -2154.1
+## 
+## Scaled residuals: 
+##     Min      1Q  Median      3Q     Max 
+## -2.5283 -0.6985 -0.0691  0.6283  3.1899 
+## 
+## Random effects:
+##  Groups   Name        Variance  Std.Dev.
+##  site     (Intercept) 9.266e-05 0.009626
+##  Residual             1.608e-04 0.012680
+## Number of obs: 381, groups:  site, 10
+## 
+## Fixed effects:
+##                    Estimate Std. Error t value
+## (Intercept)        0.081178   0.005148  15.770
+## year2016a         -0.013207   0.002169  -6.090
+## year2016b         -0.014830   0.002030  -7.304
+## year2017          -0.014954   0.001987  -7.525
+## year2019          -0.002709   0.002134  -1.270
+## hum_distMedium    -0.018474   0.007545  -2.448
+## hum_distVery High -0.024687   0.007544  -3.272
+## 
+## Correlation of Fixed Effects:
+##             (Intr) yer2016 yr2016b yr2017 yr2019 hm_dsM
+## year2016a   -0.167                                     
+## year2016b   -0.197  0.468                              
+## year2017    -0.229  0.474   0.511                      
+## year2019    -0.194  0.466   0.476   0.510              
+## hum_distMdm -0.639 -0.016   0.000   0.020 -0.004       
+## hm_dstVryHg -0.639 -0.020   0.000   0.020 -0.004  0.436</code></pre>
+<pre class="r"><code>anova(vrm19, vrm20)</code></pre>
+<pre><code>## refitting model(s) with ML (instead of REML)</code></pre>
+<pre><code>## Data: mpq
+## Models:
+## vrm19: vrm ~ year + sqrt.hdist.cont + (1 | site)
+## vrm20: vrm ~ year + hum_dist + (1 | site)
+##       npar     AIC     BIC logLik deviance Chisq Df Pr(&gt;Chisq)
+## vrm19    8 -2207.5 -2176.0 1111.8  -2223.5                    
+## vrm20    9 -2205.7 -2170.2 1111.8  -2223.7 0.122  1     0.7269</code></pre>
+<pre class="r"><code>#Models were refit with Maximum Likelihood instead of REML</code></pre>
 </div>
 <div id="d.-final-findings" class="section level2">
 <h2>D. Final findings:</h2>
 <ul>
-<li>Sqrt transformed continuous disturbance fits better than categorical (for now)</li>
-<li>No interactions are significantly better than their non-interaction counterparts, so best to leave out for simplicity sake?</li>
+<li><p>Sqrt transformed continuous disturbance fits better than categorical (for now) –&gt;varies on how much “better” the fit is based on the model</p></li>
+<li><p>Interactions between either year and disturbance(continuous) or year and region all come out as worse fits than non-interaction, so probably best to drop</p></li>
+<li><p>Random effect has SUPER low estimates in best fit model; maybe not really that required? –&gt; AIC between models that have same components except site RE show that including site makes the AIC a larger negative # (therefore, –&gt; aka better fit)</p></li>
 </ul>
-<p>*For the glm’s at the end, (1|site) random effect at the end came out as NA, which I think is due to the structure of the data collumn in the dataframe. I currently have it as an integer, and when I tried to convert it to a character, the glm’s wouldn’t run. Need to look into this more.</p>
-<p>Final Working Model: <em>VRM ~ year + sqrt.hdist.cont + region.4 + (1|site)</em></p>
+<p>Final Working Model:</p>
+<p><strong>VRM ~ year + sqrt.hdist.cont + (1|site)</strong> OR <strong>VRM ~ year + hum_dist + (1|site) </strong></p>
 </div>
 </div>
 

@@ -750,8 +750,8 @@ write.csv(mpq1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL
 frac <- mpq1
 
 #Drop Complexity measures
-frac <- frac[,-(13:17)]
-frac <- frac[,-(11)]
+frac <- frac[,-(16:20)] #Remove complexity metrics but leave area_3d
+frac <- frac[,-(14)] #Remove area_2d
 
 #And make a single DEM category to link back all metadata to
 frac.1 <- subset(mpq, DEM == 1)
@@ -759,8 +759,8 @@ frac.1 <- subset(mpq, DEM == 1)
 #Create unique col name
 frac.1$year.site.ppq <- paste(frac.1$year, frac.1$site, frac.1$ppq, sep = ".")
 
-nrow(frac.1)
-nrow(frac)
+nrow(frac.1) #127
+nrow(frac) #381
 
 str(frac)
 
@@ -773,6 +773,9 @@ frac$resolution <- frac$DEM / 100
 frac$frac.val <- 1
 
 str(frac)
+
+#Make year.site.ppq collumn
+frac$year.site.ppq <- paste(mpq$year, mpq$site, mpq$ppq, sep = ".")
 
 #Now do the math via  a for loop
 for(i in 1:nrow(frac)){
@@ -811,8 +814,9 @@ slope$fractal.dimension <- 2- slope$slope.val
 ggplot(slope, aes (x= year.site.ppq, y= fractal.dimension)) + geom_point()
 
 colnames(slope)
+
 #Reorder dataframe
-slope1 <- subset(slope, select = c("year", "hum_dist" ,"region", "pub.site", "site", "site.ppq", "ppq", "year.site.ppq", "slope.val", "fractal.dimension"))
+slope1 <- subset(slope, select = c("year", "hum_dist", "pub.site", "site", "ppq", "island.side", "region.3", "region.4", "region.full", "fractal.dimension"))
 
 
 #Export Fractal Dimension Dataframe

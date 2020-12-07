@@ -44,6 +44,7 @@ library(TMB)
 library(glmmTMB)
 library(bbmle)
 
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
 #Set the Working Directory
 setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 
@@ -55,17 +56,17 @@ cc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Da
 
 
 
-#---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
 ### 2. Fractal Dimension Data
-#frac <- read.csv("")
+frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv")
 
 
 
 
     
-
-#Complexity Data
-mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_updated.csv", header=TRUE)
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+# 3. Complexity Data
+mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_updated.csv", header=TRUE, row.names = 1)
 
 
 #Correct levels of hum_dist
@@ -78,6 +79,9 @@ levels(mpq$DEM)
 mpq$DEM <- factor(mpq$DEM, levels = c("1", "4", "8"))
 levels(mpq$DEM)
 
+#Change site to a factor (for the random effect modelling)
+mpq$site <- as.factor(mpq$site)
+
 #Create subsets for each DEM
 mpq.1 <- subset (mpq, DEM == 1) 
 mpq.4 <- subset (mpq, DEM == 4) 
@@ -87,7 +91,6 @@ mpq.8 <- subset (mpq, DEM == 8)
 
 ```
 
- 
 ```{r Exploratory plots Vrm, eval=FALSE, include=FALSE}
 mpq #Dataset
 mpq.num <- mpq[,16:21] #numeric datagrame only
@@ -119,13 +122,15 @@ plot(vrm~site, data = mpq)
 
 ```{r fixed effect models}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
-vrm1 <- glm(vrm ~ year + hum_dist, data = mpq) #Hum_Dist = Categorical
-vrm2 <- glm(vrm ~ year + hdist.cont, data = mpq)
-vrm3 <- glm(vrm ~ year * hum_dist, data = mpq)
-vrm4 <- glm(vrm~year*hdist.cont, data = mpq)
+vrm1 <- lm(vrm ~ year + hum_dist, data = mpq) #Hum_Dist = Categorical
+vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq)
+vrm3 <- lm(vrm ~ year * hum_dist, data = mpq)
+vrm4 <- lm(vrm~year*sqrt.hdist.cont, data = mpq)
 
-AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1
+AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1/vrm2
 summary(vrm1)
+summary(vrm2)
+
 ```
 
 
@@ -157,75 +162,98 @@ Ultimately, this is to check and see whether different levels of wave energy/etc
 
 - So interaction between human disturbance and year doesn't fit best when looking at it like this.... Interesting since Jenn's paper had an interaction term in best fit.
 
-```{r region with hdist}
+```{r region with interactions with hdist}
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
-vrm5 <- glm(vrm ~ year + hum_dist + island.side, data = mpq)
-vrm6 <- glm(vrm ~ year + hum_dist + region.3, data = mpq)
-vrm7 <- glm(vrm~ year + hum_dist + region.4, data = mpq)
-vrm8 <- glm(vrm ~ year*hum_dist + island.side, data = mpq)
-vrm9 <- glm(vrm ~ year*hum_dist + region.3, data = mpq)
-vrm10 <- glm(vrm~year*hum_dist + region.4, data = mpq)
+vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq) 
+vrm6 <- lm(vrm ~ year + hum_dist + region.3, data = mpq)
+vrm7 <- lm(vrm~ year + hum_dist + region.4, data = mpq)
+vrm8 <- lm(vrm ~ year*hum_dist + island.side, data = mpq)
+vrm9 <- lm(vrm ~ year*hum_dist + region.3, data = mpq)
+vrm10 <- lm(vrm~year*hum_dist + region.4, data = mpq)
 
 AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10) #AIC's the same based on if interaction is present or not (interaction makes it worse
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
-vrm11 <- glm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
-vrm12  <- glm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq)
-vrm13 <- glm(vrm~year + sqrt.hdist.cont + region.4, data = mpq)
-vrm14 <- glm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
-vrm15 <- glm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq)
-vrm16 <- glm(vrm~year*sqrt.hdist.cont + region.4, data = mpq)
+vrm11 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
+vrm12  <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq)
+vrm13 <- lm(vrm~year + sqrt.hdist.cont + region.4, data = mpq)
+vrm14 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
+vrm15 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq)
+vrm16 <- lm(vrm~year*sqrt.hdist.cont + region.4, data = mpq)
 
 AIC(vrm11, vrm12, vrm13, vrm14, vrm15, vrm16) #AIC's the same based on if interaction is present or 
 
 #AIC's for all
 AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16) 
 
+#VRM 12, 13 are the best, however 14,15,16 are also wihtin Delta AIC <3
 
 ```
 
-
-
 ## C. With Random Effect (1|site)
-- Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (region3 and region4 only)
+- Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (island.side and region4 only)
 
-```{r interactions}
+```{r simple random effects}
 #Continuous disturbance
 #no interaction
-vrm17 <- glm(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq)
-vrm18 <- glm(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
-#with interaction
-vrm19 <- glm(vrm~year*sqrt.hdist.cont + region.3 + (1|site), data = mpq)
-vrm20 <- glm(vrm~year*sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm17 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
+vrm18 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm19 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq)
+vrm20 <- lmer(vrm~year + hum_dist + (1|site), data = mpq)
+
+AIC(vrm17, vrm18, vrm19, vrm20) #VRM19 best fit, but vrm20 is close 
+
+#Results of best fitting models
+summary(vrm19)
 summary(vrm20)
+anova(vrm19, vrm20)
 
-AIC(vrm17, vrm18, vrm19, vrm20) #all are within AIC 2, so any are useable
+#With interactions
+vrm21 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq)
+vrm22 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm23 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq)
+vrm24 <- lmer(vrm~year * hum_dist + (1|site), data = mpq)
 
-#Categorical disturbance
-#no interaction
-vrm21 <- glm(vrm~year + hum_dist + region.3 + (1|site), data = mpq)
-vrm22 <- glm(vrm~year + hum_dist + region.4 + (1|site), data = mpq)
-#with interaction
-vrm23 <- glm(vrm~year*hum_dist + region.3 + (1|site), data = mpq)
-vrm24 <- glm(vrm~year*hum_dist + region.4 + (1|site), data = mpq)
+AIC(vrm21, vrm22, vrm23, vrm24) #VRM23 best fit
 
-AIC(vrm21, vrm22, vrm23, vrm24) #vrm21/22 are best (no interaction)
-
-#Lets compare only region 4's with categorical vs continuous
-AIC(vrm18, vrm20, vrm22, vrm24) #vrm18,20 are better fits (18 is best)
-
-summary(vrm20) #Site random effect is NA.... I think this is because its fitting 1 | site FALSE into the intercept --> What structure should site be in my dataframe? I have it currently as an integer, but when I changed it to character the glm's didn't run.
+#Results of best fitting models
+summary(vrm23)
+anova(vrm21, vrm23)
 
 
+#Combine all together
+AIC(vrm17, vrm18, vrm19, vrm20,vrm21, vrm22, vrm23, vrm24) #VRM19 best fit, but vrm20 is close 
+
+#Best fit model = vrm19
+
+#Results
+# Interaction between year and human disturbance (which Jen did) doesn't make the models fit better
+# Best fitting model has no region values within it (with continous human disturbance model slightly better than categorical one)
+
+#Variance is supper low with the site intercept random effect ---> Perhaps means we can leave without?
+
+AIC(vrm1, vrm2, vrm19, vrm20) #Models still fit better with site as a random effect
+
+#End Result: vrm19/vrm20 models are best fit 
+summary(vrm19)
+summary(vrm20)
+anova(vrm19, vrm20)
+
+
+#Models were refit with Maximum Likelihood instead of REML
 ```
 
 ## D. Final findings:
-- Sqrt transformed continuous disturbance fits better than categorical (for now)
-- No interactions are significantly better than their non-interaction counterparts, so best to leave out for simplicity sake?
 
-*For the glm's at the end, (1|site) random effect at the end came out as NA, which I think is due to the structure of the data collumn in the dataframe. I currently have it as an integer, and when I tried to convert it to a character, the glm's wouldn't run. Need to look into this more.
+- Sqrt transformed continuous disturbance fits better than categorical (for now) -->varies on how much "better" the fit is based on the model
+
+- Interactions between either year and disturbance(continuous) or year and region all come out as worse fits than non-interaction, so probably best to drop
+
+- Random effect has SUPER low estimates in best fit model; maybe not really that required? --> AIC between models that have same components except site RE show that including site makes the AIC a larger negative # (therefore,  --> aka better fit)
+
 
 Final Working Model:
-*VRM ~ year + sqrt.hdist.cont + region.4 + (1|site)*
+
+**VRM ~ year + sqrt.hdist.cont + (1|site)** OR **VRM ~ year + hum_dist + (1|site) ** 
 
