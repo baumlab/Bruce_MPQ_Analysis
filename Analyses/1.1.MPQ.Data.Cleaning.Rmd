@@ -217,6 +217,10 @@ for(i in c(1:nrow(CC.new))) {
 
 colnames(CC.new)
 
+
+
+
+
 #Remove the extra collums in the cloudcompare data that aren't necessary
 CC.new <- subset(CC.new, select = c("pub.site","site", "ppq","hum_dist", "island.side" ,"region.3", "region.4", "region.full", "Initial.Timepoint", "Final.Timepoint", "timepoint", "volume.change"))
 colnames(CC.new)
@@ -397,7 +401,7 @@ CC.final$hdist.cont <- as.numeric(CC.final$hdist.cont) #Make continuous value a 
 CC.final$sqrt.hdist.cont <- sqrt(CC.final$hdist.cont)
 
 colnames(CC.final)
-CC.final <- subset(CC.final, select = c("pub.site", "site", "ppq", "hum_dist", "hdist.cont","sqrt.hdist.cont", "island.side", "region.3", "region.4", "region.full", "timepoint", "volume.change"))
+CC.final <- subset(CC.final, select = c("pub.site", "site", "ppq", "hum_dist","sqrt.hdist.cont", "island.side", "region.3", "region.4", "region.full", "timepoint", "volume.change"))
 
 #Export Clean Data as a csv
 write.csv(CC.final, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_Updated.csv")
@@ -714,6 +718,7 @@ mpq$hdist.cont <- as.numeric(mpq$hdist.cont)
 #Square Root transform the h.dist continuous variable
 mpq$sqrt.hdist.cont <- 1
 mpq$sqrt.hdist.cont <- sqrt(mpq$hdist.cont) 
+str(mpq$sqrt.hdist.cont)
 
 #Reorder dataframe to export for future analyses
 mpq1 <- subset(mpq, select = c("year", "pub.site", "site", "ppq", "hum_dist", "hdist.cont","sqrt.hdist.cont","island.side", "region.3", "region.4", "region.full", "region.kb", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv"))
@@ -815,9 +820,44 @@ ggplot(slope, aes (x= year.site.ppq, y= fractal.dimension)) + geom_point()
 
 colnames(slope)
 
-#Reorder dataframe
-slope1 <- subset(slope, select = c("year", "hum_dist", "pub.site", "site", "ppq", "island.side", "region.3", "region.4", "region.full", "fractal.dimension"))
+#Add in continuous human disturbance gradient scores
+slope$hdist.cont <- 1
 
+#Input values 
+for(i in c(1:nrow(slope))) {
+  if(slope$site[i]=="5") {
+    slope$hdist.cont[i] <- "0"
+  } else if(slope$site[i]=="19") {
+    slope$hdist.cont[i] <- "0"
+  } else if(slope$site[i]=="15") {
+    slope$hdist.cont[i] <- "0"
+  } else if(slope$site[i]=="8") {
+    slope$hdist.cont[i] <- "1212.82819"
+  } else if(slope$site[i]=="34") {
+    slope$hdist.cont[i] <- "1212.82819"
+  } else if(slope$site[i]=="35") {
+   slope$hdist.cont[i] <- "1212.82819"
+  } else if(slope$site[i]=="27") {
+   slope$hdist.cont[i] <- "7276"
+  } else if(slope$site[i]=="30") {
+   slope$hdist.cont[i] <- "5085.68478"
+  } else if(slope$site[i]=="32") {
+    slope$hdist.cont[i] <- "4860.7457"
+  } else if(slope$site[i]=="37") {
+    slope$hdist.cont[i] <- "0"
+  }}
+
+
+colnames(slope)
+slope$hdist.cont <- as.numeric(slope$hdist.cont)
+
+#Square Root transform the h.dist continuous variable
+slope$sqrt.hdist.cont <- 1
+slope$sqrt.hdist.cont <- sqrt(slope$hdist.cont) 
+str(slope$sqrt.hdist.cont)
+
+#Reorder dataframe
+slope1 <- subset(slope, select = c("year", "hum_dist", "sqrt.hdist.cont","pub.site", "site", "ppq", "island.side", "region.3", "region.4", "region.full", "fractal.dimension"))
 
 #Export Fractal Dimension Dataframe
 write.csv(slope1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv")

@@ -10,7 +10,7 @@ html_document:
 ---
  
 #Load Packages/Data
-```{r Load the packages and load MPQ data, include=FALSE}
+```{r Load the packages and load mpq data, include=FALSE}
 rm(list = ls()) #This clears the environment
 dev.off()
 
@@ -42,7 +42,8 @@ library(Matrix)
 library(lme4)
 library(TMB)
 library(glmmTMB)
-library(bbmle)
+library(MuMIn)
+library(vegan)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
 #Set the Working Directory
@@ -51,17 +52,54 @@ setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 ### 1. Habitat Volume Data
 cc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_Updated.csv",header=TRUE, row.names=1)
 
-#Fix ordering of levels of Habitat Volume Data
+str(cc)
+unique(cc$timepoint)
 
 
+#Change name of volume.change to hab.vol
+colnames(cc)[which(names(cc)=="volume.change")] <- "hab.vol"
+
+#Change site to a factor (for the random effect modelling)
+cc$site <- as.factor(cc$site)
+
+unique(cc$hum_dist)
+cc$hum_dist <- factor(cc$hum_dist, levels = c("Very High", "Medium", "Very Low"))
+cc$region.4 <- factor(cc$region.4, levels = c("Leeward", "Bay of Wrecks", "Vaskess Bay"))
+
+cc$timepoint<- as.factor(cc$timepoint)
+cc$timepoint <- factor(cc$timepoint, levels = c("2015-2017", "2017-2019", "2015-2019"))
+
+# cc$timepoint2 <- cc$timepoint
+# cc$timepoint2 <- factor(cc$timepoint2, levels =c("2015-2017", "2017-2019", "2015-2019"), labels = c("A", "B", "C"))
+# str(cc$timepoint2)
+
+
+
+    
+#Data histrogram
+hist(cc$hab.vol)
+qqnorm(cc$hab.vol)
+qqline(cc$hab.vol)
+
+cc$sq.hab.vol <- 1
+cc$sq.hab.vol <- (cc$hab.vol) #Arcsin perhaps?
+
+hist(cc$sq.hab.vol)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
 ### 2. Fractal Dimension Data
-frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv")
+frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv", row.names = 1)
+
+#Rename fractal dimension collumn to frac
+colnames(frac)[which(names(frac)=="fractal.dimension")] <- "frac"
+
+#Change site to a factor (for the random effect modeling)
+frac$site <- as.factor(frac$site)
 
 
-
+#Test for normality.....
+hist(frac$frac)
 
     
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -73,11 +111,6 @@ mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL
 levels(mpq$hum_dist)
 mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very Low", "Medium", "Very High"))
 levels(mpq$hum_dist)
-
-#Levels for DEM
-levels(mpq$DEM)
-mpq$DEM <- factor(mpq$DEM, levels = c("1", "4", "8"))
-levels(mpq$DEM)
 
 #Change site to a factor (for the random effect modelling)
 mpq$site <- as.factor(mpq$site)
@@ -91,7 +124,7 @@ mpq.8 <- subset (mpq, DEM == 8)
 
 ```
 
-```{r Exploratory plots Vrm, eval=FALSE, include=FALSE}
+```{r Exploratory plots rug, eval=FALSE, include=FALSE}
 mpq #Dataset
 mpq.num <- mpq[,16:21] #numeric datagrame only
 
@@ -117,9 +150,17 @@ plot(vrm~site, data = mpq)
 
 ```
 
+# Overview of each variable
+Site: Random effect
+Region: Ultimately, this is to check and see whether different levels of wave energy/etc. found in select regions plays a role on the complexity around the atoll
+
+
+AICc will be used anytime n/k < 40. (n = sample size, k = # of parameters in model).
+- Therefore, for models with all DEM's involved, AIC will be used
+- If we choose to breakdown models into indvidual DEM scales (n = 127), anything with more than K=3 will require AICc (Burnham & Anderson, 2004 --> Page 270 of document)
+
 # 1. VRM {.tabset}
 ## A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
-
 ```{r fixed effect models}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
 vrm1 <- lm(vrm ~ year + hum_dist, data = mpq) #Hum_Dist = Categorical
@@ -130,64 +171,34 @@ vrm4 <- lm(vrm~year*sqrt.hdist.cont, data = mpq)
 AIC(vrm1, vrm2,vrm3,vrm4) #Top model = vrm1/vrm2
 summary(vrm1)
 summary(vrm2)
+summary(vrm3)
+summary(vrm4)
 
+nrow(mpq)
 ```
 
-
-
 ## B. Investigate region and human disturbance (cont and categorical)
-
-Ultimately, this is to check and see whether different levels of wave energy/etc. found in select regions plays a role on the complexity around the atoll
-
-1. VRM ~ year and human disturbance gradient (categorical- 3 levels)
-
-2. VRM ~ year and island side (leeward/windward)
-
-3. VRM ~ year and region 3 (3 options: South Shore, Leeward, Windward)
-
-4. VRM ~ year and region 4 (4 options (I only have 3 though): Vaskess Bay, BOW, Leeward)) --> Should perform similarly to region.3 (which it did). 
-
-
-*I didn't include:*
-
-- Region.full: It sorts Site 32 as "Mid-Lagoon", which would be the only site in that category
-
-- Region.kb: this follows the human disturbance gradient too closely, so will complicate the results
-
-
-
-*RESULTS*
-
-- All models using continuous human disturbance fit best, with lowest AIC = 12, 13 (delta AIC < 3 for all 11-16 models)
-
-- So interaction between human disturbance and year doesn't fit best when looking at it like this.... Interesting since Jenn's paper had an interaction term in best fit.
 
 ```{r region with interactions with hdist}
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq) 
-vrm6 <- lm(vrm ~ year + hum_dist + region.3, data = mpq)
-vrm7 <- lm(vrm~ year + hum_dist + region.4, data = mpq)
-vrm8 <- lm(vrm ~ year*hum_dist + island.side, data = mpq)
-vrm9 <- lm(vrm ~ year*hum_dist + region.3, data = mpq)
-vrm10 <- lm(vrm~year*hum_dist + region.4, data = mpq)
+vrm6 <- lm(vrm~ year + hum_dist + region.4, data = mpq)
+vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq)
+vrm8 <- lm(vrm~year*hum_dist + region.4, data = mpq)
 
-AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10) #AIC's the same based on if interaction is present or not (interaction makes it worse
+AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
-vrm11 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
-vrm12  <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq)
-vrm13 <- lm(vrm~year + sqrt.hdist.cont + region.4, data = mpq)
-vrm14 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
-vrm15 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq)
-vrm16 <- lm(vrm~year*sqrt.hdist.cont + region.4, data = mpq)
+vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
+vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.4, data = mpq)
+vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
+vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.4, data = mpq)
 
-AIC(vrm11, vrm12, vrm13, vrm14, vrm15, vrm16) #AIC's the same based on if interaction is present or 
+AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
 
 #AIC's for all
-AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16) 
-
-#VRM 12, 13 are the best, however 14,15,16 are also wihtin Delta AIC <3
+AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12)  #vrm10/vrm9 fit best, others are close
 
 ```
 
@@ -197,49 +208,58 @@ AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16
 ```{r simple random effects}
 #Continuous disturbance
 #no interaction
-vrm17 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
-vrm18 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
-vrm19 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq)
-vrm20 <- lmer(vrm~year + hum_dist + (1|site), data = mpq)
+vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
+vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq)
+vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq)
 
-AIC(vrm17, vrm18, vrm19, vrm20) #VRM19 best fit, but vrm20 is close 
+AIC(vrm13, vrm14, vrm15, vrm16) #VRM15 best fit, but vrm16 is close  (1AIC)
 
-#Results of best fitting models
-summary(vrm19)
-summary(vrm20)
-anova(vrm19, vrm20)
+#Results of models
+summary(vrm13)
+summary(vrm14)
+summary(vrm15)
+summary(vrm16)
+anova(vrm13, vrm14, vrm15, vrm16)
 
 #With interactions
-vrm21 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq)
-vrm22 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq)
-vrm23 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq)
-vrm24 <- lmer(vrm~year * hum_dist + (1|site), data = mpq)
+vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq)
+vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq)
+vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq)
 
-AIC(vrm21, vrm22, vrm23, vrm24) #VRM23 best fit
+AIC(vrm17, vrm18, vrm19, vrm20) #vrm19 best fit
 
 #Results of best fitting models
-summary(vrm23)
-anova(vrm21, vrm23)
+summary(vrm17)
+summary(vrm18)
+summary(vrm19)
+summary(vrm20)
+
+anova(vrm17, vrm18, vrm19, vrm20)
 
 
 #Combine all together
-AIC(vrm17, vrm18, vrm19, vrm20,vrm21, vrm22, vrm23, vrm24) #VRM19 best fit, but vrm20 is close 
-
-#Best fit model = vrm19
+AIC(vrm13, vrm14, vrm15,vrm16, vrm17, vrm18, vrm19, vrm20) #VRM15/16 best fit
 
 #Results
 # Interaction between year and human disturbance (which Jen did) doesn't make the models fit better
 # Best fitting model has no region values within it (with continous human disturbance model slightly better than categorical one)
 
-#Variance is supper low with the site intercept random effect ---> Perhaps means we can leave without?
+#Variance is super low with the site intercept random effect ---> Perhaps means we can leave without?
 
-AIC(vrm1, vrm2, vrm19, vrm20) #Models still fit better with site as a random effect
+AIC(vrm1, vrm2, vrm6, vrm10, vrm19, vrm20) #Models still fit better with site as a random effect
+
+
+AIC(vrm1, vrm2, vrm3, vrm4, vrm5, vrm6,vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16,vrm17, vrm18, vrm19, vrm20 ) #Best fit models are: vrm10<vrm9<vrm12<vrm11
+
 
 #End Result: vrm19/vrm20 models are best fit 
-summary(vrm19)
-summary(vrm20)
-anova(vrm19, vrm20)
-
+summary(vrm10)
+summary(vrm9)
+summary(vrm12)
+summary(vrm11)
+anova(vrm10, vrm9,vrm12, vrm11)
 
 #Models were refit with Maximum Likelihood instead of REML
 ```
@@ -254,6 +274,352 @@ anova(vrm19, vrm20)
 
 
 Final Working Model:
+Without interaction (slightly better AIC values)
+**VRM ~ year + sqrt.hdist.cont + region4** OR **VRM ~ year + sqrt.hdist.cont + island.side** 
 
-**VRM ~ year + sqrt.hdist.cont + (1|site)** OR **VRM ~ year + hum_dist + (1|site) ** 
+With interacction (slightly worse AIC values(2-3 less))
+**VRM ~ year * sqrt.hdist.cont + region4** OR **VRM ~ year * sqrt.hdist.cont + island.side** 
+
+# 2. Surface Complexity {.tabset}
+## A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
+```{r fixed effect models}
+#Models looking at disturbance gradient and if interaction between year&disturbance fit better
+rug1 <- lm(rug ~ year + hum_dist, data = mpq) #Hum_Dist = Categorical
+rug2 <- lm(rug ~ year + sqrt.hdist.cont, data = mpq)
+rug3 <- lm(rug ~ year * hum_dist, data = mpq)
+rug4 <- lm(rug~year*sqrt.hdist.cont, data = mpq)
+
+AIC(rug1, rug2,rug3,rug4) #Top model = rug2
+summary(rug1)
+summary(rug2)
+summary(rug3)
+summary(rug4)
+
+```
+
+## B. Investigate region and human disturbance (cont and categorical)
+```{r region with interactions with hdist}
+#Categorical human disturbance against region, then categorical interaction with year
+#Models without interaction of disturbance added with different regions
+rug5 <- lm(rug ~ year + hum_dist + island.side, data = mpq) 
+rug6 <- lm(rug~ year + hum_dist + region.4, data = mpq)
+rug7 <- lm(rug ~ year*hum_dist + island.side, data = mpq)
+rug8 <- lm(rug~year*hum_dist + region.4, data = mpq)
+
+AIC(rug5, rug6, rug7, rug8) #AIC's the same based on if interaction is present or not (interaction makes it worse)
+
+#Continuous human disturbance against region, then Continuous disturbance interaction with year
+rug9 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq)
+rug10  <- lm(rug ~ year + sqrt.hdist.cont + region.4, data = mpq)
+rug11 <- lm(rug ~ year*sqrt.hdist.cont + island.side, data = mpq)
+rug12 <- lm(rug ~ year*sqrt.hdist.cont + region.4, data = mpq)
+
+AIC(rug9, rug10, rug11, rug12) #AIC's the same based on if interaction is present or 
+
+#AIC's for all
+AIC(rug5, rug6, rug7, rug8, rug9, rug10,rug11, rug12)  #Rug11, 12 are best fits
+
+```
+
+## C. With Random Effect (1|site)
+- Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (island.side and region4 only)
+
+```{r simple random effects}
+#Continuous disturbance
+#no interaction
+rug13 <- lmer(rug~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
+rug14 <- lmer(rug~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+rug15 <- lmer(rug~year + sqrt.hdist.cont + (1|site), data = mpq)
+rug16 <- lmer(rug~year + hum_dist + (1|site), data = mpq)
+
+AIC(rug13, rug14, rug15, rug16) #rug16 best fit
+
+#Results of best fitting models
+summary(rug13)
+summary(rug14)
+summary(rug15)
+summary(rug16)
+
+anova(rug13, rug14, rug15, rug16) #this says rug13 firts best (13<15<14<16)
+
+#With interactions
+rug17 <- lmer(rug~year *sqrt.hdist.cont + island.side + (1|site), data = mpq)
+rug18 <- lmer(rug~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+rug19 <- lmer(rug~year * sqrt.hdist.cont + (1|site), data = mpq)
+rug20 <- lmer(rug~year * hum_dist + (1|site), data = mpq)
+
+AIC(rug17, rug18, rug19, rug20) #rug20 best fit
+
+#Results of best fitting models
+anova(rug17,rug18,rug19, rug20) #States rug17 as best fit (17<19<18<<20)
+
+#Combine all together
+AIC(rug13, rug14, rug15, rug16,rug17, rug18, rug19, rug20) #rug16 best fit
+
+
+#Results
+# Interaction between year and human disturbance (which Jen did) doesn't make the models fit better
+# Best fitting model has no region values within it (with continuous human disturbance model slightly better than categorical one)
+
+
+AIC(rug1, rug2, rug3, rug4, rug5, rug6, rug7, rug8, rug9, rug10,rug11, rug12, rug13, rug14, rug15, rug16,rug17, rug18, rug19, rug20) #Models without random effect but with region fit better (rug9/10)
+
+#End Result: rug9/10 models are best fit 
+summary(rug9)
+summary(rug10)
+anova(rug9, rug10)
+```
+
+## D. Final findings:
+
+- Sqrt transformed continuous disturbance fits better than categorical (for now) -->varies on how much "better" the fit is based on the model
+
+- Interactions between either year and disturbance(continuous) or year and region all come out as worse fits than non-interaction, so probably best to drop
+
+- Random effect has SUPER low estimates in best fit model; maybe not really that required? --> AIC between models that have same components except site RE show that including site makes the AIC a larger negative # (therefore,  --> aka better fit)
+
+
+Final Working Model:
+
+**rug ~ year + sqrt.hdist.cont + region3** OR **rug ~ year + sqrt.hdist.cont + island.side** 
+
+
+# 3. Fractal Dimension {.tabset}
+## A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
+```{r fixed effect models}
+#Models looking at disturbance gradient and if interaction between year&disturbance fit better
+frac1 <- lm(frac ~ year + hum_dist, data = frac) #Hum_Dist = Categorical
+frac2 <- lm(frac ~ year + sqrt.hdist.cont, data = frac)
+frac3 <- lm(frac ~ year * hum_dist, data = frac)
+frac4 <- lm(frac~year*sqrt.hdist.cont, data = frac)
+
+AIC(frac1, frac2,frac3,frac4) #Top model = frac4
+summary(frac1)
+summary(frac2)
+summary(frac3)
+summary(frac4)
+
+```
+
+## B. Investigate region and human disturbance (cont and categorical)
+```{r region with interactions with hdist}
+#Categorical human disturbance against region, then categorical interaction with year
+#Models without interaction of disturbance added with different regions
+frac5 <- lm(frac ~ year + hum_dist + island.side, data = frac) 
+frac6 <- lm(frac~ year + hum_dist + region.4, data = frac)
+frac7 <- lm(frac ~ year*hum_dist + island.side, data = frac)
+frac8 <- lm(frac~year*hum_dist + region.4, data = frac)
+
+AIC(frac5, frac6, frac7, frac8) #frac7,8 best
+
+#Again, Dom recommends not to include categorical human disturbance as it messes with the modelling process --> Stick to continuous variable
+
+#Continuous human disturbance against region, then Continuous disturbance interaction with year
+frac9 <- lm(frac ~ year + sqrt.hdist.cont + island.side, data = frac)
+frac10  <- lm(frac ~ year + sqrt.hdist.cont + region.4, data = frac)
+frac11 <- lm(frac ~ year*sqrt.hdist.cont + island.side, data = frac)
+frac12 <- lm(frac ~ year*sqrt.hdist.cont + region.4, data = frac)
+
+AIC(frac9, frac10, frac11, frac12) #Frac12<Frac11 best 2 (close ~1AIC between them)
+
+#AIC's for all
+AIC(frac5, frac6, frac7, frac8, frac9, frac10,frac11, frac12)  #frac7, frac8, frac11, 12 are best fits
+
+#AICc needs to be used if I add 1 more parameter (currently n/k = 42)
+nrow(frac) #127 total rows
+
+```
+
+## C. With Random Effect (1|site)
+- Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (island.side and region4 only)
+
+```{r simple random effects}
+#Continuous disturbance
+#no interaction
+frac13 <- lmer(frac~year + sqrt.hdist.cont + island.side + (1|site), data = frac)
+frac14 <- lmer(frac~year + sqrt.hdist.cont + region.4 + (1|site), data = frac)
+frac15 <- lmer(frac~year + sqrt.hdist.cont + (1|site), data = frac)
+frac16 <- lmer(frac~year + hum_dist + (1|site), data = frac)
+
+#Using AICc since we dip into (n/k<40) region, compare all using AICc and find that model frac14 best fit
+AICc(frac13, frac14, frac15, frac16) #frac14
+
+#Results of best fitting models
+summary(frac13)
+summary(frac14)
+summary(frac15)
+summary(frac16)
+
+anova(frac13, frac14, frac15, frac16) #this says frac14 firts best
+
+#With interactions
+frac17 <- lmer(frac~year *sqrt.hdist.cont + island.side + (1|site), data = frac)
+frac18 <- lmer(frac~year * sqrt.hdist.cont + region.4 + (1|site), data = frac)
+frac19 <- lmer(frac~year * sqrt.hdist.cont + (1|site), data = frac)
+frac20 <- lmer(frac~year * hum_dist + (1|site), data = frac)
+
+AICc(frac17, frac18, frac19, frac20) #frac19 best fit
+
+#Results of best fitting models
+summary(frac19)
+anova(frac17,frac18,frac19, frac20) #States frac19 as best fit 
+
+#Combine all together
+AICc(frac13, frac14, frac15, frac16,frac17, frac18, frac19, frac20) #frac15 or frac13 best fit
+
+
+#Results
+# Interaction between year and human disturbance (which Jen did) doesn't make the models fit better
+# Best fitting model has no region values within it (with continuous human disturbance model slightly better than categorical one)
+
+
+AICc(frac1, frac2, frac3, frac4, frac9, frac10,frac11, frac12, frac13, frac14, frac15, frac16,frac17, frac18, frac19, frac20) #Frac11,12 are best fits (with frac10 and 9 following)
+
+#End Result: frac9/10 models are best fit 
+summary(frac9)
+summary(frac10)
+summary(frac11)
+summary(frac12)
+anova(frac9, frac10, frac11, frac12)
+
+
+
+```
+
+## D. Final findings:
+
+- Sqrt transformed continuous disturbance fits better than categorical (for now) -->varies on how much "better" the fit is based on the model
+
+- Best fit models turn out to be the ones with interactions between year and disturbance
+
+- All best fit models didn't include random effect
+
+Final Working Model(s):
+
+**frac ~ year * hum_dist + region4** 
+
+**frac ~ year * hum_dist + island.side** 
+
+**frac ~ year * sqrt.hdist.cont + region4 **
+
+
+# 4. Habitat Volume {.tabset}
+## A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
+```{r fixed effect models}
+#Models looking at disturbance gradient and if interaction between year&disturbance fit better
+hab.vol1 <- lm(hab.vol ~ timepoint + hum_dist, data = cc) #Hum_Dist = Categorical
+hab.vol2 <- lm(hab.vol ~ timepoint + sqrt.hdist.cont, data = cc)
+hab.vol3 <- lm(hab.vol ~ timepoint * hum_dist, data = cc)
+hab.vol4 <- lm(hab.vol~timepoint*sqrt.hdist.cont, data = cc)
+
+AIC(hab.vol1, hab.vol2,hab.vol3,hab.vol4) #Top model = hab.vol1, hab.vol3
+summary(hab.vol1)
+summary(hab.vol2)
+summary(hab.vol3)
+summary(hab.vol4)
+
+#Best fit: Hab.vol1, hab.vol3
+
+```
+
+## B. Investigate region and human disturbance (cont and categorical)
+```{r region with interactions with hdist}
+#Categorical human disturbance against region, then categorical interaction with year
+#Models without interaction of disturbance added with different regions
+hab.vol5 <- lm(hab.vol ~ timepoint + hum_dist + island.side, data = cc) 
+hab.vol6 <- lm(hab.vol~ timepoint + hum_dist +region.4, data = cc)
+hab.vol7 <- lm(hab.vol ~ timepoint*hum_dist + island.side, data = cc)
+hab.vol8 <- lm(hab.vol~timepoint*hum_dist + region.4, data = cc)
+
+summary(hab.vol5)
+summary(hab.vol6)
+
+AIC(hab.vol5, hab.vol6, hab.vol7, hab.vol8) #AIC's the same based on if interaction is present or not (interaction makes it worse)
+
+```
+
+**The model output for the "best fitting" model using the categorical human disturbance value comes out all wierd. In talking with Dom about it and after showing her the equivalent model with the linear continuous human disturbance, she recommends not using the categorical variable as it makes "more modelling sense" to use the continuous with my data**
+
+```{r continuous human dist}
+#Continuous human disturbance against region, then Continuous disturbance interaction with timepoint
+hab.vol9 <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + island.side, data = cc)
+hab.vol10  <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + region.4, data = cc)
+hab.vol11 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + island.side, data = cc)
+hab.vol12 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + region.4, data = cc)
+
+AIC(hab.vol9, hab.vol10, hab.vol11, hab.vol12) #hab.vol10 best fit, followed by hab.vol12, hab.vol9 (each 2 AIC apart from one another)
+
+summary(hab.vol10)
+summary(hab.vol12)
+
+#Best fit: Hab.vol10
+
+
+```
+
+## C. With Random Effect (1|site)
+- Adding to previous model iterations with both human disturbances, some with interactions between timepoint&hum_dist, and various regions of "best fit" (island.side and region4 only)
+
+```{r simple random effects}
+#Continuous disturbance
+#no interaction
+hab.vol13 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + island.side + (1|site), data = cc)
+hab.vol14 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + region.4 + (1|site), data = cc)
+hab.vol15 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + (1|site), data = cc)
+# hab.vol16 <- lmer(hab.vol~timepoint + hum_dist + (1|site), data = cc)
+
+AIC(hab.vol13, hab.vol14, hab.vol15) #hab.vol14 <13<15 best fit
+
+#Results of best fitting models
+summary(hab.vol13)
+summary(hab.vol14)
+summary(hab.vol15)
+# summary(hab.vol16)
+
+anova(hab.vol13, hab.vol14, hab.vol15) #this says hab.vol14 fits best (14<13<15)
+
+#With interactions
+hab.vol17 <- lmer(hab.vol~timepoint *sqrt.hdist.cont + island.side + (1|site), data = cc)
+hab.vol18 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + region.4 + (1|site), data = cc)
+hab.vol19 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + (1|site), data = cc)
+# hab.vol20 <- lmer(hab.vol~timepoint * hum_dist + (1|site), data = cc)
+
+AIC(hab.vol17, hab.vol18, hab.vol19) #hab.vol18 best fit
+
+#Results of best fitting models
+anova(hab.vol17,hab.vol18,hab.vol19) #States hab.vol18 as best fit (18<17<19)
+
+#Combine all together
+AIC(hab.vol13, hab.vol14, hab.vol15, hab.vol17, hab.vol18, hab.vol19) #hab.vol14 best fit
+
+
+#Results
+# Interaction between timepoint and human disturbance (which Jen did) doesn't make the models fit better
+# Best fitting model has no region values within it (with continuous human disturbance model slightly better than categorical one)
+
+#Test fits with AICc since the sample size is small
+AICc(hab.vol1, hab.vol2, hab.vol3, hab.vol4, hab.vol9, hab.vol10,hab.vol11, hab.vol12, hab.vol13, hab.vol14, hab.vol15,hab.vol17, hab.vol18, hab.vol19) #Hab.vol1 and hab.vol10 are best models
+
+summary(hab.vol1)
+summary(hab.vol10)
+
+```
+
+## D. Final findings:
+- Sqrt transformed continuous disturbance fits better than categorical, particularly as the categorical variable interferes with the modeling process when incorporating region as a categorical variable too (Dom recommends stating we used continuous human disturbance with modeling, and categorical variable with plotting only)
+
+- Best fit models do not have any interactions or random effects
+
+- All models compared using AICc
+
+Final Working Model(s):
+
+- **Habitat Volumetric Change ~ timepoint + sqrt.hdist.cont + region4** 
+
+OR 
+
+- **Habitat Volumetric Change ~ timepoint + hum_dist** 
+
+
+
 

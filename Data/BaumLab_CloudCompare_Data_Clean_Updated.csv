@@ -1,72 +1,72 @@
-"","pub.site","site","ppq","hum_dist","hdist.cont","island.side","region.3","region.4","region.full","timepoint","volume.change"
-"1","VL3","5","1","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2017",-0.311
-"2","VL3","5","1","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2019",-0.547
-"3","VL3","5","2","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2017",-0.207
-"4","VL3","5","2","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2019",-0.253
-"5","VL3","5","3","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2017",-0.428
-"6","VL3","5","3","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2019",-0.642
-"7","M1","8","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.068
-"8","M1","8","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.012
-"9","M1","8","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.013
-"10","M1","8","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.004
-"11","M1","8","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",0.002
-"12","M1","8","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.138
-"13","VL1","15","1","Very Low","0","Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.688
-"14","VL1","15","2","Very Low","0","Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-1.348
-"15","VL1","15","3","Very Low","0","Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.646
-"16","VL2","19","1","Very Low","0","Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.063
-"17","VL2","19","2","Very Low","0","Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.626
-"18","VH1","27","1","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2015-2017",-0.583
-"19","VH1","27","1","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2015-2019",-0.445
-"20","VH1","27","2","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2015-2017",-1.018
-"21","VH1","27","2","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2015-2019",-0.567
-"22","VH1","27","3","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2015-2017",-0.107
-"23","VH1","27","3","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2015-2019",-0.174
-"24","VL4","37","1","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",0.047
-"25","VL4","37","2","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",0.067
-"26","VL4","37","3","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",0.145
-"27","VH3","30","1","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2015-2017",-1.096
-"28","VH3","30","1","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2015-2019",-1.979
-"29","VH3","30","2","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2015-2017",0.101
-"30","VH3","30","2","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2015-2019",0.115
-"31","VH3","30","3","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2015-2017",0.419
-"32","VH3","30","3","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2015-2019",0.513
-"33","VH2","32","1","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2015-2017",-1.365
-"34","VH2","32","1","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2015-2019",-0.724
-"35","VH2","32","2","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2015-2017",-0.273
-"36","VH2","32","2","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2015-2019",-0.395
-"37","VH2","32","3","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2015-2017",-0.099
-"38","VH2","32","3","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2015-2019",-0.324
-"39","M3","34","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",0.18
-"40","M3","34","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",0.21
-"41","M3","34","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.016
-"42","M3","34","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.065
-"43","M3","34","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.043
-"44","M3","34","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",0.032
-"45","M2","35","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.005
-"46","M2","35","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",0.11
-"47","M2","35","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.126
-"48","M2","35","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.078
-"49","M2","35","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2017",0.288
-"50","M2","35","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.067
-"51","VL3","5","1","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",-0.236
-"52","VL3","5","2","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",-0.046
-"53","VL3","5","3","Very Low","0","Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",-0.214
-"54","M1","8","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.056
-"55","M1","8","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.009
-"56","M1","8","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",-0.14
-"57","VH1","27","1","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.138
-"58","VH1","27","2","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.451
-"59","VH1","27","3","Very High","7276","Leeward","Leeward","Leeward","North Lagoon","2017-2019",-0.067
-"60","VH3","30","1","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2017-2019",-0.883
-"61","VH3","30","2","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.014
-"62","VH3","30","3","Very High","5085.68478","Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.094
-"63","VH2","32","1","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2017-2019",0.641
-"64","VH2","32","2","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2017-2019",-0.122
-"65","VH2","32","3","Very High","4860.7457","Leeward","Leeward","Leeward","Mid Lagoon","2017-2019",-0.225
-"66","M3","34","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.03
-"67","M3","34","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",-0.049
-"68","M3","34","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.075
-"69","M2","35","1","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.115
-"70","M2","35","2","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.048
-"71","M2","35","3","Medium","1212.82819","Leeward","Leeward","Leeward","South Lagoon","2017-2019",-0.355
+"","pub.site","site","ppq","hum_dist","sqrt.hdist.cont","island.side","region.3","region.4","region.full","timepoint","volume.change"
+"1","VL3","5","1","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2017",-0.311
+"2","VL3","5","1","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2019",-0.547
+"3","VL3","5","2","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2017",-0.207
+"4","VL3","5","2","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2019",-0.253
+"5","VL3","5","3","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2017",-0.428
+"6","VL3","5","3","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2015-2019",-0.642
+"7","M1","8","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.068
+"8","M1","8","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.012
+"9","M1","8","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.013
+"10","M1","8","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.004
+"11","M1","8","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",0.002
+"12","M1","8","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.138
+"13","VL1","15","1","Very Low",0,"Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.688
+"14","VL1","15","2","Very Low",0,"Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-1.348
+"15","VL1","15","3","Very Low",0,"Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.646
+"16","VL2","19","1","Very Low",0,"Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.063
+"17","VL2","19","2","Very Low",0,"Windward","Windward","Bay of Wrecks","Bay of Wrecks","2015-2017",-0.626
+"18","VH1","27","1","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2015-2017",-0.583
+"19","VH1","27","1","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2015-2019",-0.445
+"20","VH1","27","2","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2015-2017",-1.018
+"21","VH1","27","2","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2015-2019",-0.567
+"22","VH1","27","3","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2015-2017",-0.107
+"23","VH1","27","3","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2015-2019",-0.174
+"24","VL4","37","1","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",0.047
+"25","VL4","37","2","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",0.067
+"26","VL4","37","3","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",0.145
+"27","VH3","30","1","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2015-2017",-1.096
+"28","VH3","30","1","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2015-2019",-1.979
+"29","VH3","30","2","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2015-2017",0.101
+"30","VH3","30","2","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2015-2019",0.115
+"31","VH3","30","3","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2015-2017",0.419
+"32","VH3","30","3","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2015-2019",0.513
+"33","VH2","32","1","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2015-2017",-1.365
+"34","VH2","32","1","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2015-2019",-0.724
+"35","VH2","32","2","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2015-2017",-0.273
+"36","VH2","32","2","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2015-2019",-0.395
+"37","VH2","32","3","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2015-2017",-0.099
+"38","VH2","32","3","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2015-2019",-0.324
+"39","M3","34","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",0.18
+"40","M3","34","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",0.21
+"41","M3","34","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.016
+"42","M3","34","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.065
+"43","M3","34","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.043
+"44","M3","34","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",0.032
+"45","M2","35","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.005
+"46","M2","35","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",0.11
+"47","M2","35","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",-0.126
+"48","M2","35","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.078
+"49","M2","35","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2017",0.288
+"50","M2","35","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2015-2019",-0.067
+"51","VL3","5","1","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",-0.236
+"52","VL3","5","2","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",-0.046
+"53","VL3","5","3","Very Low",0,"Leeward","South Shore","Vaskess Bay","Vaskess Bay","2017-2019",-0.214
+"54","M1","8","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.056
+"55","M1","8","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.009
+"56","M1","8","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",-0.14
+"57","VH1","27","1","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.138
+"58","VH1","27","2","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.451
+"59","VH1","27","3","Very High",85.2994724485445,"Leeward","Leeward","Leeward","North Lagoon","2017-2019",-0.067
+"60","VH3","30","1","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2017-2019",-0.883
+"61","VH3","30","2","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.014
+"62","VH3","30","3","Very High",71.3139872675761,"Leeward","Leeward","Leeward","North Lagoon","2017-2019",0.094
+"63","VH2","32","1","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2017-2019",0.641
+"64","VH2","32","2","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2017-2019",-0.122
+"65","VH2","32","3","Very High",69.7190483297069,"Leeward","Leeward","Leeward","Mid Lagoon","2017-2019",-0.225
+"66","M3","34","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.03
+"67","M3","34","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",-0.049
+"68","M3","34","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.075
+"69","M2","35","1","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.115
+"70","M2","35","2","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",0.048
+"71","M2","35","3","Medium",34.8256829078771,"Leeward","Leeward","Leeward","South Lagoon","2017-2019",-0.355
