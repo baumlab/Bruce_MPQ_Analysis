@@ -45,6 +45,8 @@ library(TMB)
 library(glmmTMB)
 library(MuMIn)
 library(vegan)
+library(randomForest)
+
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
 #Set the Working Directory
@@ -122,6 +124,27 @@ mpq.4 <- subset (mpq, DEM == 4)
 mpq.8 <- subset (mpq, DEM == 8) 
 
 
+
+
+
+##### Digitization Data for Random Forest Regressions and later modelling
+#Import Data
+dig.live <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", row.names = 1)
+
+dig.all <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", row.names = 1)
+
+nrow(dig.live)
+nrow(dig.all)
+
+#Create dataframe for all data bits (complexity, % cover of specific morphologies, % cover of general live/dead corals)
+dig.full <- cbind(dig.all, dig.live)
+
+#Need to remove 2016 data from  complexity dataframe before adding coral data to complexity df for each DEM
+mpq.1.3yr <- subset(mpq.1, year == 2015 | year == 2017 | year == 2019)
+nrow(mpq.1.3yr)
+
+#Now merge that with previously merged digitization data
+data.1cm <- cbind(mpq.1.3yr, dig.full)
 
 ```
 
@@ -222,8 +245,7 @@ AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12)  #vrm10/vrm9 fit best, oth
 - Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (island.side and region4 only)
 
 ```{r vrm simple random effects}
-#Continuous disturbance
-#no interaction
+#Continuous disturbance- no interaction
 vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
 vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
 vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq)
@@ -544,6 +566,15 @@ Final Working Model(s):
 
 
 ## 4. Habitat Volume {.tabset}
+### Data is not normally distributed
+```{r non normal data distribution}
+#Data is not normal
+ggplot(cc, aes(x=hab.vol)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="Any suggestions for transformation?",x="Volumetric Change (m^3)", y = "Density")
+
+```
+
 ### A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
 ```{r hab volfixed effect models}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
@@ -658,6 +689,175 @@ OR
 
 - **Habitat Volumetric Change ~ timepoint + hum_dist** 
 
+# Curvatures {.tabset}
+## Curvature range
+```{r pro curv range, echo=FALSE}
+ggplot(mpq, aes(x=pro.curv)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
+ geom_density(alpha=.2, fill="#FF6666") 
+```
+
+```{r plan curv range, echo=FALSE}
+ggplot(mpq, aes(x=plan.curv)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
+ geom_density(alpha=.2, fill="#FF6666") 
+```
+
+## Test for Collinearity bewteen curvature values
+```{r collinearity}
+ggplot(mpq, aes(x=pro.curv, y=plan.curv)) + geom_point() + ggtitle("Pearson Correlation = 0.9886") +geom_smooth(method=lm)
+
+#cor.test(mpq$pro.curv, mpq$plan.curv, method=c("pearson")) 
+
+```
 
 
+# Random Forest
+
+This is to determine the significant contributing morphologies to each metric of complexity
+
+```{r random forest, eval=FALSE, include=FALSE}
+# Set prunescale 
+prunescale = 0.0001
+
+# Prune out rare OTUs by mean relative abundance set by prunescale
+tax.mean <- taxa_sums(sites.scale)/nsamples(sites.scale)
+sites.prune <- prune_taxa(tax.mean > prunescale*minlib, sites.scale)
+
+sites.prune
+
+# Make a dataframe of training data with OTUs as column and samples as rows
+predictors <- t(otu_table(sites.prune))
+dim(predictors)
+## [1]  40 387
+
+
+# Make one column for our outcome/response variable 
+response <- as.factor(sample_data(sites.prune)$Station)
+
+# Combine them into 1 data frame
+rf.data <- data.frame(response, predictors)
+
+
+#Random Forest Results
+set.seed(2)
+erie.classify <- randomForest(response~., data = rf.data, ntree = 100)
+print(erie.classify)
+
+```
+
+# Models at different DEM's
+## VRM
+### 1cm
+```{r vrm 1cm dem}
+#Models looking at disturbance gradient and if interaction between year&disturbance fit better
+vrm1 <- lm(vrm ~ year + hum_dist, data = mpq.1) #Hum_Dist = Categorical
+vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1)
+vrm3 <- lm(vrm ~ year * hum_dist, data = mpq.1)
+vrm4 <- lm(vrm~year*sqrt.hdist.cont, data = mpq.1)
+
+nrow(mpq.1)
+AIC(vrm1,vrm2,vrm3,vrm4)
+
+#Models without interaction of disturbance added with different regions
+vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq.1) 
+vrm6 <- lm(vrm~ year + hum_dist + region.4, data = mpq.1)
+vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq.1)
+vrm8 <- lm(vrm~year*hum_dist + region.4, data = mpq.1)
+
+AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
+
+#Continuous human disturbance against region, then Continuous disturbance interaction with year
+vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1)
+vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.4, data = mpq.1)
+vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq.1)
+vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.4, data = mpq.1)
+
+AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
+
+
+#Continuous disturbance- no interaction
+vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
+vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq.1)
+vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq.1)
+vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq.1)
+
+AIC(vrm13, vrm14, vrm15, vrm16) #VRM15 best fit, but vrm16 is close  (1AIC)
+
+#With interactions
+vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
+vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq.1)
+vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq.1)
+vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq.1)
+
+AIC(vrm17, vrm18, vrm19, vrm20) #vrm19 best fit
+
+#Choosing top model
+AIC(vrm1, vrm2, vrm3, vrm4, vrm5, vrm6,vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16,vrm17, vrm18, vrm19, vrm20 ) #Best fit models are: vrm9<8<1
+
+
+summary(vrm9)
+summary(vrm8)
+summary(vrm1)
+
+
+```
+
+### 4cm
+
+### 8cm
+```{r vrm 8cm dem}
+mpq.1
+#Models looking at disturbance gradient and if interaction between year&disturbance fit better
+vrm1 <- lm(vrm ~ year + hum_dist, data = mpq.8) #Hum_Dist = Categorical
+vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.8)
+vrm3 <- lm(vrm ~ year * hum_dist, data = mpq.8)
+vrm4 <- lm(vrm~year*sqrt.hdist.cont, data = mpq.8)
+
+nrow(mpq.8)
+AIC(vrm1,vrm2,vrm3,vrm4)
+
+#Models without interaction of disturbance added with different regions
+vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq.8) 
+vrm6 <- lm(vrm~ year + hum_dist + region.4, data = mpq.8)
+vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq.8)
+vrm8 <- lm(vrm~year*hum_dist + region.4, data = mpq.8)
+
+AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
+
+#Continuous human disturbance against region, then Continuous disturbance interaction with year
+vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.8)
+vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.4, data = mpq.8)
+vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq.8)
+vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.4, data = mpq.8)
+
+AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
+
+
+#Continuous disturbance- no interaction
+vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.8)
+vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq.8)
+vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq.8)
+vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq.8)
+
+AIC(vrm13, vrm14, vrm15, vrm16) #VRM15 best fit, but vrm16 is close  (1AIC)
+
+#With interactions
+vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.8)
+vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq.8)
+vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq.8)
+vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq.8)
+
+AIC(vrm17, vrm18, vrm19, vrm20) #vrm19 best fit
+
+#Choosing top model
+AIC(vrm1, vrm2, vrm3, vrm4, vrm5, vrm6,vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16,vrm17, vrm18, vrm19, vrm20 ) #Best fit models are: vrm11<12<9
+
+
+summary(vrm11)
+summary(vrm12)
+summary(vrm9)
+
+
+```
 
