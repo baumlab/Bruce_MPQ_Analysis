@@ -283,10 +283,13 @@ anova(vrm10, vrm9,vrm12, vrm11)
 
 
 Final Working Model:
+
 Without interaction (slightly better AIC values)
+
 **VRM ~ year + sqrt.hdist.cont + region4** OR **VRM ~ year + sqrt.hdist.cont + island.side** 
 
 With interacction (slightly worse AIC values(2-3 less))
+
 **VRM ~ year * sqrt.hdist.cont + region4** OR **VRM ~ year * sqrt.hdist.cont + island.side** 
 
 ## 2. Surface Complexity {.tabset}
@@ -533,11 +536,11 @@ anova(frac9, frac10, frac11, frac12)
 
 Final Working Model(s):
 
-**frac ~ year * hum_dist + region4** 
+**frac ~ year * sqrt.hdist.cont + region.4** 
 
-**frac ~ year * hum_dist + island.side** 
+**frac ~ year * sqrt.hdist.cont + island.side** 
 
-**frac ~ year * sqrt.hdist.cont + region4 **
+**frac ~ year + sqrt.hdist.cont + region.4**
 
 
 ## 4. Habitat Volume {.tabset}

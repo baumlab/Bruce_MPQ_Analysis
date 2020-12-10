@@ -1565,7 +1565,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">1.5.Linear.Models.Complexity.Metrics</h1>
 <h4 class="author">Kevin Bruce</h4>
-<h4 class="date">Last compiled on 09 December, 2020</h4>
+<h4 class="date">Last compiled on 10 December, 2020</h4>
 
 </div>
 
@@ -2489,8 +2489,11 @@ AIC(vrm10, vrm9, vrm12, vrm11)</code></pre>
 <li><p>Interactions between either year and disturbance(continuous) or year and region all come out as worse fits than non-interaction, so probably best to drop</p></li>
 <li><p>Random effect has SUPER low estimates in best fit model; maybe not really that required? –&gt; AIC between models that have same components except site RE show that including site makes the AIC a larger negative # (therefore, –&gt; aka better fit)</p></li>
 </ul>
-<p>Final Working Model: Without interaction (slightly better AIC values) <strong>VRM ~ year + sqrt.hdist.cont + region4</strong> OR <strong>VRM ~ year + sqrt.hdist.cont + island.side</strong></p>
-<p>With interacction (slightly worse AIC values(2-3 less)) <strong>VRM ~ year * sqrt.hdist.cont + region4</strong> OR <strong>VRM ~ year * sqrt.hdist.cont + island.side</strong></p>
+<p>Final Working Model:</p>
+<p>Without interaction (slightly better AIC values)</p>
+<p><strong>VRM ~ year + sqrt.hdist.cont + region4</strong> OR <strong>VRM ~ year + sqrt.hdist.cont + island.side</strong></p>
+<p>With interacction (slightly worse AIC values(2-3 less))</p>
+<p><strong>VRM ~ year * sqrt.hdist.cont + region4</strong> OR <strong>VRM ~ year * sqrt.hdist.cont + island.side</strong></p>
 </div>
 </div>
 <div id="surface-complexity" class="section level2 tabset">
@@ -4339,9 +4342,9 @@ summary(frac9)</code></pre>
 <li><p>All best fit models didn’t include random effect</p></li>
 </ul>
 <p>Final Working Model(s):</p>
-<p><strong>frac ~ year * hum_dist + region4</strong></p>
-<p><strong>frac ~ year * hum_dist + island.side</strong></p>
-<p><strong>frac ~ year * sqrt.hdist.cont + region4 </strong></p>
+<p><strong>frac ~ year * sqrt.hdist.cont + region.4</strong></p>
+<p><strong>frac ~ year * sqrt.hdist.cont + island.side</strong></p>
+<p><strong>frac ~ year + sqrt.hdist.cont + region.4</strong></p>
 </div>
 </div>
 <div id="habitat-volume" class="section level2 tabset">
