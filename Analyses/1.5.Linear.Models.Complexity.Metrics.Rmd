@@ -53,7 +53,7 @@ library(randomForest)
 setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 
 ### 1. Habitat Volume Data
-cc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_Updated.csv",header=TRUE, row.names=1)
+cc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_11Dec2020.csv",header=TRUE, row.names=1)
 
 str(cc)
 unique(cc$timepoint)
@@ -71,23 +71,11 @@ cc$region.4 <- factor(cc$region.4, levels = c("Leeward", "Bay of Wrecks", "Vaske
 
 cc$timepoint<- as.factor(cc$timepoint)
 cc$timepoint <- factor(cc$timepoint, levels = c("2015-2017", "2017-2019", "2015-2019"))
-
-# cc$timepoint2 <- cc$timepoint
-# cc$timepoint2 <- factor(cc$timepoint2, levels =c("2015-2017", "2017-2019", "2015-2019"), labels = c("A", "B", "C"))
-# str(cc$timepoint2)
-
-
-
     
 #Data histrogram
 hist(cc$hab.vol)
 qqnorm(cc$hab.vol)
 qqline(cc$hab.vol)
-
-cc$sq.hab.vol <- 1
-cc$sq.hab.vol <- (cc$hab.vol) #Arcsin perhaps?
-
-hist(cc$sq.hab.vol)
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -107,7 +95,9 @@ hist(frac$frac)
     
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
 # 3. Complexity Data
-mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_updated.csv", header=TRUE, row.names = 1)
+mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_FINAL.11Dec2020.csv", header=TRUE, row.names = 1)
+
+mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Complexity.Data.Final.21Dec2020.csv", header=TRUE, row.names = 1)
 
 
 #Correct levels of hum_dist
@@ -126,25 +116,12 @@ mpq.8 <- subset (mpq, DEM == 8)
 
 
 
-
+#--------------------------------------------------------------------------------------------------------------------------------------------
 ##### Digitization Data for Random Forest Regressions and later modelling
 #Import Data
-dig.live <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Simple_Wide_PerCover_Data_Clean.csv", row.names = 1)
-
-dig.all <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitization_Wide_PercentCover_Data_Clean.csv", row.names = 1)
-
-nrow(dig.live)
-nrow(dig.all)
-
-#Create dataframe for all data bits (complexity, % cover of specific morphologies, % cover of general live/dead corals)
-dig.full <- cbind(dig.all, dig.live)
-
-#Need to remove 2016 data from  complexity dataframe before adding coral data to complexity df for each DEM
-mpq.1.3yr <- subset(mpq.1, year == 2015 | year == 2017 | year == 2019)
-nrow(mpq.1.3yr)
-
-#Now merge that with previously merged digitization data
-data.1cm <- cbind(mpq.1.3yr, dig.full)
+mpq.dig.1 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_1cm_Data_11Dec20.csv", row.names = 1) #DEM 1cm
+mpq.dig.4 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_4cm_Data_11Dec20.csv", row.names = 1) #DEM 4cm
+mpq.dig.8 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_8cm_Data_11Dec20.csv", row.names = 1) #DEM 8cm
 
 ```
 
@@ -213,9 +190,9 @@ summary(vrm4)
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq) 
-vrm6 <- lm(vrm~ year + hum_dist + region.4, data = mpq)
+vrm6 <- lm(vrm~ year + hum_dist + region.3, data = mpq)
 vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq)
-vrm8 <- lm(vrm~year*hum_dist + region.4, data = mpq)
+vrm8 <- lm(vrm~year*hum_dist + region.3, data = mpq)
 
 AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
 
@@ -224,9 +201,9 @@ summary(vrm8)
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
 vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq)
-vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.4, data = mpq)
+vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq)
 vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq)
-vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.4, data = mpq)
+vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq)
 
 AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
 
@@ -247,7 +224,7 @@ AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12)  #vrm10/vrm9 fit best, oth
 ```{r vrm simple random effects}
 #Continuous disturbance- no interaction
 vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
-vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq)
 vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq)
 vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq)
 
@@ -262,7 +239,7 @@ anova(vrm13, vrm14, vrm15, vrm16) #Says vrm13 is best followed by vrm14
 
 #With interactions
 vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq)
-vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.3 + (1|site), data = mpq)
 vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq)
 vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq)
 
@@ -336,9 +313,9 @@ summary(rug4)
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 rug5 <- lm(rug ~ year + hum_dist + island.side, data = mpq) 
-rug6 <- lm(rug~ year + hum_dist + region.4, data = mpq)
+rug6 <- lm(rug~ year + hum_dist + region.3, data = mpq)
 rug7 <- lm(rug ~ year*hum_dist + island.side, data = mpq)
-rug8 <- lm(rug~year*hum_dist + region.4, data = mpq)
+rug8 <- lm(rug~year*hum_dist + region.3, data = mpq)
 
 AIC(rug5, rug6, rug7, rug8) #AIC's the same based on if interaction is present or not (interaction makes it worse)
 
@@ -349,9 +326,9 @@ summary(rug8)
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
 rug9 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq)
-rug10  <- lm(rug ~ year + sqrt.hdist.cont + region.4, data = mpq)
+rug10  <- lm(rug ~ year + sqrt.hdist.cont + region.3, data = mpq)
 rug11 <- lm(rug ~ year*sqrt.hdist.cont + island.side, data = mpq)
-rug12 <- lm(rug ~ year*sqrt.hdist.cont + region.4, data = mpq)
+rug12 <- lm(rug ~ year*sqrt.hdist.cont + region.3, data = mpq)
 
 AIC(rug9, rug10, rug11, rug12) #AIC's the same based on if interaction is present or 
 
@@ -373,7 +350,7 @@ AIC(rug5, rug6, rug7, rug8, rug9, rug10,rug11, rug12)  #Rug11, 12 are best fits
 #Continuous disturbance
 #no interaction
 rug13 <- lmer(rug~year + sqrt.hdist.cont + island.side + (1|site), data = mpq)
-rug14 <- lmer(rug~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+rug14 <- lmer(rug~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq)
 rug15 <- lmer(rug~year + sqrt.hdist.cont + (1|site), data = mpq)
 rug16 <- lmer(rug~year + hum_dist + (1|site), data = mpq)
 
@@ -388,7 +365,7 @@ anova(rug13, rug14, rug15, rug16) #this says rug13 fits best (13<15<14<16)
 
 #With interactions
 rug17 <- lmer(rug~year *sqrt.hdist.cont + island.side + (1|site), data = mpq)
-rug18 <- lmer(rug~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq)
+rug18 <- lmer(rug~year * sqrt.hdist.cont + region.3 + (1|site), data = mpq)
 rug19 <- lmer(rug~year * sqrt.hdist.cont + (1|site), data = mpq)
 rug20 <- lmer(rug~year * hum_dist + (1|site), data = mpq)
 
@@ -429,6 +406,17 @@ Final Working Model:
 
 
 ## 3. Fractal Dimension {.tabset}
+
+### Fractal Dimension Dataset is normal
+```{r frac not normal, echo=FALSE}
+#Data is not normal
+ggplot(frac, aes(x=frac)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="Looks Normally Distributed",x="Fractal Dimension", y = "Density")
+
+
+```
+
 ### A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
 ```{r frac fixed effect models}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
@@ -450,9 +438,9 @@ summary(frac4)
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 frac5 <- lm(frac ~ year + hum_dist + island.side, data = frac) 
-frac6 <- lm(frac~ year + hum_dist + region.4, data = frac)
+frac6 <- lm(frac~ year + hum_dist + region.3, data = frac)
 frac7 <- lm(frac ~ year*hum_dist + island.side, data = frac)
-frac8 <- lm(frac~year*hum_dist + region.4, data = frac)
+frac8 <- lm(frac~year*hum_dist + region.3, data = frac)
 
 AIC(frac5, frac6, frac7, frac8) #frac7,8 best
 
@@ -471,9 +459,9 @@ summary(frac8)
 ```{r frac continuous human dist}
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
 frac9 <- lm(frac ~ year + sqrt.hdist.cont + island.side, data = frac)
-frac10  <- lm(frac ~ year + sqrt.hdist.cont + region.4, data = frac)
+frac10  <- lm(frac ~ year + sqrt.hdist.cont + region.3, data = frac)
 frac11 <- lm(frac ~ year*sqrt.hdist.cont + island.side, data = frac)
-frac12 <- lm(frac ~ year*sqrt.hdist.cont + region.4, data = frac)
+frac12 <- lm(frac ~ year*sqrt.hdist.cont + region.3, data = frac)
 
 AIC(frac9, frac10, frac11, frac12) #Frac12<Frac11 best 2 (close ~1AIC between them)
 
@@ -498,7 +486,7 @@ nrow(frac) #127 total rows
 #Continuous disturbance
 #no interaction
 frac13 <- lmer(frac~year + sqrt.hdist.cont + island.side + (1|site), data = frac)
-frac14 <- lmer(frac~year + sqrt.hdist.cont + region.4 + (1|site), data = frac)
+frac14 <- lmer(frac~year + sqrt.hdist.cont + region.3 + (1|site), data = frac)
 frac15 <- lmer(frac~year + sqrt.hdist.cont + (1|site), data = frac)
 frac16 <- lmer(frac~year + hum_dist + (1|site), data = frac)
 
@@ -515,7 +503,7 @@ anova(frac13, frac14, frac15, frac16) #this says frac14 firts best
 
 #With interactions
 frac17 <- lmer(frac~year *sqrt.hdist.cont + island.side + (1|site), data = frac)
-frac18 <- lmer(frac~year * sqrt.hdist.cont + region.4 + (1|site), data = frac)
+frac18 <- lmer(frac~year * sqrt.hdist.cont + region.3 + (1|site), data = frac)
 frac19 <- lmer(frac~year * sqrt.hdist.cont + (1|site), data = frac)
 frac20 <- lmer(frac~year * hum_dist + (1|site), data = frac)
 
@@ -558,20 +546,30 @@ anova(frac9, frac10, frac11, frac12)
 
 Final Working Model(s):
 
-**frac ~ year * sqrt.hdist.cont + region.4** 
+**frac ~ year * sqrt.hdist.cont + region.3** 
 
 **frac ~ year * sqrt.hdist.cont + island.side** 
 
-**frac ~ year + sqrt.hdist.cont + region.4**
+**frac ~ year + sqrt.hdist.cont + region.3**
 
 
-## 4. Habitat Volume {.tabset}
-### Data is not normally distributed
-```{r non normal data distribution}
+# 4. Habitat Volume {.tabset}
+### Data appears to not be normally distributed
+```{r non normal data distribution, echo=FALSE}
+# cc$sq.hab.vol.t <- cc$hab.vol+3
+# cc$sq.hab.vol.t <- asin(cc$hab.vol) #Arcsin perhaps?
+
+# hist(cc$sq.hab.vol)
+# qqnorm(cc$hab.vol)
+# qqline(cc$hab.vol)
+
+
 #Data is not normal
 ggplot(cc, aes(x=hab.vol)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") + labs(title="Any suggestions for transformation?",x="Volumetric Change (m^3)", y = "Density")
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="Or is it normal enough? Any suggestions?",x="Volumetric Change (m^3)", y = "Density")
+
+
 
 ```
 
@@ -598,9 +596,9 @@ summary(hab.vol4)
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 hab.vol5 <- lm(hab.vol ~ timepoint + hum_dist + island.side, data = cc) 
-hab.vol6 <- lm(hab.vol~ timepoint + hum_dist +region.4, data = cc)
+hab.vol6 <- lm(hab.vol~ timepoint + hum_dist +region.3, data = cc)
 hab.vol7 <- lm(hab.vol ~ timepoint*hum_dist + island.side, data = cc)
-hab.vol8 <- lm(hab.vol~timepoint*hum_dist + region.4, data = cc)
+hab.vol8 <- lm(hab.vol~timepoint*hum_dist + region.3, data = cc)
 
 summary(hab.vol5)
 summary(hab.vol6)
@@ -616,9 +614,9 @@ AIC(hab.vol5, hab.vol6, hab.vol7, hab.vol8) #AIC's the same based on if interact
 ```{r habvol continuous human dist}
 #Continuous human disturbance against region, then Continuous disturbance interaction with timepoint
 hab.vol9 <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + island.side, data = cc)
-hab.vol10  <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + region.4, data = cc)
+hab.vol10  <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + region.3, data = cc)
 hab.vol11 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + island.side, data = cc)
-hab.vol12 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + region.4, data = cc)
+hab.vol12 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + region.3, data = cc)
 
 AIC(hab.vol9, hab.vol10, hab.vol11, hab.vol12) #hab.vol10 best fit, followed by hab.vol12, hab.vol9 (each 2 AIC apart from one another)
 
@@ -637,7 +635,7 @@ summary(hab.vol12)   #Best fit: Hab.vol10
 #Continuous disturbance
 #no interaction
 hab.vol13 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + island.side + (1|site), data = cc)
-hab.vol14 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + region.4 + (1|site), data = cc)
+hab.vol14 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + region.3 + (1|site), data = cc)
 hab.vol15 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + (1|site), data = cc)
 hab.vol16 <- lmer(hab.vol~timepoint + hum_dist + (1|site), data = cc)
 
@@ -653,7 +651,7 @@ anova(hab.vol13, hab.vol14, hab.vol15, hab.vol16) #this says hab.vol16 fits best
 
 #With interactions
 hab.vol17 <- lmer(hab.vol~timepoint *sqrt.hdist.cont + island.side + (1|site), data = cc)
-hab.vol18 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + region.4 + (1|site), data = cc)
+hab.vol18 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + region.3 + (1|site), data = cc)
 hab.vol19 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + (1|site), data = cc)
 hab.vol20 <- lmer(hab.vol~timepoint * hum_dist + (1|site), data = cc)
 
@@ -689,27 +687,160 @@ OR
 
 - **Habitat Volumetric Change ~ timepoint + hum_dist** 
 
-# Curvatures {.tabset}
-## Curvature range
-```{r pro curv range, echo=FALSE}
-ggplot(mpq, aes(x=pro.curv)) + 
- geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") 
+
+
+# 5. Curvature Range Data 
+
+## Profile Curvature Distributions {.tabset}
+### Raw Data
+```{r raw pro curv distribution, echo=FALSE}
+
+hist(mpq$pro.range)
+lmv1 <- lm(pro.range ~ year, data = mpq)
+plot(lmv1)
+
+qqnorm(mpq$vrm.range, pch = 1, frame = FALSE)
+qqline(mpq$vrm.range, col = "steelblue", lwd = 2)
 ```
 
-```{r plan curv range, echo=FALSE}
-ggplot(mpq, aes(x=plan.curv)) + 
- geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") 
+### Square Root Transformed
+```{r sqrt pro curv, echo=FALSE}
+#Transform the data
+mpq$pro.range.t <- 1
+mpq$pro.range.t <- sqrt(mpq$pro.range)
+hist(mpq$pro.range.t)
+lmv2 <- lm(pro.range.t ~ year, data = mpq)
+plot(lmv2)
+
+
+# 
+# qqnorm(mpq$pro.range.t, pch = 1, frame = FALSE)
+# qqline(mpq$pro.range.t, col = "steelblue", lwd = 2)
+# 
+
 ```
 
-## Test for Collinearity bewteen curvature values
-```{r collinearity}
-ggplot(mpq, aes(x=pro.curv, y=plan.curv)) + geom_point() + ggtitle("Pearson Correlation = 0.9886") +geom_smooth(method=lm)
 
-#cor.test(mpq$pro.curv, mpq$plan.curv, method=c("pearson")) 
+### Log10 Transformed
+```{r pro curv log transformed, echo=FALSE}
+#Transform the data
+mpq$pro.range.t <- log10(mpq$pro.range)
+hist(mpq$pro.range.t)
+lmv2 <- lm(pro.range.t ~ year, data = mpq)
+plot(lmv2)
+
+# qqnorm(mpq$pro.range.t, pch = 1, frame = FALSE)
+# qqline(mpq$pro.range.t, col = "steelblue", lwd = 2)
+
 
 ```
+
+### Inverse Transformed (1/X)
+```{r inverse transform, echo=FALSE}
+#Transform the data
+mpq$pro.range.t <- 1
+mpq$pro.range.t <- 1/(mpq$pro.range)
+hist(mpq$pro.range.t)
+lmv2 <- lm(pro.range.t ~ year, data = mpq)
+plot(lmv2)
+
+# 
+# qqnorm(mpq$pro.range.t, pch = 1, frame = FALSE)
+# qqline(mpq$pro.range.t, col = "steelblue", lwd = 2)
+
+```
+
+## Planform Curvature Distributions {.tabset}
+
+### Raw Data
+```{r plan raw pro curv distribution, echo=FALSE}
+
+hist(mpq$plan.range)
+lmv3 <- lm(plan.range ~ year, data = mpq)
+plot(lmv3)
+
+# qqnorm(mpq$plan.range, pch = 1, frame = FALSE)
+# qqline(mpq$plan.range, col = "steelblue", lwd = 2)
+```
+
+### Square Root Transformed
+```{r plan sqrt pro curv, echo=FALSE}
+#Transform the data
+mpq$plan.range.t <- 1
+mpq$plan.range.t <- sqrt(mpq$plan.range)
+hist(mpq$plan.range.t)
+lmv4 <- lm(plan.range.t ~ year, data = mpq)
+plot(lmv4)
+# 
+# qqnorm(mpq$plan.range.t, pch = 1, frame = FALSE)
+# qqline(mpq$plan.range.t, col = "steelblue", lwd = 2)
+
+
+```
+
+
+### Log10 Transformed
+```{r plan curv log transformed, echo=FALSE}
+#Transform the data
+mpq$plan.range.t <- log10(mpq$plan.range)
+hist(mpq$plan.range.t)
+lmv4 <- lm(plan.range.t ~ year, data = mpq)
+plot(lmv4)
+
+# qqnorm(mpq$plan.range.t, pch = 1, frame = FALSE)
+# qqline(mpq$plan.range.t, col = "steelblue", lwd = 2)
+
+
+```
+
+### Inverse Transformed (1/X)
+```{r plan inverse transform, echo=FALSE}
+#Transform the data
+mpq$plan.range.t <- 1/(mpq$plan.range)
+hist(mpq$plan.range.t)
+lmv4 <- lm(plan.range.t ~ year, data = mpq)
+plot(lmv4)
+
+# qqnorm(mpq$plan.range.t, pch = 1, frame = FALSE)
+# qqline(mpq$plan.range.t, col = "steelblue", lwd = 2)
+
+```
+
+
+
+
+
+## VRM Range Data
+
+### Raw Data Distribution
+```{r vrm range distributon, eval=FALSE, include=FALSE}
+hist(mpq$vrm.range)
+lmv1 <- lm(vrm.range ~ year, data = mpq)
+plot(lmv1)
+
+qqnorm(mpq$vrm.range, pch = 1, frame = FALSE)
+qqline(mpq$vrm.range, col = "steelblue", lwd = 2)
+
+#Transform the data
+mpq$vrm.range.t <- 1
+mpq$vrm.range.t <- 1/(mpq$vrm.range)
+hist(mpq$vrm.range.t)
+
+qqnorm(mpq$vrm.range.t, pch = 1, frame = FALSE)
+qqline(mpq$vrm.range.t, col = "steelblue", lwd = 2)
+
+
+lmv2 <- lm(vrm.range.t ~ year, data = mpq)
+plot(lmv2)
+
+
+
+
+
+
+```
+
+
 
 
 # Random Forest
@@ -717,6 +848,18 @@ ggplot(mpq, aes(x=pro.curv, y=plan.curv)) + geom_point() + ggtitle("Pearson Corr
 This is to determine the significant contributing morphologies to each metric of complexity
 
 ```{r random forest, eval=FALSE, include=FALSE}
+#Data
+mpq.dig.1 #DEM 1cm
+mpq.dig.4 #DEM 4cm
+mpq.dig.8 #DEM 8cm
+
+#Create Data Matrix of complexity metric ~ morphology percentages
+#1. VRM
+vrm.per.1 <- mpq.dig.1[,c(17:69)]
+vrm.per.1 <- vrm.per.1[,-c(2:4)] #drop other complexity metrics
+
+
+
 # Set prunescale 
 prunescale = 0.0001
 
@@ -749,7 +892,7 @@ print(erie.classify)
 # Models at different DEM's
 ## VRM
 ### 1cm
-```{r vrm 1cm dem}
+```{r vrm 1cm dem, eval=FALSE, include=FALSE}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
 vrm1 <- lm(vrm ~ year + hum_dist, data = mpq.1) #Hum_Dist = Categorical
 vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1)
@@ -761,24 +904,24 @@ AIC(vrm1,vrm2,vrm3,vrm4)
 
 #Models without interaction of disturbance added with different regions
 vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq.1) 
-vrm6 <- lm(vrm~ year + hum_dist + region.4, data = mpq.1)
+vrm6 <- lm(vrm~ year + hum_dist + region.3, data = mpq.1)
 vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq.1)
-vrm8 <- lm(vrm~year*hum_dist + region.4, data = mpq.1)
+vrm8 <- lm(vrm~year*hum_dist + region.3, data = mpq.1)
 
 AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
 vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1)
-vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.4, data = mpq.1)
+vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq.1)
 vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq.1)
-vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.4, data = mpq.1)
+vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq.1)
 
 AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
 
 
 #Continuous disturbance- no interaction
 vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
-vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq.1)
+vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1)
 vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq.1)
 vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq.1)
 
@@ -786,7 +929,7 @@ AIC(vrm13, vrm14, vrm15, vrm16) #VRM15 best fit, but vrm16 is close  (1AIC)
 
 #With interactions
 vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
-vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq.1)
+vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1)
 vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq.1)
 vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq.1)
 
@@ -806,7 +949,7 @@ summary(vrm1)
 ### 4cm
 
 ### 8cm
-```{r vrm 8cm dem}
+```{r vrm 8cm dem, eval=FALSE, include=FALSE}
 mpq.1
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
 vrm1 <- lm(vrm ~ year + hum_dist, data = mpq.8) #Hum_Dist = Categorical
@@ -819,24 +962,24 @@ AIC(vrm1,vrm2,vrm3,vrm4)
 
 #Models without interaction of disturbance added with different regions
 vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq.8) 
-vrm6 <- lm(vrm~ year + hum_dist + region.4, data = mpq.8)
+vrm6 <- lm(vrm~ year + hum_dist + region.3, data = mpq.8)
 vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq.8)
-vrm8 <- lm(vrm~year*hum_dist + region.4, data = mpq.8)
+vrm8 <- lm(vrm~year*hum_dist + region.3, data = mpq.8)
 
 AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
 vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.8)
-vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.4, data = mpq.8)
+vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq.8)
 vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq.8)
-vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.4, data = mpq.8)
+vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq.8)
 
 AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
 
 
 #Continuous disturbance- no interaction
 vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.8)
-vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.4 + (1|site), data = mpq.8)
+vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.8)
 vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq.8)
 vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq.8)
 
@@ -844,7 +987,7 @@ AIC(vrm13, vrm14, vrm15, vrm16) #VRM15 best fit, but vrm16 is close  (1AIC)
 
 #With interactions
 vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.8)
-vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.4 + (1|site), data = mpq.8)
+vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.8)
 vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq.8)
 vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq.8)
 

@@ -1,4 +1,4 @@
-"","year","hum_dist","region","site","site.ppq","year.site.ppq","Live_Branching","Live_Columnar","Live_Digitate","Live_Encrusting","Live_Encrusting_Columnar","Live_Foliose","Live_FreeLiving","Live_Massive","Live_Massive_Grooved","Live_Porites","Live_SubMassive","Live_Tabulate","NonCoral_Encrusting","NonCoral_Massive","NonCoral_SubMassive","SoftCoral_Nodular","SoftCoral_Plating","NonCoral_Branching"
+"","year","hum_dist","region","site","site.ppq","year.site.ppq","LB.count","LC.count","LD.count","LE.count","LEC.count","LF.count","LFL.count","LM.count","LMG.count","LP.count","LS.count","LT.count","NCE.count","NCM.count","NCS.count","SCN.count","SCP.count","NCB.count"
 "1","2015","Very High","N.Lagoon","27","27.1","2015.27.1",6,0,0,46,0,6,2,26,0,11,0,0,0,0,0,0,0,0
 "2","2015","Very High","N.Lagoon","27","27.2","2015.27.2",2,0,0,0,0,0,2,7,0,0,0,0,0,0,0,0,0,0
 "3","2015","Very High","N.Lagoon","27","27.3","2015.27.3",1,0,0,5,0,0,2,9,0,3,0,0,0,0,0,0,0,0

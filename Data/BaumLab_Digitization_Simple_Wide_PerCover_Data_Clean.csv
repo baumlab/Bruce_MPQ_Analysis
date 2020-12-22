@@ -1,4 +1,4 @@
-"","year","hum_dist","region","site","site.ppq","year.site.ppq","Dead","HardCoral","Macroalgae","Non.Coral","Rubble","Sand","SoftCoral"
+"","year","hum_dist","region","site","site.ppq","year.site.ppq","Dead.Coral","Live.Coral","Macroalgae","Non.Coral","Rubble","Sand","Soft.Coral"
 "1","2015","Very High","N.Lagoon","27","27.1","2015.27.1",7.10457451389579,3.2872650728086,0.332008972404668,0,79.6447975240263,9.63135391686463,0
 "2","2015","Very High","N.Lagoon","27","27.2","2015.27.2",3.71683359767582,0.311907056732387,0.662259764658139,0,90.1361915640471,5.1728080168866,0
 "3","2015","Very High","N.Lagoon","27","27.3","2015.27.3",9.55664690005211,0.651855618282301,0.0423182324839323,0,86.94439447935,2.80478476983171,0

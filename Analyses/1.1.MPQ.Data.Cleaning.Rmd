@@ -359,10 +359,6 @@ for(i in c(1:nrow(CC.total))) {
 
 CC.total
 
-#Convert Timepoint to year range
-CC.total$timepoint <- factor(CC.total$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
-CC.total
-
 #Add in continuous human disturbance gradient scores
 CC.total$hdist.cont <- 1
 
@@ -401,10 +397,25 @@ CC.final$hdist.cont <- as.numeric(CC.final$hdist.cont) #Make continuous value a 
 CC.final$sqrt.hdist.cont <- sqrt(CC.final$hdist.cont)
 
 colnames(CC.final)
+
+#Set levels for each dataframe
+CC.final$timepoint.site.ppq <- paste(CC.final$timepoint, CC.final$site, CC.final$ppq, sep = ".")
+levels(CC.final$timepoint.site.ppq)
+head(CC.final$timepoint.site.ppq)
+CC.final$timepoint.site.ppq<- factor(CC.final$timepoint.site.ppq, levels = c("A.27.1","A.27.2","A.27.3", "A.32.1","A.32.2", "A.32.3", "A.30.1", "A.30.2","A.30.3", "A.8.1","A.8.2", "A.8.3", "A.35.1","A.35.2", "A.35.3", "A.34.1", "A.34.2", "A.34.3", "A.15.1", "A.15.2", "A.15.3", "A.19.1", "A.19.2", "A.5.1", "A.5.2", "A.5.3","B.27.1","B.27.2","B.27.3", "B.32.1","B.32.2", "B.32.3", "B.30.1", "B.30.2","B.30.3", "B.8.1","B.8.2", "B.8.3", "B.35.1","B.35.2", "B.35.3", "B.34.1", "B.34.2", "B.34.3", "B.5.1","B.5.2", "B.5.3",  "B.37.1", "B.37.2", "B.37.3", "C.27.1","C.27.2","C.27.3", "C.32.1","C.32.2", "C.32.3", "C.30.1", "C.30.2","C.30.3", "C.8.1","C.8.2", "C.8.3", "C.35.1","C.35.2", "C.35.3", "C.34.1", "C.34.2", "C.34.3", "C.5.1","C.5.2", "C.5.3"))
+
+#Reorder dataframe by disturbance publication site names (VH -- M -- VL)
+CC.final<- CC.final[order(CC.final$timepoint.site.ppq),]
+row.names(CC.final) <- 1:nrow(CC.final) #Changes the row names so that they are re-orderd 1-80
+
+#Convert Timepoint to year range
+CC.final$timepoint <- factor(CC.final$timepoint, levels =c("A", "B", "C"), labels = c("2015-2017", "2017-2019", "2015-2019"))
+CC.final
+
 CC.final <- subset(CC.final, select = c("pub.site", "site", "ppq", "hum_dist","sqrt.hdist.cont", "island.side", "region.3", "region.4", "region.full", "timepoint", "volume.change"))
 
 #Export Clean Data as a csv
-write.csv(CC.final, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_Updated.csv")
+write.csv(CC.final, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_11Dec2020.csv")
 ```
 
 # ArcMap Complexity
@@ -520,9 +531,8 @@ for(i in c(1:nrow(mpq))) {
     mpq$pub.site[i] <- "VL4"
   }}
 
-# #Create unique collumn name site.ppq
-# mpq$site.ppq <- paste(mpq$site, mpq$ppq, sep=".")
 
+mpq
 
 #Create dataframe with only columns I require
 mpq.temp <- subset(mpq, select = c("year","hum_dist","site", "pub.site", "ppq", "DEM", "area_2d", "area_3d", "rug", "slope", "vrm", "curv", "pro.curv", "plan.curv", "region.kb"))
@@ -532,45 +542,21 @@ mpq <- mpq.temp
 str(mpq)
 
 # #Create unique colname
-# mpq$year.site.ppq <- paste(mpq$year, mpq$site, mpq$ppq, sep = ".")
+mpq$year.site.ppq <- paste(mpq$year, mpq$site, mpq$ppq, sep = ".")
 
 #Change descriptors to factors (Ex: Year, region, disturbance)
 # mpq$region <- as.factor(mpq$region) 
 # levels(mpq$region)
 mpq$hum_dist <- as.factor(mpq$hum_dist) 
-mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very High", "Medium", "Very Low" ))
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very Low", "Medium", "Very High" ))
 mpq$site <- factor(mpq$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
-#mpq$site.ppq<- factor(mpq$site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "35.1", "35.2", "35.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
 levels(mpq$hum_dist)
 #levels(mpq$site.ppq)
+#mpq$site.ppq<- factor(mpq$site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "35.1", "35.2", "35.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
 
 #Reorder the dataframe
 colnames(mpq)
 mpq <- subset(mpq, select = c ("year",  "hum_dist",  "pub.site", "site","ppq", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "region.kb"))
-
-
-#Take a subset of the mpq data to only include 2015, 2017, 2019 years
-mpq1<- subset(mpq, year == 2015 | year == 2017 | year == 2019)
-mpq1 <- subset(mpq1, select = c("year", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "hum_dist", "pub.site", "site","ppq"))
-
-#Line up rows with digitization dataframe
-#levels(mpq1$year.site.ppq)
-#mpq1$year.site.ppq<- factor(mpq1$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
-
-
-#How to rename dataframes if I want to break them up by DEM
-mpq.1 <- subset(mpq1, DEM ==1) #1cm DEM
-row.names(mpq.1) <- 1:nrow(mpq.1) #Changes the row names so that they are re-orderd 1-80
-
-mpq.4 <- subset(mpq1, DEM ==4) #4cm DEM
-row.names(mpq.4) <- 1:nrow(mpq.4) #Changes the row names so that they are re-orderd 1-80
-
-mpq.8 <- subset(mpq1, DEM ==8) #8cm DEM
-row.names(mpq.8) <- 1:nrow(mpq.8) #Changes the row names so that they are re-orderd 1-80
-
-
-
-mpq
 
 #Add in region collumns according to KI publication records
 #2. Create 4 subsections for the region collumn:
@@ -723,15 +709,62 @@ str(mpq$sqrt.hdist.cont)
 #Reorder dataframe to export for future analyses
 mpq1 <- subset(mpq, select = c("year", "pub.site", "site", "ppq", "hum_dist", "hdist.cont","sqrt.hdist.cont","island.side", "region.3", "region.4", "region.full", "region.kb", "DEM", "area_2d", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv"))
 
-head(mpq1)
-colnames(mpq1)
 
-str(mpq1)
-#Export csv file 
-write.csv(mpq.1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_1cm_Data_Clean.csv")
-write.csv(mpq1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_updated.csv")
 
-### Look into converting planform & profile curv values into Z values
+#<----------------------------------------------------------------------------------------------------------------------------------------------------
+#Create unique id collumn
+mpq1$year.site.ppq <- paste(mpq1$year, mpq1$site, mpq1$ppq, sep = ".")
+
+#Break up by DEM
+mpq.1 <- subset(mpq1, DEM == 1)
+mpq.4 <- subset(mpq1, DEM == 4)
+mpq.8 <- subset(mpq1, DEM == 8)
+
+#<--------------------------------------------------------------------------------------------------------->
+#1cm DEM
+#Set levels for each dataframe
+levels(mpq.1$year.site.ppq)
+mpq.1$year.site.ppq<- factor(mpq.1$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2016a.27.1", "2016a.27.2", "2016a.27.3", "2016a.32.1", "2016a.32.2", "2016a.32.3", "2016a.30.1", "2016a.30.2", "2016a.30.3", "2016a.8.1", "2016a.8.2", "2016a.8.3", "2016a.35.1", "2016a.35.2", "2016a.34.1", "2016a.34.2", "2016a.34.3", "2016a.15.1", "2016a.5.1", "2016a.5.2", "2016a.5.3","2016b.27.1", "2016b.27.2", "2016b.27.3", "2016b.32.1", "2016b.32.2", "2016b.32.3", "2016b.30.1", "2016b.30.2", "2016b.30.3", "2016b.8.1", "2016b.8.2", "2016b.8.3", "2016b.35.1", "2016b.35.2", "2016b.35.3",  "2016b.34.1", "2016b.34.2", "2016b.34.3", "2016b.15.1", "2016b.15.2", "2016b.15.3", "2016b.19.1", "2016b.19.2", "2016b.5.1", "2016b.5.2", "2016b.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(mpq.1$year.site.ppq)
+
+#Reorder dataframe by disturbance publication site names (VH -- M -- VL)
+mpq.1<- mpq.1[order(mpq.1$year.site.ppq),]
+row.names(mpq.1) <- 1:nrow(mpq.1) #Changes the row names so that they are re-orderd 1-80
+
+#<--------------------------------------------------------------------------------------------------------->
+#4cm DEM
+#Set levels for each dataframe
+levels(mpq.4$year.site.ppq)
+mpq.4$year.site.ppq<- factor(mpq.4$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2016a.27.1", "2016a.27.2", "2016a.27.3", "2016a.32.1", "2016a.32.2", "2016a.32.3", "2016a.30.1", "2016a.30.2", "2016a.30.3", "2016a.8.1", "2016a.8.2", "2016a.8.3", "2016a.35.1", "2016a.35.2", "2016a.34.1", "2016a.34.2", "2016a.34.3", "2016a.15.1", "2016a.5.1", "2016a.5.2", "2016a.5.3","2016b.27.1", "2016b.27.2", "2016b.27.3", "2016b.32.1", "2016b.32.2", "2016b.32.3", "2016b.30.1", "2016b.30.2", "2016b.30.3", "2016b.8.1", "2016b.8.2", "2016b.8.3", "2016b.35.1", "2016b.35.2", "2016b.35.3",  "2016b.34.1", "2016b.34.2", "2016b.34.3", "2016b.15.1", "2016b.15.2", "2016b.15.3", "2016b.19.1", "2016b.19.2", "2016b.5.1", "2016b.5.2", "2016b.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(mpq.4$year.site.ppq)
+
+#Reorder dataframe by disturbance publication site names (VH -- M -- VL)
+mpq.4<- mpq.4[order(mpq.4$year.site.ppq),]
+row.names(mpq.4) <- 1:nrow(mpq.4) #Changes the row names so that they are re-orderd 1-80
+
+#<--------------------------------------------------------------------------------------------------------->
+#8cm DEM
+#Set levels for each dataframe
+levels(mpq.8$year.site.ppq)
+mpq.8$year.site.ppq<- factor(mpq.8$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2016a.27.1", "2016a.27.2", "2016a.27.3", "2016a.32.1", "2016a.32.2", "2016a.32.3", "2016a.30.1", "2016a.30.2", "2016a.30.3", "2016a.8.1", "2016a.8.2", "2016a.8.3", "2016a.35.1", "2016a.35.2", "2016a.34.1", "2016a.34.2", "2016a.34.3", "2016a.15.1", "2016a.5.1", "2016a.5.2", "2016a.5.3","2016b.27.1", "2016b.27.2", "2016b.27.3", "2016b.32.1", "2016b.32.2", "2016b.32.3", "2016b.30.1", "2016b.30.2", "2016b.30.3", "2016b.8.1", "2016b.8.2", "2016b.8.3", "2016b.35.1", "2016b.35.2", "2016b.35.3",  "2016b.34.1", "2016b.34.2", "2016b.34.3", "2016b.15.1", "2016b.15.2", "2016b.15.3", "2016b.19.1", "2016b.19.2", "2016b.5.1", "2016b.5.2", "2016b.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(mpq.8$year.site.ppq)
+
+#Reorder dataframe by disturbance publication site names (VH -- M -- VL)
+mpq.8<- mpq.8[order(mpq.8$year.site.ppq),]
+row.names(mpq.8) <- 1:nrow(mpq.8) #Changes the row names so that they are re-orderd 1-80
+#<--------------------------------------------------------------------------------------------------------->
+#Merge all 3 DEM df's together
+mpq.all <- rbind(mpq.1, mpq.4, mpq.8)
+
+
+#<--------------------------------------------------------------------------------------------------------->
+#Break dataframe up into its sub-components
+mpq.all #Dataframe with all 5 timepoints for initial modelling
+
+#Export complexity dataframeDataframe
+write.csv(mpq.all, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_FINAL.11Dec2020.csv")
+
+
 
 ```
 
@@ -856,6 +889,16 @@ slope$sqrt.hdist.cont <- 1
 slope$sqrt.hdist.cont <- sqrt(slope$hdist.cont) 
 str(slope$sqrt.hdist.cont)
 
+#Order dataframe properly
+#Set levels for each dataframe
+levels(slope$year.site.ppq)
+slope$year.site.ppq<- factor(slope$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2016a.27.1", "2016a.27.2", "2016a.27.3", "2016a.32.1", "2016a.32.2", "2016a.32.3", "2016a.30.1", "2016a.30.2", "2016a.30.3", "2016a.8.1", "2016a.8.2", "2016a.8.3", "2016a.35.1", "2016a.35.2", "2016a.34.1", "2016a.34.2", "2016a.34.3", "2016a.15.1", "2016a.5.1", "2016a.5.2", "2016a.5.3","2016b.27.1", "2016b.27.2", "2016b.27.3", "2016b.32.1", "2016b.32.2", "2016b.32.3", "2016b.30.1", "2016b.30.2", "2016b.30.3", "2016b.8.1", "2016b.8.2", "2016b.8.3", "2016b.35.1", "2016b.35.2", "2016b.35.3",  "2016b.34.1", "2016b.34.2", "2016b.34.3", "2016b.15.1", "2016b.15.2", "2016b.15.3", "2016b.19.1", "2016b.19.2", "2016b.5.1", "2016b.5.2", "2016b.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(slope$year.site.ppq)
+
+#Reorder dataframe by disturbance publication site names (VH -- M -- VL)
+slope<- slope[order(slope$year.site.ppq),]
+row.names(slope) <- 1:nrow(slope) #Changes the row names so that they are re-orderd 1-80
+
 #Reorder dataframe
 slope1 <- subset(slope, select = c("year", "hum_dist", "sqrt.hdist.cont","pub.site", "site", "ppq", "island.side", "region.3", "region.4", "region.full", "fractal.dimension"))
 
@@ -865,6 +908,49 @@ write.csv(slope1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dime
   
 ```
 
+### ArcMap Complexity Range Calculations
+```{r curvature range calculations}
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+
+#Load CloudCompare data
+ranges <- read.csv("Complexty.Range.Raw.csv", row.names = 1)
+
+#Create new columns
+ranges$vrm.range <- 1 
+ranges$pro.range <- 2
+ranges$plan.range <- 3
+
+#Calculate range values for vrm, pro, & plan curvatures
+ranges$vrm.range <- ranges$vrm.max - ranges$vrm.min
+ranges$pro.range <- ranges$pro.max - ranges$pro.min
+ranges$plan.range <- ranges$plan.max - ranges$plan.min
+
+#Create final dataframe to later merge with other complexity dataset
+range.final <- ranges[,-(6:14)]
+
+
+#Add onto complexity dataframe
+mpq.all #complexity metrics
+colnames(mpq.all)
+mpq <- cbind(mpq.all, range.final)
+
+#ReOrder dataframe
+colnames(mpq)
+mpq <- subset(mpq, select = c("year", "pub.site",  "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "region.full", "DEM", "year.site.ppq", "area_2d", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range", "plan.curv", "plan.range"))
+
+#Dataframe to combine with digitization dataframe
+mpq.3yrs <- subset(mpq, year == 2015 | year == 2017 | year == 2019) #Dataframe to link with digitization datasets
+mpq.3yrs.1cm <- subset(mpq.3yrs, DEM == 1)
+mpq.3yrs.4cm <- subset(mpq.3yrs, DEM == 4)
+mpq.3yrs.8cm <- subset(mpq.3yrs, DEM == 8)
+
+#Export Fractal Dimension Dataframe
+write.csv(range.final, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Range.Data.Final.csv")
+write.csv(mpq, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Complexity.Data.Final.21Dec2020.csv")
+
+
+```
 
 ### ArcMap Complexity Distributions
 ```{r distributions of complexity data, include=FALSE}
@@ -974,6 +1060,50 @@ CC.total$cube.change <- CC.total$volume.change ^ 1/3
 m5.a <- lm(cube.change ~ timepoint, data= CC.total)
 m5.1.a<- simulateResiduals(m5.a)
 plot(m5.1.a)
+
+
+###### RANGE DATA #######
+#VRM Range
+m6 <- lm(vrm.range ~ year, data= range.final)
+m6.1<- simulateResiduals(m6)
+plot(m6.1)
+
+#Non-transformed data  
+ggplot(range.final, aes(x = vrm.range)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = .1, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(vrm.range, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+
+
+#Profile Curvature Range
+m7 <- lm(pro.range ~ year, data= range.final)
+m7.1<- simulateResiduals(m7)
+plot(m7.1)
+
+#Non-transformed data  
+ggplot(range.final, aes(x = pro.range)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = 100000, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(pro.range, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
+
+
+#Planform Curvature Range
+m8 <- lm(plan.range ~ year, data= range.final)
+m8.1<- simulateResiduals(m8)
+plot(m8.1)
+
+#Non-transformed data  
+ggplot(range.final, aes(x = plan.range)) +
+  geom_histogram(aes(y = ..density..), # the histogram will display "density" on its y-axis
+                 binwidth = 100000, colour = "blue", fill = "white") +
+  geom_density(alpha = .2, fill="#FF6655") +
+  geom_vline(aes(xintercept = mean(plan.range, na.rm = T)),
+             colour = "red", linetype ="longdash", size = .8)
 
 
 ```
@@ -1238,7 +1368,14 @@ dig$hum_dist <- factor(dig$hum_dist, levels = c("Very High", "Medium", "Very Low
 dig$site <- factor(dig$site, levels =c("27", "30", "32", "8", "34", "35", "5", "15", "19", "37"))
 dig$site.ppq<- factor(dig$site.ppq, levels = c("27.1", "27.2", "27.3", "30.1", "30.2", "30.3", "32.1", "32.2", "32.3", "8.1", "8.2", "8.3", "34.1", "34.2", "34.3", "35.1", "35.2", "35.3", "5.1", "5.2", "5.3", "15.1", "15.2", "15.3", "19.1", "19.2", "19.3", "37.1", "37.2", "37.3"))
 dig$year.site.ppq <- as.factor(dig$year.site.ppq)
-dig$year.site.ppq<- factor(dig$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.5.1", "2015.5.2", "2015.5.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2017.27.1", "2017.27.2", "2017.27.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+
+dig$year.site.ppq<- factor(dig$year.site.ppq, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3", "2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+
+levels(dig$year.site.ppq)
+
+#Reorder dataframe by disturbance publication site names (VH -- M -- VL)
+dig<- dig[order(dig$year.site.ppq),]
+row.names(dig) <- 1:nrow(dig) #Changes the row names so that they are re-orderd 1-80
 
 
 ```
@@ -1256,43 +1393,43 @@ dig.simple$status <- "Blank"
 #4Loop transferring any live coral morphs to "live" and dead = "dead" (macroalgae stays the same)
 for(i in c(1:nrow(dig.simple))) {
   if(dig.simple$Benthic_Morphology[i]=="Live_Branching") {
-   dig.simple$status[i] <- "HardCoral"
+   dig.simple$status[i] <- "Live.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Live_Columnar") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
  } else if(dig.simple$Benthic_Morphology[i]=="Live_Digitate") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Live_Encrusting") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
  } else if(dig.simple$Benthic_Morphology[i]=="Live_Encrusting_Columnar") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
 } else if(dig.simple$Benthic_Morphology[i]=="Live_Foliose") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
 } else if(dig.simple$Benthic_Morphology[i]=="Live_FreeLiving") {
-  dig.simple$status[i] <- "HardCoral"
+  dig.simple$status[i] <- "Live.Coral"
 } else if(dig.simple$Benthic_Morphology[i]=="Live_Massive") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Live_Massive_Grooved") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Live_Porites") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
    } else if(dig.simple$Benthic_Morphology[i]=="Live_SubMassive") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Live_Tabulate") {
-    dig.simple$status[i] <- "HardCoral"
+    dig.simple$status[i] <- "Live.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Macroalgae") {
     dig.simple$status[i] <- "Macroalgae"
   } else if(dig.simple$Benthic_Morphology[i]=="Dead_Branching") {
-    dig.simple$status[i] <- "Dead"
+    dig.simple$status[i] <- "Dead.Coral"
    } else if(dig.simple$Benthic_Morphology[i]=="Dead_Columnar") {
-    dig.simple$status[i] <- "Dead"
+    dig.simple$status[i] <- "Dead.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Dead_Foliose") {
-    dig.simple$status[i] <- "Dead"
+    dig.simple$status[i] <- "Dead.Coral"
 } else if(dig.simple$Benthic_Morphology[i]=="Dead_Massive") {
-    dig.simple$status[i] <- "Dead"  
+    dig.simple$status[i] <- "Dead.Coral"  
   } else if(dig.simple$Benthic_Morphology[i]=="Dead_SoftCoral") {
-    dig.simple$status[i] <- "Dead"
+    dig.simple$status[i] <- "Dead.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="Dead_Tabulate") {
-    dig.simple$status[i] <- "Dead"
+    dig.simple$status[i] <- "Dead.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="NonCoral_Branching") {
     dig.simple$status[i] <- "Non.Coral"
   } else if(dig.simple$Benthic_Morphology[i]=="NonCoral_Encrusting") {
@@ -1306,9 +1443,9 @@ for(i in c(1:nrow(dig.simple))) {
 } else if(dig.simple$Benthic_Morphology[i]=="Sand") {
     dig.simple$status[i] <- "Sand"
 } else if(dig.simple$Benthic_Morphology[i]=="SoftCoral_Nodular") {
-    dig.simple$status[i] <- "SoftCoral"
+    dig.simple$status[i] <- "Soft.Coral"
 } else if(dig.simple$Benthic_Morphology[i]=="SoftCoral_Plating") {
-    dig.simple$status[i] <- "SoftCoral"
+    dig.simple$status[i] <- "Soft.Coral"
 }}
 
                        #<-----------Summarize Area by Morphology------------>#
@@ -1358,12 +1495,12 @@ dig_simple_prop_w
 
 #Set Color Pallette
 #Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
-dig_sum_simple$status <- factor(dig_sum_simple$status, levels = c("Sand", "Rubble", "Dead", "Macroalgae", "Non.Coral", "SoftCoral", "HardCoral"))
+dig_sum_simple$status <- factor(dig_sum_simple$status, levels = c("Sand", "Rubble", "Dead.Coral", "Macroalgae", "Non.Coral", "Soft.Coral", "Live.Coral"))
 
 ##<------Set Colour Pallettes for each morphology type ----->
 sum.simple.cols <- c("Gray30", "Gray35", "Gray40", "Forest Green", "yellow","mediumseagreen", "Dodger Blue")
 
-morph.sum.simple.colscale<- scale_fill_manual(name="", values=sum.simple.cols, breaks=c("Sand", "Rubble", "Dead", "Macroalgae", "Non.Coral", "SoftCoral", "HardCoral"))
+morph.sum.simple.colscale<- scale_fill_manual(name="", values=sum.simple.cols, breaks=c("Sand", "Rubble", "Dead.Coral", "Macroalgae", "Non.Coral", "Soft.Coral", "Live.Coral"))
 
 
 
@@ -1391,7 +1528,7 @@ dig.simple2.w2 <- dcast(dig.simple2, year ~status, value.var="count", fun.aggreg
 #2017 = 2504 Living Colonies
 #2019 = 5497 Living Colonies
 #Total Colonies Digitized = #15,868
-7867+ 2504 + 5497 #15,868
+#7867+ 2504 + 5497 #15,868
 
 ```
 
@@ -1565,6 +1702,36 @@ colnames(dig.num.w)
 #Only include categories of "live" colonies
 dig.num.w1 <- subset(dig.num.w, select = c("year", "hum_dist", "region", "site", "site.ppq", "year.site.ppq", "Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting","Live_Encrusting_Columnar","Live_Foliose",     "Live_FreeLiving", "Live_Massive","Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive",  "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching"))
 
+#Add unique code at end to differentiate these #'s from the % cover df
+#Change Names of collumns
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Dead_Branching")] <- "DB.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Dead_Columnar")] <- "DC.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Dead_Foliose")] <- "DF.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Dead_Massive")] <- "DM.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Dead_SoftCoral")] <- "DS.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Dead_Tabulate")] <- "DT.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Branching")] <- "LB.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Columnar")] <- "LC.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Digitate")] <- "LD.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Encrusting")] <- "LE.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Encrusting_Columnar")] <- "LEC.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Foliose")] <- "LF.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_FreeLiving")] <- "LFL.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Massive")] <- "LM.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Massive_Grooved")] <- "LMG.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Porites")] <- "LP.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_SubMassive")] <- "LS.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Live_Tabulate")] <- "LT.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Macroalgae")] <- "M.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="NonCoral_Encrusting")] <- "NCE.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="NonCoral_Massive")] <- "NCM.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="NonCoral_SubMassive")] <- "NCS.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Rubble")] <- "R.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="Sand")] <- "S.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="SoftCoral_Nodular")] <- "SCN.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="SoftCoral_Plating")] <- "SCP.count"
+colnames(dig.num.w1)[which(names(dig.num.w1)=="NonCoral_Branching")] <- "NCB.count"
+
 #Dataframe for colony count (wide)
 dig.num.w1
 
@@ -1575,6 +1742,8 @@ dig.num.w1
 ```{r live or dead df database prep and exportation}
 dig_simple_per_w 
 dig_simple_prop_w 
+
+
 
 dig.simple.final #long format
 
@@ -1617,7 +1786,78 @@ write.csv(dig_prop_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitiza
 
 ```
 
-# 3. Surface Complexity Calculations (Sum 3D and 2D Surface areas by morphology)
+# 3. Combine MPQ Complexity data with different digitization dataframes
+```{r combine complexity with coral digitization}
+#Add in all digitization information at each DEM scale
+#This data will be from the coarse dataframe and full dataframe (doesn't include modified/reduced full classification system, so if I need that data, I will have to check back in and change the code here)
+
+#Dataframe to combine with digitization dataframe
+mpq.3yrs.1cm <- subset(mpq.3yrs, DEM == 1)
+mpq.3yrs.4cm <- subset(mpq.3yrs, DEM == 4)
+mpq.3yrs.8cm <- subset(mpq.3yrs, DEM == 8)
+dig_simple_per_w  #Coarse Digitization dataframe
+dig_per_w         #Full Dataframe percent coverage
+dig.num.w1        #Full Dataframe colony count
+
+#1cm
+mpq.dig.1cm <- cbind(mpq.3yrs.1cm,dig_simple_per_w)
+mpq.dig.1cm <-mpq.dig.1cm[,-c(22:27)] #remove rows 21-27
+mpq.dig.1cm <-mpq.dig.1cm[,-c(24:27)] #remove rows NonCoral, Rubble, sand % cover
+
+#Now bind in full dataframe to this one
+mpq.dig.1cm <- cbind(mpq.dig.1cm,dig_per_w) #Percent coverage wide)
+mpq.dig.1cm <-mpq.dig.1cm[,-c(25:30)] #remove same metadata already present
+
+#Finally, add in colony count data
+mpq.dig.1cm <- cbind(mpq.dig.1cm,dig.num.w1) #Colony Count Data)
+ncol(mpq.dig.1cm)
+head(mpq.dig.1cm)
+mpq.dig.1cm <-mpq.dig.1cm[,-c(52:57)] #remove same metadata already present
+
+#Write data
+write.csv(mpq.dig.1cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_1cm_Data_11Dec20.csv")
+
+
+#<------ 4cm -------->
+mpq.dig.4cm <- cbind(mpq.3yrs.4cm,dig_simple_per_w)
+mpq.dig.4cm <-mpq.dig.4cm[,-c(22:27)] #remove rows 21-27
+mpq.dig.4cm <-mpq.dig.4cm[,-c(24:27)] #remove rows NonCoral, Rubble, sand % cover
+
+#Now bind in full dataframe to this one
+mpq.dig.4cm <- cbind(mpq.dig.4cm,dig_per_w) #Percent coverage wide)
+mpq.dig.4cm <-mpq.dig.4cm[,-c(25:30)] #remove same metadata already present
+
+#Finally, add in colony count data
+mpq.dig.4cm <- cbind(mpq.dig.4cm,dig.num.w1) #Colony Count Data)
+ncol(mpq.dig.4cm)
+head(mpq.dig.4cm)
+mpq.dig.4cm <-mpq.dig.4cm[,-c(52:57)] #remove same metadata already present
+
+#Write
+write.csv(mpq.dig.4cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_4cm_Data_11Dec20.csv")
+
+#<------ 8cm -------->
+mpq.dig.8cm <- cbind(mpq.3yrs.8cm,dig_simple_per_w)
+mpq.dig.8cm <-mpq.dig.8cm[,-c(22:27)] #remove rows 21-27
+mpq.dig.8cm <-mpq.dig.8cm[,-c(24:27)] #remove rows NonCoral, Rubble, sand % cover
+
+#Now bind in full dataframe to this one
+mpq.dig.8cm <- cbind(mpq.dig.8cm,dig_per_w) #Percent coverage wide)
+mpq.dig.8cm <-mpq.dig.8cm[,-c(25:30)] #remove same metadata already present
+
+#Finally, add in colony count data
+mpq.dig.8cm <- cbind(mpq.dig.8cm,dig.num.w1) #Colony Count Data)
+ncol(mpq.dig.8cm)
+head(mpq.dig.8cm)
+mpq.dig.8cm <-mpq.dig.8cm[,-c(52:57)] #remove same metadata already present
+
+#Write
+write.csv(mpq.dig.8cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_8cm_Data_11Dec20.csv")
+
+
+```
+
+# 4. Surface Complexity Calculations (Sum 3D and 2D Surface areas by morphology)
 ```{r Area calculation for Surface Complexity values, include=FALSE}
 #1. Summarize the total shape area for each year.site.ppq combination by benthic morphology
 #Erase all rows with an NA in it
@@ -1686,8 +1926,7 @@ dig_area$surface.complexity
 
 ```
 
-#4. Fish Data
-## Load fish data
+# 5. Fish Data
 ```{r load fish data, eval=FALSE, include=FALSE}
 #Set the Working Directory
 setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/FishSurveys")
@@ -2026,20 +2265,100 @@ ki_full$LENGTH_CONVERSION_FACTOR[ki_full$Species == "Labridae sp"] <- mean(cred$
 dim(ki_full[is.na(ki_full$lw_a),] ) #0 NA's out of 15 collumns
 unique(ki_full$Species[is.na(ki_full$lw_a)] ) #None
 
-
-******* ASK SEAN WHERE Trophic is coming from..... **********
-
-
 ## Add Family info
-ki_full$Family <- as.character(trophic$X[match(ki_full$Species, trophic$CREDSpecies)])
+ki_full$Family <- as.character(cred.allo$X[match(ki_full$Species, cred.allo$CREDSpecies)])
 dim(ki_full[is.na(ki_full$Family),])
 
 # Add in Family info for species not in 'trophic' dataset
 unique(ki_full$Species[is.na(ki_full$Family)])
 
+colnames(ki_full)
+
+### Add functional group data
+ki_full$CoarseFG <- as.character(cred.allo$CoarseFG[match(ki_full$Species, cred.allo$CREDSpecies)])
+ki_full$FineFG <- as.character(cred.allo$FineFG[match(ki_full$Species, cred.allo$CREDSpecies)])
+
+colnames(ki_full)
+
+ki.fish <- subset(ki_full, select = c("Year", "KI_Date", "Site", "Observer", "Transect", "Species", "Family", "CoarseFG", "FineFG", "Size(cm)", "Number", "Note"))
+
+
+#Rename some collumns
+colnames(ki.fish)[which(names(ki.fish)=="Year")] <- "year"
+colnames(ki.fish)[which(names(ki.fish)=="Site")] <- "site"
+colnames(ki.fish)[which(names(ki.fish)=="Observer")] <- "diver"
+colnames(ki.fish)[which(names(ki.fish)=="Transect")] <- "transect"
+colnames(ki.fish)[which(names(ki.fish)=="Species")] <- "species"
+colnames(ki.fish)[which(names(ki.fish)=="Family")] <- "family"
+colnames(ki.fish)[which(names(ki.fish)=="Size(cm)")] <- "size(cm)"
+colnames(ki.fish)[which(names(ki.fish)=="Number")] <- "count"
+
+
 
 ```
 
+
+#Summarize fish dataset
+```{r}
+ki.fish
+colnames(ki.fish)
+
+#Total Fish Abundance by year/site/transect
+ki_AB <- ki.fish %>% dplyr::group_by(year, KI_Date, site, diver, transect) %>% dplyr::summarise(AB_total = sum(count))
+
+#Which years have double surveys completed? Go through and delete the first of the two, as that is most likely a training dive
+#1 2015, site 8 
+
+
+## Total abundance
+ki_AB <- ki_full %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_total = sum(number))
+
+## Functional group abundance
+# Corallivores
+ki_AB_coral <- ki_coral %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_coral = sum(number))
+# Detritivores
+ki_AB_det <- ki_det %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_det = sum(number))
+# Generalist carnivores
+ki_AB_gen <- ki_gen %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_gen = sum(number))
+# Herbivores
+ki_AB_herb <- ki_herb %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_herb = sum(number))
+# Invertivores
+ki_AB_inv <- ki_inv %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_inv = sum(number))
+# Omnivores
+ki_AB_omn <- ki_omn %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_omn = sum(number))
+# Piscivores
+ki_AB_pisc <- ki_pisc %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_pisc = sum(number))
+# Planktivores
+ki_AB_plank <- ki_plank %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_plank = sum(number))
+
+
+
+
+
+#Create unique collumn
+ki.fish$year.site.transect <- paste(ki.fish$year, ki.fish$site, ki.fish$transect, sep= ".")
+
+#Try subsetting by coarseFG
+ki.herbs <- subset(ki.fish, CoarseFG == "Herbivore")
+
+#Summarize fish counts by site.transect
+
+
+#Summarize all fish counts by site.spp
+ki.fish.sum <- ki.fish %>% group_by(year, site, transect, CoarseFG, year.site.transect) %>% summarise(Total = sum(count))
+
+# Summarize the total area of each morphology in Long format
+str(dig.simple$area)
+dig_sum_simple <- dig.simple %>% dplyr::group_by(year, hum_dist, region, site, ppq, year.site.ppq, status) %>% dplyr::summarise(Area = sum(area))
+
+
+
+
+
+
+```
+
+# old cleaning script form SD
 
 ```{r cleaning script from Sean, eval=FALSE, include=FALSE}
 ### Cleaning the 2019 Data and creating a dataframe with 2017, 2018, and 2019 data###
@@ -2089,8 +2408,8 @@ unique(ki_full$Species[is.na(ki_full$Family)])
 
 
 ### Add functional group data
-ki_full$CoarseFG <- as.character(trophic$CoarseFG[match(ki_full$Species, trophic$CREDSpecies)])
-ki_full$FineFG <- as.character(trophic$FineFG[match(ki_full$Species, trophic$CREDSpecies)])
+ki_full$CoarseFG <- as.character(cred.allo$CoarseFG[match(ki_full$Species, cred.allo$CREDSpecies)])
+ki_full$FineFG <- as.character(cred.allo$FineFG[match(ki_full$Species, trophic$CREDSpecies)])
 
 
 # Add in CoarseFG info for species not in 'trophic' dataset

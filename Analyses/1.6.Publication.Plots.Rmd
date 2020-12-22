@@ -1,0 +1,270 @@
+---
+title: "1.6.Publication.Plots"
+author: "Kevin Bruce"
+date: "Last compiled on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: yes
+    theme: united
+---
+
+#Load Packages/Data
+```{r Load the packages and load mpq data, include=FALSE}
+rm(list = ls()) #This clears the environment
+dev.off()
+
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+library(ade4)
+library(MASS)
+library(ellipse)
+library(FactoMineR)
+library(arm)
+library(ape)
+library(ggrepel)
+library(FactoMineR)
+library(ggpubr)
+library(corrplot)
+library(Matrix)
+library(lme4)
+library(TMB)
+library(glmmTMB)
+library(MuMIn)
+library(vegan)
+library(randomForest)
+
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+
+### 1. Habitat Volume Data
+cc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_11Dec2020.csv",header=TRUE, row.names=1)
+
+str(cc)
+unique(cc$timepoint)
+
+
+#Change name of volume.change to hab.vol
+colnames(cc)[which(names(cc)=="volume.change")] <- "hab.vol"
+
+#Change site to a factor (for the random effect modelling)
+cc$site <- as.factor(cc$site)
+
+unique(cc$hum_dist)
+cc$hum_dist <- factor(cc$hum_dist, levels = c("Very High", "Medium", "Very Low"))
+cc$region.4 <- factor(cc$region.4, levels = c("Leeward", "Bay of Wrecks", "Vaskess Bay"))
+
+cc$timepoint<- as.factor(cc$timepoint)
+cc$timepoint <- factor(cc$timepoint, levels = c("2015-2017", "2017-2019", "2015-2019"))
+    
+#Data histrogram
+hist(cc$hab.vol)
+qqnorm(cc$hab.vol)
+qqline(cc$hab.vol)
+
+cc$sq.hab.vol <- 1
+cc$sq.hab.vol <- (cc$hab.vol) #Arcsin perhaps?
+
+hist(cc$sq.hab.vol)
+
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+### 2. Fractal Dimension Data
+frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv", row.names = 1)
+
+#Rename fractal dimension collumn to frac
+colnames(frac)[which(names(frac)=="fractal.dimension")] <- "frac"
+
+#Change site to a factor (for the random effect modeling)
+frac$site <- as.factor(frac$site)
+
+
+#Test for normality.....
+hist(frac$frac)
+
+    
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+# 3. Complexity Data
+mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_FINAL.11Dec2020.csv", header=TRUE, row.names = 1)
+
+
+#Correct levels of hum_dist
+levels(mpq$hum_dist)
+mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(mpq$hum_dist)
+
+#Change site to a factor (for the random effect modelling)
+mpq$site <- as.factor(mpq$site)
+
+#Create subsets for each DEM
+mpq.1 <- subset (mpq, DEM == 1) 
+mpq.4 <- subset (mpq, DEM == 4) 
+mpq.8 <- subset (mpq, DEM == 8) 
+
+
+
+
+#--------------------------------------------------------------------------------------------------------------------------------------------
+##### Digitization Data for Random Forest Regressions and later modelling
+#Import Data
+mpq.dig.1 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_1cm_Data_11Dec20.csv", row.names = 1) #DEM 1cm
+mpq.dig.4 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_4cm_Data_11Dec20.csv", row.names = 1) #DEM 4cm
+mpq.dig.8 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_8cm_Data_11Dec20.csv", row.names = 1) #DEM 8cm
+
+```
+
+```{r set colour pallette}
+mpq.1
+levels(mpq.1$year)
+#Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
+mpq.1$year <- factor(mpq.1$year, levels=c("2015", "2016a", "2016b", "2017", "2019"))
+
+##<------Set Colour Pallettes for each morphology type ----->
+year.cols <- rev(c("seagreen3", "Medium Spring Green", "Chartreuse", "Forest Green", "Spring Green","palegreen2", "mediumseagreen", "darkseagreen3", "Yellow Green", "Green Yellow", "Light Green", "Orchid", "Pale Violet Red", "Cyan", "Dark Turquoise", "Deep Sky Blue", "Dodger Blue", "Dark Blue","Gray80", "Gray75", "Gray70","Gray65","Gray60","Gray55", "Gray30", "Gray25"))
+morph.colscale<- scale_fill_manual(name="", values=morph.cols, breaks=rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand")))
+
+```
+# Parameter Estimate Calculations
+
+
+
+
+
+
+
+# Figure 3 from JM's manuscript {.tabset}
+
+## VRM
+```{r changes in complexity over time}
+mpq.1
+library(RColorBrewer)
+display.brewer.all()
+display.brewer.all(colorblindFriendly = TRUE) #Only Color Blind Friendly schemes
+
+# 1. Visualize a single RColorBrewer palette 
+# by specifying its name
+display.brewer.pal(n, name) #n = # of colors | name = pallette bane
+display.brewer.pal(5, "BuGn")
+display.brewer.pal(5, "GnBu")
+display.brewer.pal(5, "RdYlBu")
+
+# 2. Return the hexadecimal color code of the palette
+brewer.pal(9, "BuGn") #All color hex codes from BuGn
+brewer.pal(9, "RdYlBu") #All color hex codes from BuGn
+#D73027 = Red
+#4575B4" = Navy-ish Blue
+
+
+
+#Need to match up colours with year
+#These plots involve all applicable data collected at all timepoints (no sites were )
+p1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") + ylim(0.02, 0.12) + scale_fill_brewer(palette = "Dark2")  #+ annotate("text", x=5, y=0.12, label= "p=2.81E-10", size = 7) + annotate("text", x= 1, y=0.115, label= "A", size = 6) + annotate("text", x= 2, y=0.095, label= "B", size = 6) + annotate("text", x= 3, y=0.095, label= "B", size = 6) + annotate("text", x= 4, y=0.095, label= "B", size = 6) + annotate("text", x= 5, y=0.095, label= "AB", size = 6) 
+
+#plot 2 should be for human disturbance....
+p1.1 <- ggplot(mpq.1, aes(x= hum_dist, y= vrm, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + ylim(0.02, 0.12)+ xlab("") + ylab("")
+
+ggarrange(p1, p1.1, ncol = 2, nrow = 1)
+
+
+
+
+
+
+
+
+
+p2 <- ggplot(mpq.1, aes(x = year, y=rug)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") #+ ylim(0.02, 0.12) 
+
+p2.2 <- ggplot(mpq.1, aes(x= year, y= rug, fill=hum_dist)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + ylim(0.02, 0.12)+ xlab("Year") + ylab("")
+
+p3 <- ggplot(mpq.1, aes(x = year, y=pro.curv)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") #+ ylim(0.02, 0.12) 
+
+p4 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)")# + ylim(0.02, 0.12) 
+
+p5 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") #+ ylim(0.02, 0.12) 
+
+
+
+
+
+
+```
+
+# Figure 4 from JM's Manuscript {.tabset}
+## VRM
+```{r Parameter estimates plot}
+#Jen's CODE
+library(ggplot2)
+library(cowplot)
+
+
+theme_set(theme_bw() + theme(plot.title = element_text(hjust = 0.5)) + 
+            theme(axis.text = element_text(size = 14, color = "black"),
+                  axis.title.y = element_blank(),
+                  axis.title.x = element_text(size = 17, margin = margin(20,0,0,0)),
+                  plot.title = element_text(size = 22, margin = margin(0,0,15,0)),
+                  plot.margin = margin(10,10,10,20), 
+                  strip.background = element_rect(fill = "black"),
+                  strip.text = element_text(colour = "white", size = 12),
+                  panel.border = element_rect(color = "black", fill = NA, size = 1),
+                  panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+vrm_coef <- data.frame(summary(avg_modelv)[9])
+vrm_ci <- data.frame(confint(avg_modelv, full = TRUE))
+vrm_coef <- cbind(vrm_coef, vrm_ci)
+
+names(vrm_coef)[names(vrm_coef) == "coefmat.full.Estimate"] <- "Estimate"
+names(vrm_coef)[names(vrm_coef) == "X2.5.."] <- "LowerCI"
+names(vrm_coef)[names(vrm_coef) == "X97.5.."] <- "UpperCI"
+
+### Order of coefficients in data frame may change - check with FINAL data
+vrm_coef <- vrm_coef[-1, ]
+rownames(vrm_coef)[1] <- "Branching"
+rownames(vrm_coef)[2] <- "Massive"
+rownames(vrm_coef)[3] <- "Disturbance (M)"
+rownames(vrm_coef)[4] <- "Disturbance (H)"
+rownames(vrm_coef)[5] <- "Heat stress"
+rownames(vrm_coef)[6] <- "Heat*Dist (M)"
+rownames(vrm_coef)[7] <- "Heat*Dist (H)"
+rownames(vrm_coef)[8] <- "Plating"
+vrm_coef$Variable <- rownames(vrm_coef)
+vrm_coef$Variable <- as.factor(vrm_coef$Variable)
+
+p1 <- ggplot(vrm_coef, aes(x = reorder(Variable, Estimate), y = Estimate)) + geom_hline(yintercept = 0, color = gray(1/2), lty = 2)
+p1 <- p1 + geom_pointrange(aes(x = reorder(Variable, Estimate), y = Estimate, ymin = LowerCI, ymax = UpperCI),
+                           position = position_dodge(width = 1/2), shape = 21, fatten = 4, size = 1/2, fill = "black")
+p1 <- p1 + coord_flip() + theme_cowplot() + xlab("")
+p1
+
+
+#<------------------------------------------------------------------------------------------------------------------------>
+theme_set(theme_bw() + theme(plot.title = element_text(hjust = 0.5)) + 
+            theme(axis.text = element_text(size = 14, color = "black"),
+                  axis.title.y = element_blank(),
+                  axis.title.x = element_text(size = 17, margin = margin(20,0,0,0)),
+                  plot.title = element_text(size = 22, margin = margin(0,0,15,0)),
+                  plot.margin = margin(10,10,10,20), 
+                  strip.background = element_rect(fill = "black"),
+                  strip.text = element_text(colour = "white", size = 12),
+                  panel.border = element_rect(color = "black", fill = NA, size = 1),
+                  panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+```
+
+# Figure 5 from JM's Manuscript
