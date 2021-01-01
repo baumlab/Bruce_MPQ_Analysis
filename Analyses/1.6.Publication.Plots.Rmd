@@ -97,10 +97,16 @@ frac$site <- as.factor(frac$site)
 #Test for normality.....
 hist(frac$frac)
 
+#Correct levels of hum_dist
+levels(frac$hum_dist)
+frac$hum_dist <- factor(frac$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+levels(frac$hum_dist)
+
+
     
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
 # 3. Complexity Data
-mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_FINAL.11Dec2020.csv", header=TRUE, row.names = 1)
+mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Complexity.Data.Final.21Dec2020.csv", header=TRUE, row.names = 1)
 
 
 #Correct levels of hum_dist
@@ -128,7 +134,7 @@ mpq.dig.8 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+
 
 ```
 
-```{r set colour pallette}
+```{r set colour pallette, eval=FALSE, include=FALSE}
 mpq.1
 levels(mpq.1$year)
 #Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
@@ -138,27 +144,16 @@ mpq.1$year <- factor(mpq.1$year, levels=c("2015", "2016a", "2016b", "2017", "201
 year.cols <- rev(c("seagreen3", "Medium Spring Green", "Chartreuse", "Forest Green", "Spring Green","palegreen2", "mediumseagreen", "darkseagreen3", "Yellow Green", "Green Yellow", "Light Green", "Orchid", "Pale Violet Red", "Cyan", "Dark Turquoise", "Deep Sky Blue", "Dodger Blue", "Dark Blue","Gray80", "Gray75", "Gray70","Gray65","Gray60","Gray55", "Gray30", "Gray25"))
 morph.colscale<- scale_fill_manual(name="", values=morph.cols, breaks=rev(c("Live_Branching", "Live_Columnar", "Live_Digitate", "Live_Encrusting", "Live_Encrusting_Columnar", "Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Massive_Grooved", "Live_Porites", "Live_SubMassive", "Live_Tabulate", "SoftCoral_Nodular", "SoftCoral_Plating", "NonCoral_Branching", "NonCoral_Encrusting", "NonCoral_Massive", "NonCoral_SubMassive", "Macroalgae", "Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive", "Dead_Tabulate", "Dead_SoftCoral", "Rubble", "Sand")))
 
-```
-# Parameter Estimate Calculations
 
 
 
-
-
-
-
-# Figure 3 from JM's manuscript {.tabset}
-
-## VRM
-```{r changes in complexity over time}
-mpq.1
 library(RColorBrewer)
 display.brewer.all()
 display.brewer.all(colorblindFriendly = TRUE) #Only Color Blind Friendly schemes
 
 # 1. Visualize a single RColorBrewer palette 
 # by specifying its name
-display.brewer.pal(n, name) #n = # of colors | name = pallette bane
+#display.brewer.pal(n, name) #n = # of colors | name = pallette bane
 display.brewer.pal(5, "BuGn")
 display.brewer.pal(5, "GnBu")
 display.brewer.pal(5, "RdYlBu")
@@ -171,43 +166,137 @@ brewer.pal(9, "RdYlBu") #All color hex codes from BuGn
 
 
 
-#Need to match up colours with year
-#These plots involve all applicable data collected at all timepoints (no sites were )
-p1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") + ylim(0.02, 0.12) + scale_fill_brewer(palette = "Dark2")  #+ annotate("text", x=5, y=0.12, label= "p=2.81E-10", size = 7) + annotate("text", x= 1, y=0.115, label= "A", size = 6) + annotate("text", x= 2, y=0.095, label= "B", size = 6) + annotate("text", x= 3, y=0.095, label= "B", size = 6) + annotate("text", x= 4, y=0.095, label= "B", size = 6) + annotate("text", x= 5, y=0.095, label= "AB", size = 6) 
 
-#plot 2 should be for human disturbance....
-p1.1 <- ggplot(mpq.1, aes(x= hum_dist, y= vrm, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + ylim(0.02, 0.12)+ xlab("") + ylab("")
 
-ggarrange(p1, p1.1, ncol = 2, nrow = 1)
+```
 
 
 
 
+# JM Figure 3 (Complexity Changes) {.tabset}
+
+- I need to setup a color pallete so that the year color bars from the left sided plots match the corresponding year plots on the right
+
+## Complexity changes (VRM,Rug,Frac) 
+```{r changes in complexity over time, echo=FALSE}
+#Need to match up colours with year **Create specific color pallette for this....
+#These plots involve all applicable data collected at all timepoints (no sites were left out)
+p.1 <- ggplot(mpq.1, aes(x = year, y=vrm)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("") + ylab("VRM") + ylim(0.02, 0.12) + scale_fill_brewer(palette = "Dark2")  #+ annotate("text", x=5, y=0.12, label= "p=2.81E-10", size = 7) + annotate("text", x= 1, y=0.115, label= "A", size = 6) + annotate("text", x= 2, y=0.095, label= "B", size = 6) + annotate("text", x= 3, y=0.095, label= "B", size = 6) + annotate("text", x= 4, y=0.095, label= "B", size = 6) + annotate("text", x= 5, y=0.095, label= "AB", size = 6) 
+
+#plot 2 covers differences in local human disturbance....
+p.1.1 <- ggplot(mpq.1, aes(x= hum_dist, y= vrm, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + ylim(0.02, 0.12)+ xlab("") + ylab("")
+
+p1 <- ggarrange(p.1, p.1.1, ncol = 2, nrow = 1)
+
+#Surface Complexity 
+p.2 <- ggplot(mpq.1, aes(x = year, y=rug)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("") + ylab("Surface Complexity")
+
+p.2.1 <- ggplot(mpq.1, aes(x= hum_dist, y= rug, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("")
+
+p2 <- ggarrange(p.2, p.2.1, ncol = 2, nrow = 1)
+
+#Fractal Dimension
+p.3 <- ggplot(frac, aes(x = year, y=frac)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("Year") + ylab("Fractal Dimension")
+
+p.3.1 <- ggplot(frac, aes(x= hum_dist, y= frac, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + xlab("Human Disturbance") + ylab("")
+
+p3 <- ggarrange(p.3, p.3.1, ncol = 2, nrow = 1)
+
+#Now put all plots together:
+ggarrange(p1, p2, p3, ncol = 1, nrow = 3) #VRM, Rug, Frac
+
+```
+
+
+## Curvature Ranges {.tabset}
+ 
+- I need to check and see if KI2016b_Site30_MPQ1 range value is correct. It is an odd outlier by a large amount, so I feel like it most likely isn't (probably a math mistake or data collection error)
+
+### Mean vs Range values
+```{r Curvature Range plot, echo=FALSE}
+#Profile Curvature
+p.4 <- ggplot(mpq.1, aes(x = year, y=pro.curv)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("") + ylab("Pro.Curv.MEAN")
+
+p.4.1 <- ggplot(mpq.1, aes(x= hum_dist, y= pro.curv, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("")
+
+p4 <- ggarrange(p.4, p.4.1, ncol = 2, nrow = 1)
+
+#Planform Curvature
+p.5 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("") + ylab("Plan.Curv.MEAN")
+
+p.5.1 <- ggplot(mpq.1, aes(x= hum_dist, y= plan.curv, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("")
+
+p5 <- ggarrange(p.5, p.5.1, ncol = 2, nrow = 1)
+
+#Profile Curvature RANGE
+p.6 <- ggplot(mpq.1, aes(x = year, y=pro.range)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("") + ylab("Pro.Curv.RANGE")
+
+p.6.1 <- ggplot(mpq.1, aes(x= hum_dist, y= pro.range, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("")
+
+p6 <- ggarrange(p.6, p.6.1, ncol = 2, nrow = 1)
+
+#Planform Curvature RANGE
+p.7 <- ggplot(mpq.1, aes(x = year, y=plan.range)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("") + ylab("Plan.Curv.RANGE")
+
+p.7.1 <- ggplot(mpq.1, aes(x= hum_dist, y= plan.range, fill=year)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("")
+
+p7 <- ggarrange(p.7, p.7.1, ncol = 2, nrow = 1)
+
+
+#Put all together
+ggarrange(p4, p5, p6, p7, ncol = 1, nrow = 4) #Curvature MEAN Vs. RANGE
 
 
 
+```
 
+### Profile Curvature
+```{r curvature range graphing, echo=FALSE}
+colnames(mpq.1)
+head(mpq.1$pro.range) #Row 54 is the aberration
 
-p2 <- ggplot(mpq.1, aes(x = year, y=rug)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") #+ ylim(0.02, 0.12) 
+#Remove Row 54
+mpq.1.range <- mpq.1
+mpq.1.range <- mpq.1[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cells without any coverage in the plot. 
 
-p2.2 <- ggplot(mpq.1, aes(x= year, y= rug, fill=hum_dist)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + ylim(0.02, 0.12)+ xlab("Year") + ylab("")
+nrow(mpq.1)
+nrow(mpq.1.range)
 
-p3 <- ggplot(mpq.1, aes(x = year, y=pro.curv)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") #+ ylim(0.02, 0.12) 
+#Profile Curv RANGE GRAPHING
+pro.1 <- ggplot(mpq.1, aes(x=pro.range, fill=year)) + geom_density(alpha=0.2)
+pro.2 <- ggplot(mpq.1, aes(x=pro.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
 
-p4 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)")# + ylim(0.02, 0.12) 
+pro.3 <- ggplot(mpq.1, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.2)
+pro.4 <- ggplot(mpq.1, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
 
-p5 <- ggplot(mpq.1, aes(x = year, y=plan.curv)) + geom_boxplot(fill="steelblue3") + theme_classic(base_size = 18) + xlab("Year") + ylab("Vector Ruggedness Measure (VRM)") #+ ylim(0.02, 0.12) 
+pro.5 <- ggplot(mpq.1.range, aes(x=pro.range, fill=year)) + geom_density(alpha=0.2)
+pro.6 <- ggplot(mpq.1.range, aes(x=pro.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
 
-
+grid.arrange(pro.1, pro.2, nrow=2)
+grid.arrange(pro.3, pro.4, nrow=2)
+grid.arrange(pro.5, pro.6, nrow=2)
 
 
 
 
 ```
 
-# Figure 4 from JM's Manuscript {.tabset}
-## VRM
-```{r Parameter estimates plot}
+### Planform Curvature
+```{r plan curv range, echo=FALSE}
+#Planform Curv Range
+plan.1 <- ggplot(mpq.1, aes(x=plan.range, fill=year)) + geom_density(alpha=0.2)
+plan.2 <- ggplot(mpq.1, aes(x=plan.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+plan.3 <- ggplot(mpq.1, aes(x=plan.curv, fill=year)) + geom_density(alpha=0.2)
+plan.4 <- ggplot(mpq.1, aes(x=plan.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+grid.arrange(plan.1, plan.2, nrow=2)
+grid.arrange(plan.3, plan.4, nrow=2)
+```
+
+
+# JM Figure 4 (Parameter Estimates) {.tabset}
+```{r Parameter estimates plot, eval=FALSE, include=FALSE}
 #Jen's CODE
 library(ggplot2)
 library(cowplot)
@@ -267,4 +356,57 @@ theme_set(theme_bw() + theme(plot.title = element_text(hjust = 0.5)) +
 
 ```
 
-# Figure 5 from JM's Manuscript
+
+
+# JM Figure 5 (Habitat Volume)
+
+- I still need to establish another colour pallete differentiating the different timepoints
+
+- Also, consult with JKB if this is appropriate/the right way forward. I think that is the story to tell (1st 2 years = large losses; latter 2 years = less loss), but am open to suggestion. 
+
+- IF that is the case, should the modeling change to remove the 2015-2019 timepoint measurements? that would leave some sites as only having 1 data entry (Ex: Site 15/19 only have input from 2015-2017, while site 37 will only have 2017-2019)
+
+- Lastly, check to see if the -2 volume change is accurate (JKB idea)
+
+```{r habitat volume, echo=FALSE}
+#Subset out only 2 timepoints
+cc.2tps <- subset(cc, timepoint == "2015-2017" | timepoint == "2017-2019")
+# #cc.overall <- subset(cc, timepoint == "2015-2019")
+# cc.high <- subset(cc.2tps, hum_dist == "Very High")
+# cc.med <- subset(cc.2tps, hum_dist == "Medium")
+# cc.low <- subset(cc.2tps, hum_dist == "Very Low")
+
+#Make Colours for 2 timepoints (*Not working.... get help if JKB okay's the plot)
+#tpt.cols <- c("#4575B4","#00441B")
+
+#tpt.colscale<- scale_fill_manual(name="timepoint", values=tpt.cols, breaks= c("2015-2017", "2017-2019"))
+
+
+
+
+# p.cc.overall <- ggplot(cc.overall, aes(x = timepoint, y=hab.vol)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("Year") + ylab("Habitat volume (m3)")  + scale_fill_brewer(palette = "Dark2")  #+ ylim(0.02, 0.12)+ annotate("text", x=5, y=0.12, label= "p=2.81E-10", size = 
+
+p.cc.2tps <- ggplot(cc.2tps, aes(x = timepoint, y=hab.vol)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) + xlab("Timepoint") + ylab("Habitat volume (m3)") #+ tpt.colscale  #+ ylim(0.02, 0.12) + annotate("text", x=5, y=0.12, label= "p=2.81E-10", size = 
+
+#p.cc.hdist <-  ggplot(cc, aes(x= hum_dist, y= hab.vol, fill=timepoint)) + theme_classic(base_size = 18) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("")
+
+
+# p.cc.vh <- ggplot(cc.high, aes(x= timepoint, y= hab.vol)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) +  theme(legend.position="none") + xlab("") + ylab("") + ylim(-1, 0.5)  + annotate(geom="text", x=3, y=30, label="Scatter plot",
+#               color="red")
+# 
+# p.cc.m <- ggplot(cc.med, aes(x= timepoint, y= hab.vol)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) +  theme(legend.position="none") + xlab("") + ylab("")+ ylim(-1, 0.5)
+# 
+# p.cc.vl <- ggplot(cc.low, aes(x= timepoint, y= hab.vol)) + geom_boxplot(fill = "#4575B4") + theme_classic(base_size = 18) +  theme(legend.position="none") + xlab("Year") + ylab("")+ ylim(-1, 0.5)
+# 
+# p.cc.2 <- ggarrange(p.cc.vh,p.cc.m,p.cc.vl, ncol = 1, nrow = 3)
+
+
+p.cc.3 <- ggplot(cc.2tps, aes(x = timepoint, y=hab.vol)) + geom_boxplot(fill="#4575B4") + xlab("Timepoint") + ylab(" ")  +facet_wrap(~hum_dist, scales = "fixed", ncol= 1, strip.position="right") + theme_classic(base_size = 18)
+
+
+ggarrange(p.cc.2tps, p.cc.3, ncol = 2, nrow = 1)
+
+
+
+```
+
