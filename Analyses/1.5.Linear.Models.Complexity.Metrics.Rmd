@@ -151,11 +151,6 @@ dotchart(mpq$vrm, groups = factor(mpq$year), ylab = "Year", xlab = "Concentratio
 #pairplot
 pairs(mpq.num) #AREA_3d and rug are collinear it appears, with curvature values very similar
 
-#Boxplots 
-boxplot(vrm ~ factor(year), varwidth = TRUE, data = mpq)
-plot(vrm~site, data = mpq)
-
-
 ```
 
 # Overview of each variable
@@ -236,7 +231,7 @@ vol
 ### A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
 ```{r vrm fixed effect models}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
-vrm1 <- lm(vrm ~ year + hum_dist, data = mpq.1) #Hum_Dist = Categorical
+vrm1 <- lm(vrm ~ year, data = mpq.1) #Hum_Dist = Categorical
 vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1)
 vrm3 <- lm(vrm ~ year * hum_dist, data = mpq.1)
 vrm4 <- lm(vrm~year*sqrt.hdist.cont, data = mpq.1)
@@ -248,11 +243,7 @@ summary(vrm3)
 summary(vrm4)
 
 # nrow(mpq.1) 127 = Any model with 3 variables or less = can use AIC
-```
 
-### B. Investigate region and human disturbance (cont and categorical)
-
-```{r vrm region with interactions with hdist}
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq.1) 
@@ -260,7 +251,7 @@ vrm6 <- lm(vrm~ year + hum_dist + region.3, data = mpq.1)
 vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq.1)
 vrm8 <- lm(vrm~year*hum_dist + region.3, data = mpq.1)
 
-AIC(vrm5, vrm6, vrm7, vrm8) #VRM5/6 fit better (with interaction)
+AIC(vrm5, vrm6, vrm7, vrm8) #VRM5/6 fit better (without interaction)
 
 summary(vrm7)
 summary(vrm8)
@@ -282,12 +273,8 @@ summary(vrm12)
 #AIC's for all
 AIC(vrm5, vrm6, vrm7, vrm8, vrm9, vrm10,vrm11, vrm12)  #vrm11/vrm12 fit best
 
-```
-
-### C. With Random Effect (1|site)
-- Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (island.side and region4 only)
-
-```{r vrm simple random effects}
+#-------------------------------------------------------------------------------------------------------------------------
+#With Random Effect (1|site)
 #Continuous disturbance- no interaction
 vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
 vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1)
@@ -301,7 +288,6 @@ summary(vrm13)
 summary(vrm14)
 summary(vrm15)
 summary(vrm16)
-anova(vrm13, vrm14, vrm15, vrm16) #Says vrm13 is best followed by vrm14
 
 #With interactions
 vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
@@ -317,19 +303,9 @@ summary(vrm18)
 summary(vrm19)
 summary(vrm20)
 
-anova(vrm17, vrm18, vrm19, vrm20)
-
-
-#AIC of all models
-AIC(vrm13, vrm14, vrm15,vrm16, vrm17, vrm18, vrm19, vrm20) #VRM15/16 best fit
-
-#Choosing top model
 AIC(vrm1, vrm2, vrm3, vrm4, vrm5, vrm6,vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16,vrm17, vrm18, vrm19, vrm20 ) #Best fit models are: vrm11<vrm12<vrm9<vrm10
 
-
-#End Result: vrm11 is best fit
-x <- AIC(vrm11, vrm12, vrm9, vrm10)
-AICc(vrm11, vrm12, vrm9, vrm10) #Same as AIC
+nrow(mpq.1) #127, meaning anything with up to 3 variables = AIC okay to use
 
 summary(vrm11) # vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.1
 summary(vrm12) #vrm ~ year * sqrt.hdist.cont + region.3, data = mpq.1)
@@ -338,14 +314,10 @@ summary(vrm12) #vrm ~ year * sqrt.hdist.cont + region.3, data = mpq.1)
 summary(vrm9) #vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1
 summary(vrm10) #vrm ~ year + sqrt.hdist.cont + region.3, data = mpq.1
 
-#anova(vrm10, vrm9,vrm12, vrm11)
-
-#Models were refit with Maximum Likelihood (ML) instead of REML
-
-
 ```
 
-### D. Final findings:
+
+### B. Final findings:
 
 - Sqrt transformed continuous disturbance improved models vs categorical disturbance
 
@@ -361,13 +333,7 @@ Top Model: **VRM ~ year * sqrt.hdist.cont + island.side**
 Runner Up: **VRM ~ year * sqrt.hdist.cont + region3**
 
 
-
-These 2 are > 4AIC from top model, but within 4AIC of runner up
-
-**VRM ~ year + sqrt.hdist.cont + island.side** 
-
-**VRM ~ year + sqrt.hdist.cont + region3**
-
+TOP MODEL USING REGION3: **VRM ~ year * sqrt.hdist.cont + region3**
 
 
 ## 2. Surface Complexity {.tabset}
@@ -385,10 +351,8 @@ summary(rug2)
 summary(rug3)
 summary(rug4)
 
-```
 
-### B. Investigate region and human disturbance (cont and categorical)
-```{r rug region with interactions with hdist}
+
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 rug5 <- lm(rug ~ year + hum_dist + island.side, data = mpq.1) 
@@ -420,12 +384,6 @@ summary(rug12)
 #AIC's for all
 AIC(rug5, rug6, rug7, rug8, rug9, rug10,rug11, rug12)  #Rug9, 10 are best fits
 
-```
-
-### C. With Random Effect (1|site)
-- Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (island.side and region4 only)
-
-```{r rug simple random effects}
 #Continuous disturbance
 #no interaction
 rug13 <- lmer(rug~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
@@ -440,8 +398,6 @@ summary(rug14)
 summary(rug15)
 summary(rug16)
 
-anova(rug13, rug14, rug15, rug16) #this says rug13 fits best (13<14<15<16)
-
 #With interactions
 rug17 <- lmer(rug~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
 rug18 <- lmer(rug~year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1)
@@ -455,33 +411,24 @@ summary(rug18)
 summary(rug19)
 summary(rug20)
 
-#Results of best fitting models
-anova(rug17,rug18,rug19, rug20) #States rug17 as best fit (17<19<18<<20)
-
-#Combine all together
-AIC(rug13, rug14, rug15, rug16,rug17, rug18, rug19, rug20) #rug16 best fit
-
 #Final Model selection:
 AIC(rug1, rug2, rug3, rug4, rug5, rug6, rug7, rug8, rug9, rug10,rug11, rug12, rug13, rug14, rug15, rug16,rug17, rug18, rug19, rug20) #Best fitting (rug9/10/11)
-
+AIC(rug12)
 #End Result: rug9/10 models are best fit 
 summary(rug9) #rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1
 summary(rug10) #rug ~ year + sqrt.hdist.cont + region.3, data = mpq.1 
 summary(rug11) #rug ~ year * sqrt.hdist.cont + island.side, data = mpq.1
+summary(rug12) #rug ~ year * sqrt.hdist.cont + region.3, data = mpq.1
 
-AIC(rug9, rug10, rug11)
-AICc(rug9,rug10,rug11) #Same as AIC
-
-anova(rug9, rug10)
 ```
 
-### D. Final findings:
+### B. Final findings:
 
-- Sqrt transformed continuous disturbance fits better than categorical (for now) -->varies on how much "better" the fit is based on the model
+- Sqrt transformed continuous disturbance fits better than categorical
 
-- Interactions between either year and disturbance(continuous) or year and region all come out as worse fits than non-interaction, so probably best to drop
+- Interactions between  year and disturbance(continuous) only selected in 1 of 3 top models
 
-- Random effect has SUPER low estimates in best fit model; maybe not really that required? --> AIC between models that have same components except site RE show that including site makes the AIC a larger negative # (therefore,  --> aka better fit)
+- Site random effect didn't improve model fit
 
 
 Final Working Models:
@@ -493,6 +440,14 @@ Final Working Models:
 **rug ~ year*sqrt.hdist.cont + region3**
 
 
+TOP MODEL(S) USING REGION3: 
+
+**rug ~ year + sqrt.hdist.cont + region3**
+
+**rug ~ year*sqrt.hdist.cont + region3**
+
+
+
 ## 3. Fractal Dimension {.tabset}
 
 ### Fractal Dimension Dataset is normal
@@ -502,10 +457,11 @@ ggplot(frac, aes(x=frac)) +
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
  geom_density(alpha=.2, fill="#FF6666") + labs(title="Looks Normally Distributed",x="Fractal Dimension", y = "Density") + geom_vline(aes(xintercept = mean(frac)),col='red',size=0.3) + geom_vline(aes(xintercept = median(frac)),col='blue',size=0.3)
 
-
 ```
 
 ### A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
+**The model output for the "best fitting" model using the categorical human disturbance value comes out all wierd. In talking with Dom about it and after showing her the equivalent model with the linear continuous human disturbance, she recommends not using the categorical variable as it makes "more modelling sense" to use the continuous with my data**
+
 ```{r frac fixed effect models}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
 frac1 <- lm(frac ~ year + hum_dist, data = frac) #Hum_Dist = Categorical
@@ -519,10 +475,6 @@ summary(frac2)
 summary(frac3)
 summary(frac4)
 
-```
-
-### B. Investigate region and human disturbance (cont and categorical)
-```{r frac region with interactions with hdist}
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
 frac5 <- lm(frac ~ year + hum_dist + island.side, data = frac) 
@@ -538,13 +490,8 @@ summary(frac7)
 summary(frac8)
 
 #Dom recommends not to include categorical human disturbance as it messes with the modelling process --> Stick to continuous variable
-```
-
-**The model output for the "best fitting" model using the categorical human disturbance value comes out all wierd. In talking with Dom about it and after showing her the equivalent model with the linear continuous human disturbance, she recommends not using the categorical variable as it makes "more modelling sense" to use the continuous with my data**
 
 
-
-```{r frac continuous human dist}
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
 frac9 <- lm(frac ~ year + sqrt.hdist.cont + island.side, data = frac)
 frac10  <- lm(frac ~ year + sqrt.hdist.cont + region.3, data = frac)
@@ -559,18 +506,8 @@ summary(frac11)
 summary(frac12)
 
 
-#AIC's for all
-AIC(frac5, frac6, frac7, frac8, frac9, frac10,frac11, frac12)  #frac7, frac8, frac11, frac12 are best fits
 
-#AICc needs to be used if I add 1 more parameter (currently n/k = 42)
-nrow(frac) #127 total rows
 
-```
-
-### C. With Random Effect (1|site)
-- Adding to previous model iterations with both human disturbances, some with interactions between year&hum_dist, and various regions of "best fit" (island.side and region4 only)
-
-```{r frac simple random effects}
 #Continuous disturbance
 #no interaction
 frac13 <- lmer(frac~year + sqrt.hdist.cont + island.side + (1|site), data = frac)
@@ -579,15 +516,13 @@ frac15 <- lmer(frac~year + sqrt.hdist.cont + (1|site), data = frac)
 frac16 <- lmer(frac~year + hum_dist + (1|site), data = frac)
 
 #Using AICc since we dip into (n/k<40) region, compare all using AICc and find that model frac14 best fit
-AICc(frac13, frac14, frac15, frac16) #frac14
+AICc(frac13, frac14, frac15, frac16) #frac15 < frac16
 
 #Results of best fitting models
 summary(frac13)
 summary(frac14)
 summary(frac15)
 summary(frac16)
-
-anova(frac13, frac14, frac15, frac16) #this says frac14 firts best
 
 #With interactions
 frac17 <- lmer(frac~year *sqrt.hdist.cont + island.side + (1|site), data = frac)
@@ -598,22 +533,17 @@ frac20 <- lmer(frac~year * hum_dist + (1|site), data = frac)
 nrow(frac) #127 --> anything more than 3 variables = use AICc
 
 AIC(frac17, frac18, frac19, frac20) #frac19 best fit 
-anova(frac17,frac18,frac19, frac20) #States frac17 as best fit 
+AICc(frac17, frac18, frac19, frac20) #frac19 best fit 
 
 summary(frac17)
 summary(frac18)
 summary(frac19)
 summary(frac20)
 
-#Results of best fitting models
-AIC(frac13, frac14, frac15, frac16,frac17, frac18, frac19, frac20) #frac15 or frac13 best fit
+#AICc needs to be used if I add 1 more parameter (currently n/k = 42)
+nrow(frac) #127 total rows
 
-
-#Results
-# Interaction between year and human disturbance (which Jen did) doesn't make the models fit better
-# Best fitting model has no region values within it (with continuous human disturbance model slightly better than categorical one)
-
-
+#Final model selection
 AICc(frac1, frac2, frac3, frac4, frac9, frac10,frac11, frac12, frac13, frac14, frac15, frac16,frac17, frac18, frac19, frac20) #Frac11,12 are best fits (with frac10 and 9 following)
 
 #End Result: frac11/12 models are best fit 
@@ -626,23 +556,17 @@ summary(frac11) #frac ~ year * sqrt.hdist.cont + island.side, data = frac
 
 #These two are just at or more than 4AIC different than top 2 models
 summary(frac10) #frac ~ year + sqrt.hdist.cont + region.3, data = frac
-summary(frac9) #frac ~ year + sqrt.hdist.cont + region.3, data = frac
-
-
-
-
-#anova(frac9, frac10, frac11, frac12)
-
+summary(frac9) #frac ~ year + sqrt.hdist.cont + island.side, data = frac
 
 ```
 
-### D. Final findings:
+### B. Final findings:
 
-- Sqrt transformed continuous disturbance fits better than categorical (for now) -->varies on how much "better" the fit is based on the model
+- Sqrt transformed continuous disturbance fits best, allowing for categorical region variable to be added to models
 
-- Best fit models turn out to be the ones with interactions between year and disturbance
+- 2 out of 3 top model sinvolve interation between year & disturbance
 
-- All best fit models didn't include random effect
+- All best fit models didn't include site random effect
 
 Final Working Model(s):
 
@@ -654,90 +578,89 @@ Final Working Model(s):
 
 
 # 4. Habitat Volume {.tabset}
-### Data appears to not be normally distributed
+### Data appears to close enough to normally distributed 
 ```{r non normal data distribution, echo=FALSE}
-# cc$sq.hab.vol.t <- cc$hab.vol+3
-# cc$sq.hab.vol.t <- asin(cc$hab.vol) #Arcsin perhaps?
+cc.2tps <- subset(cc, timepoint == "2015-2017" | timepoint == "2017-2019")
 
-# hist(cc$sq.hab.vol)
-# qqnorm(cc$hab.vol)
-# qqline(cc$hab.vol)
-
-
-#Data is not normal
-ggplot(cc, aes(x=hab.vol)) + 
+#Data is normal enough apparently (according to JKB)
+ggplot(cc.2tps, aes(x=hab.vol)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
  geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Volumetric Change (m^3)", y = "Density") + geom_vline(aes(xintercept = mean(hab.vol)),col='red',size=0.3) + geom_vline(aes(xintercept = median(hab.vol)),col='blue',size=0.3)
+
+
+#Sqrt transformation
+cc.2tps$hab.vol.t <- sqrt(max(cc.2tps$hab.vol + 1) - cc.2tps$hab.vol)
+
+ggplot(cc.2tps, aes(x=hab.vol.t)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Volumetric Change (m^3)", y = "Density") + geom_vline(aes(xintercept = mean(hab.vol.t)),col='red',size=0.3) + geom_vline(aes(xintercept = median(hab.vol.t)),col='blue',size=0.3)
+
+
+
+#Inverse transformation for habitat volume data (#Appears to make it more normal, but also quite odd....)
+cc.2tps$hab.vol.t2 <- 1/(cc.2tps$hab.vol)
+
+#Data is normal enough apparently (according to JKB)
+ggplot(cc.2tps, aes(x=hab.vol.t2)) + 
+ geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Volumetric Change (m^3)", y = "Density") + geom_vline(aes(xintercept = mean(hab.vol.t2)),col='red',size=0.3) + geom_vline(aes(xintercept = median(hab.vol.t2)),col='blue',size=0.3)
 
 ```
 
 ### A. Investigating categorical Hum_Dist vs continuous square root transformed Hum_dist
-```{r hab volfixed effect models}
+```{r hab volume  models}
 #Models looking at disturbance gradient and if interaction between year&disturbance fit better
-hab.vol1 <- lm(hab.vol ~ timepoint + hum_dist, data = cc) #Hum_Dist = Categorical
-hab.vol2 <- lm(hab.vol ~ timepoint + sqrt.hdist.cont, data = cc)
-hab.vol3 <- lm(hab.vol ~ timepoint * hum_dist, data = cc)
-hab.vol4 <- lm(hab.vol~timepoint*sqrt.hdist.cont, data = cc)
+hab.vol1 <- lm(hab.vol ~ timepoint + hum_dist, data = cc.2tps) #Hum_Dist = Categorical
+hab.vol2 <- lm(hab.vol ~ timepoint + sqrt.hdist.cont, data = cc.2tps)
+hab.vol3 <- lm(hab.vol ~ timepoint * hum_dist, data = cc.2tps)
+hab.vol4 <- lm(hab.vol~timepoint*sqrt.hdist.cont, data = cc.2tps)
 
-AIC(hab.vol1, hab.vol2,hab.vol3,hab.vol4) #Top model = hab.vol1, hab.vol3
+AICc(hab.vol1, hab.vol2,hab.vol3,hab.vol4) #Top model = hab.vol3 < hab.vol1
 summary(hab.vol1)
 summary(hab.vol2)
 summary(hab.vol3)
 summary(hab.vol4)
 
-#Best fit: Hab.vol1, hab.vol3
 
-```
-
-### B. Investigate region and human disturbance (cont and categorical)
-```{r hab volregion with interactions with hdist}
 #Categorical human disturbance against region, then categorical interaction with year
 #Models without interaction of disturbance added with different regions
-hab.vol5 <- lm(hab.vol ~ timepoint + hum_dist + island.side, data = cc) 
-hab.vol6 <- lm(hab.vol~ timepoint + hum_dist +region.3, data = cc)
-hab.vol7 <- lm(hab.vol ~ timepoint*hum_dist + island.side, data = cc)
-hab.vol8 <- lm(hab.vol~timepoint*hum_dist + region.3, data = cc)
+hab.vol5 <- lm(hab.vol ~ timepoint + hum_dist + island.side, data = cc.2tps) 
+hab.vol6 <- lm(hab.vol~ timepoint + hum_dist +region.3, data = cc.2tps)
+hab.vol7 <- lm(hab.vol ~ timepoint*hum_dist + island.side, data = cc.2tps)
+hab.vol8 <- lm(hab.vol~timepoint*hum_dist + region.3, data = cc.2tps)
 
 summary(hab.vol5)
 summary(hab.vol6)
 summary(hab.vol7)
 summary(hab.vol8)
 
-AIC(hab.vol5, hab.vol6, hab.vol7, hab.vol8) #AIC's the same based on if interaction is present or not (interaction makes it worse)
+AICc(hab.vol5, hab.vol6, hab.vol7, hab.vol8) #Hab.vol5/6 best (without interaction)
 
 #Again, Dom recommends not to include categorical human disturbance as it messes with the modelling process --> Stick to continuous variable
 
-```
 
-```{r habvol continuous human dist}
 #Continuous human disturbance against region, then Continuous disturbance interaction with timepoint
-hab.vol9 <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + island.side, data = cc)
-hab.vol10  <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + region.3, data = cc)
-hab.vol11 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + island.side, data = cc)
-hab.vol12 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + region.3, data = cc)
+hab.vol9 <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + island.side, data = cc.2tps)
+hab.vol10  <- lm(hab.vol ~ timepoint + sqrt.hdist.cont + region.3, data = cc.2tps)
+hab.vol11 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + island.side, data = cc.2tps)
+hab.vol12 <- lm(hab.vol ~ timepoint*sqrt.hdist.cont + region.3, data = cc.2tps)
 
-AIC(hab.vol9, hab.vol10, hab.vol11, hab.vol12) #hab.vol10 best fit, followed by hab.vol12, hab.vol9 (each 2 AIC apart from one another)
+AICc(hab.vol9, hab.vol10, hab.vol11, hab.vol12) #hab.vol9 best fit, followed by hab.vol10, hab.vol11, hab.vol12 (all extremely)
 
 summary(hab.vol9)
 summary(hab.vol10)
 summary(hab.vol11)
-summary(hab.vol12)   #Best fit: Hab.vol10
+summary(hab.vol12)  
 
 
-```
-
-### C. With Random Effect (1|site)
-- Adding to previous model iterations with both human disturbances, some with interactions between timepoint&hum_dist, and various regions of "best fit" (island.side and region4 only)
-
-```{r hab vol random effects}
 #Continuous disturbance
 #no interaction
-hab.vol13 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + island.side + (1|site), data = cc)
-hab.vol14 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + region.3 + (1|site), data = cc)
-hab.vol15 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + (1|site), data = cc)
-hab.vol16 <- lmer(hab.vol~timepoint + hum_dist + (1|site), data = cc)
+hab.vol13 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + island.side + (1|site), data = cc.2tps)
+hab.vol14 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + region.3 + (1|site), data = cc.2tps)
+hab.vol15 <- lmer(hab.vol~timepoint + sqrt.hdist.cont + (1|site), data = cc.2tps)
+hab.vol16 <- lmer(hab.vol~timepoint + hum_dist + (1|site), data = cc.2tps)
 
-AIC(hab.vol13, hab.vol14, hab.vol15, hab.vol16) #hab.vol16<14 <13<15 best fit 
+AICc(hab.vol13, hab.vol14, hab.vol15, hab.vol16) #hab.vol13 <hab.vol13 are best models
 
 #Results of best fitting models
 summary(hab.vol13)
@@ -745,70 +668,69 @@ summary(hab.vol14)
 summary(hab.vol15)
 summary(hab.vol16)
 
-anova(hab.vol13, hab.vol14, hab.vol15, hab.vol16) #this says hab.vol16 fits best (14<13<15)
 
 #With interactions
-hab.vol17 <- lmer(hab.vol~timepoint *sqrt.hdist.cont + island.side + (1|site), data = cc)
-hab.vol18 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + region.3 + (1|site), data = cc)
-hab.vol19 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + (1|site), data = cc)
-hab.vol20 <- lmer(hab.vol~timepoint * hum_dist + (1|site), data = cc)
+hab.vol17 <- lmer(hab.vol~timepoint *sqrt.hdist.cont + island.side + (1|site), data = cc.2tps)
+hab.vol18 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + region.3 + (1|site), data = cc.2tps)
+hab.vol19 <- lmer(hab.vol~timepoint * sqrt.hdist.cont + (1|site), data = cc.2tps)
+hab.vol20 <- lmer(hab.vol~timepoint * hum_dist + (1|site), data = cc.2tps)
 
-AIC(hab.vol17, hab.vol18, hab.vol19, hab.vol20) #hab.vol20 best fit, but it and hab.vol18 are providing errors
+AICc(hab.vol17, hab.vol18, hab.vol19, hab.vol20) #hab.vol20 best fit, but it and hab.vol18 are providing errors
 
-#Results of best fitting models
-anova(hab.vol17,hab.vol18,hab.vol19, hab.vol20) #States hab.vol20 as best fit (18<17<19)
-
-#Combine all together
-AIC(hab.vol13, hab.vol14, hab.vol15, hab.vol16, hab.vol17, hab.vol18, hab.vol19, hab.vol20) #hab.vol16 best fit
 
 #Choosing final model
-#Test fits with AICc since the sample size is small
-AICc(hab.vol1, hab.vol2, hab.vol3, hab.vol4, hab.vol9, hab.vol10,hab.vol11, hab.vol12, hab.vol13, hab.vol14, hab.vol15,hab.vol17, hab.vol18, hab.vol19) #Hab.vol1 and hab.vol10 are best models
+nrow(cc) #Use AICc
 
-summary(hab.vol1)
-summary(hab.vol10)
-summary(hab.vol3)
-summary(hab.vol12)
+AICc(hab.vol1, hab.vol2, hab.vol3, hab.vol4, hab.vol9, hab.vol10,hab.vol11, hab.vol12, hab.vol13, hab.vol14, hab.vol15,hab.vol17, hab.vol18, hab.vol19, hab.vol20)  #Best are: 3<9/10/11/1<12
 
+AICc(hab.vol3,hab.vol9,hab.vol10,hab.vol11,hab.vol1,hab.vol12)
 
+#Model Summaries
+summary(hab.vol3) #hab.vol ~ timepoint * hum_dist
+summary(hab.vol9) #hab.vol ~ timepoint + sqrt.hdist.cont + island.side
+summary(hab.vol10) #hab.vol ~ timepoint + sqrt.hdist.cont + region.3
+summary(hab.vol11) #hab.vol ~ timepoint + sqrt.hdist.cont + region.3
+summary(hab.vol1) #hab.vol ~ timepoint + hum_dist
+summary(hab.vol12) #hab.vol ~ timepoint * sqrt.hdist.cont + region.3
+summary(hab.vol2) #hab.vol ~ timepoint * sqrt.hdist.cont + region.3
 ```
 
-### D. Final findings:
-- Sqrt transformed continuous disturbance fits better than categorical, particularly as the categorical variable interferes with the modeling process when incorporating region as a categorical variable too (Dom recommends stating we used continuous human disturbance with modeling, and categorical variable with plotting only)
+### B. Final findings:
+- Sqrt transformed continuous disturbance fits better than categorical
 
-- Best fit models do not have any interactions or random effects
+- Only the latter two best fit models have interactions
+
+- No top models selected involved site random effect
 
 - All models compared using AICc
 
 Final Working Model(s):
 
-- **Habitat Volumetric Change ~ timepoint + sqrt.hdist.cont + region.3** 
+**hab.vol ~ timepoint * hum_dist**
 
-OR 
+**hab.vol ~ timepoint + sqrt.hdist.cont + region.3**
 
-- **Habitat Volumetric Change ~ timepoint + hum_dist** 
+**hab.vol ~ timepoint + sqrt.hdist.cont + region.3**
 
-```{r residiual and fitted plot of final models}
+**hab.vol ~ timepoint + hum_dist**
 
-#Hab.vol1
-plot(fitted(hab.vol1), resid(hab.vol1))
+**hab.vol ~ timepoint * sqrt.hdist.cont + region.3**
 
-#Hab.vol10
-plot(fitted(hab.vol10), resid(hab.vol10))
-```
+**hab.vol ~ timepoint * sqrt.hdist.cont + region.3**
+
+
+
+
+
 
 
 # 5. Profile Curvature {.tabset}
-
 ## Distribution + Transformations
 ```{r raw pro curv distribution, echo=FALSE}
-
 # hist(mpq$pro.range)
-
-
 ggplot(mpq.1, aes(x=pro.range)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range", y = "Density") + geom_vline(aes(xintercept = mean(pro.range)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range)),col='blue',size=0.3) + ggtitle("Raw Data")
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range", y = "Density") + geom_vline(aes(xintercept = mean(pro.range)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range)),col='blue',size=0.3) + ggtitle("Raw Data (red = mean|blue=median")
 
 #REMOVE ROW 54
 mpq.1.range <- mpq.1[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cells without any coverage in the plot. 
@@ -816,7 +738,7 @@ mpq.1.range <- mpq.1[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cell
 #After dropping the outlier, it looks better!
 ggplot(mpq.1.range, aes(x=pro.range)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range", y = "Density") + geom_vline(aes(xintercept = mean(pro.range)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range)),col='blue',size=0.3) + ggtitle("Raw Data with outlier removed")
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range", y = "Density") + geom_vline(aes(xintercept = mean(pro.range)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range)),col='blue',size=0.3) + ggtitle("Raw Data with outlier removed (red = mean|blue=median)")
 
 
 # lmv1 <- lm(pro.range ~ year, data = mpq)
@@ -829,16 +751,17 @@ ggplot(mpq.1.range, aes(x=pro.range)) +
 mpq.1.range$pro.range.t <- sqrt(mpq.1.range$pro.range)
 ggplot(mpq.1.range, aes(x=pro.range.t)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range. SQRT", y = "Density") + geom_vline(aes(xintercept = mean(pro.range.t)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range.t)),col='blue',size=0.3) + ggtitle("SquareRoot Transformed")
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range. SQRT", y = "Density") + geom_vline(aes(xintercept = mean(pro.range.t)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range.t)),col='blue',size=0.3) + ggtitle("SquareRoot Transformed (red = mean|blue=median)")
 # lmv1.1 <- lm(pro.range.t ~ year, data = mpq)
 # plot(lmv1.1)
 
 
+
 #MUCH BETTER
-mpq.1.range$pro.range.t2 <- log10(mpq.1.range$pro.range)
-ggplot(mpq.1.range, aes(x=pro.range.t2)) + 
+mpq.1.range$pro.range.log <- log10(mpq.1.range$pro.range)
+ggplot(mpq.1.range, aes(x=pro.range.log)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range LOG", y = "Density") + geom_vline(aes(xintercept = mean(pro.range.t2)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range.t2)),col='blue',size=0.3)+ ggtitle("Log10 Transformed")
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range LOG", y = "Density") + geom_vline(aes(xintercept = mean(pro.range.log)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range.log)),col='blue',size=0.3)+ ggtitle("Log10 Transformed (red = mean|blue=median)")
 # lmv2 <- lm(pro.range.t ~ year, data = mpq)
 # plot(lmv2)
 
@@ -848,7 +771,7 @@ ggplot(mpq.1.range, aes(x=pro.range.t2)) +
 mpq.1.range$pro.range.t3 <- 1/(mpq.1.range$pro.range)
 ggplot(mpq.1.range, aes(x=pro.range.t3)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range INVERSE", y = "Density") + geom_vline(aes(xintercept = mean(pro.range.t3)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range.t3)),col='blue',size=0.3)+ ggtitle("Inverse Transformed")
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Pro.Curv.Range INVERSE", y = "Density") + geom_vline(aes(xintercept = mean(pro.range.t3)),col='red',size=0.3) + geom_vline(aes(xintercept = median(pro.range.t3)),col='blue',size=0.3)+ ggtitle("Inverse Transformed (red = mean|blue=median)")
 # lmv3 <- lm(pro.range.t3 ~ year, data = mpq)
 # plot(lmv3)
 
@@ -857,7 +780,6 @@ ggplot(mpq.1.range, aes(x=pro.range.t3)) +
 ```
 
 ## Gamma Distribution Models
-
 **All models with the random effect fail to converge, so its difficult to compare AIC's of all models to determine top model**
 
 ```{r pro curv gamma modelling}
@@ -939,23 +861,20 @@ nrow(mpq.1.range) #126 rows
  
 ```
 
-## Log Transformed Models
-
-**All models converge**
-
-**Top models are: pr9 < pr10 <pr2/5/6 < pr1 < pr16**
-
+## A. Log Transformed Models
 ```{r pro curv log transformed modelling}
 #nrow(mpq.1)# 127 = Any model with 3 variables or less = can use AIC
-#colnames(mpq.1.range) #Call pro.range.t2
+#colnames(mpq.1.range) #Call pro.range.log
 
 # Models year + disturbance
-pr1 <- lm(pro.range.t2 ~ year + hum_dist, data = mpq.1.range)
-pr2 <- lm(pro.range.t2 ~ year + sqrt.hdist.cont, data = mpq.1.range)
-pr3 <- lm(pro.range.t2 ~ year * hum_dist, data = mpq.1.range)
-pr4 <- lm(pro.range.t2 ~ year*sqrt.hdist.cont, data = mpq.1.range)
+pr1 <- lm(pro.range.log ~ year + hum_dist, data = mpq.1.range)
+pr2 <- lm(pro.range.log ~ year + sqrt.hdist.cont, data = mpq.1.range)
+pr3 <- lm(pro.range.log ~ year * hum_dist, data = mpq.1.range)
+pr4 <- lm(pro.range.log ~ year*sqrt.hdist.cont, data = mpq.1.range)
 
-AIC(pr1, pr2,pr3,pr4) #Top model = pr2/pr1
+nrow(mpq.1.range) #126 (Anything more than 3 variables = use AICc)
+
+AICc(pr1, pr2,pr3,pr4) #Top model = pr2/pr1
 summary(pr1)
 summary(pr2)
 summary(pr3)
@@ -963,64 +882,80 @@ summary(pr4)
 
 
 #Categorical human disturbance against region, then categorical interaction with year
-pr5 <- lm(pro.range.t2 ~ year + hum_dist + island.side, data = mpq.1.range)
-pr6 <- lm(pro.range.t2 ~ year + hum_dist + region.3, data = mpq.1.range)
-pr7 <- lm(pro.range.t2 ~ year*hum_dist + island.side, data = mpq.1.range)
-pr8 <- lm(pro.range.t2 ~ year*hum_dist + region.3, data = mpq.1.range)
+pr5 <- lm(pro.range.log ~ year + hum_dist + island.side, data = mpq.1.range)
+pr6 <- lm(pro.range.log ~ year + hum_dist + region.3, data = mpq.1.range)
+pr7 <- lm(pro.range.log ~ year*hum_dist + island.side, data = mpq.1.range)
+pr8 <- lm(pro.range.log ~ year*hum_dist + region.3, data = mpq.1.range)
 
-AIC(pr5, pr6, pr7, pr8) #pr5/6 fit better (without interaction)
+AICc(pr5, pr6, pr7, pr8) #pr5/6 fit better (without interaction)
 summary(pr6)
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
-pr9 <- lm(pro.range.t2 ~ year + sqrt.hdist.cont + island.side, data = mpq.1.range)
-pr10 <- lm(pro.range.t2 ~ year + sqrt.hdist.cont + region.3, data = mpq.1.range)
-pr11 <- lm(pro.range.t2 ~ year*sqrt.hdist.cont + island.side, data = mpq.1.range)
-pr12 <- lm(pro.range.t2 ~ year*sqrt.hdist.cont + region.3, data = mpq.1.range)
+pr9 <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1.range)
+pr10 <- lm(pro.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1.range)
+pr11 <- lm(pro.range.log ~ year*sqrt.hdist.cont + island.side, data = mpq.1.range)
+pr12 <- lm(pro.range.log ~ year*sqrt.hdist.cont + region.3, data = mpq.1.range)
 
-AIC(pr9, pr10, pr11, pr12) #pr9>pr10>pr11>pr12
+AICc(pr9, pr10, pr11, pr12) #pr9>pr10>pr11>pr12
 
-#AIC's for all thus far....
-AIC(pr1, pr2,pr3,pr4, pr5, pr6, pr7, pr8,pr9, pr10, pr11, pr12)  #pr9 > pr10 > pr2 >pr1 ...
-
-summary(pr11)
-
+summary(pr10)
 
 #Continuous disturbance- no interaction (13,14,15 models do not converge!)
-pr13 <- lmer(pro.range.t2 ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
-pr14 <- lmer(pro.range.t2 ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1.range)
-pr15 <- lmer(pro.range.t2 ~ year + sqrt.hdist.cont + (1|site), data = mpq.1.range)
-pr16 <- lmer(pro.range.t2 ~ year + hum_dist + (1|site), data = mpq.1.range)
+pr13 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
+pr14 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + region.3 + (1|site),data = mpq.1.range)
+pr15 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1.range)
+pr16 <- lmer(pro.range.log ~ year + hum_dist + (1|site), data = mpq.1.range)
 
-AIC(pr13, pr14, pr15, pr16) #pr16 < pr15 < pr13 < pr14
+AICc(pr13, pr14, pr15, pr16) #pr16 < pr15 < pr13 < pr14
+#With REML = False --> pr15 < pr13 < pr16 <pr14
+
 
 #Results of models
 summary(pr15)
 summary(pr16)
 
-
-
 #With interactions (17,18,19 do not converge)
-pr17 <- lmer(pro.range.t2 ~ year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
-pr18 <- lmer(pro.range.t2 ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1.range)
-pr19 <- lmer(pro.range.t2 ~ year * sqrt.hdist.cont + (1|site), data = mpq.1.range)
-pr20 <- lmer(pro.range.t2 ~ year * hum_dist + (1|site), data = mpq.1.range)
+pr17 <- lmer(pro.range.log ~ year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
+pr18 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1.range)
+pr19 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1.range)
+pr20 <- lmer(pro.range.log ~ year * hum_dist + (1|site), data = mpq.1.range)
 
 
-AIC(pr17, pr18, pr19, pr20) #pr20 < pr19 < pr17 <pr18
+AICc(pr17, pr18, pr19, pr20) #pr19/17/18
 
 #Results of best fitting models
+summary(pr19)
 summary(pr17)
 summary(pr18)
-summary(pr19)
-summary(pr20)
 
 
 #Choosing top model
-AIC(pr1, pr2,pr3,pr4, pr5, pr6, pr7, pr8,pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16,pr17, pr18, pr19, pr20) #Best fit models are: pr9 < pr10 <pr2/5/6 < pr1 < pr16
+nrow(mpq.1.range) #USE AICc
+AICc(pr1, pr2,pr3,pr4, pr5, pr6, pr7, pr8,pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16,pr17, pr18, pr19, pr20) #Best fit models are: pr9 < pr10 <pr2/5/6 < pr1 < pr16     ***pr5/6 are part of set with 2 categorical variables == best not to use
 
 #AICc(pr1, pr2,pr3,pr4, pr5, pr6, pr7, pr8,pr9, pr10, pr11, pr12, pr13, pr14, pr15, pr16,pr17, pr18, pr19, pr20) #Best fit models are: pr9 < pr10 <pr2/5/6 < pr1 < pr16
 
+summary(pr11)
+summary(pr17)
+summary(pr18)
+
+
 ```
+
+## B. Final Findings:
+
+**All models converge**
+
+- **pro.range.log ~ year + sqrt.hdist.cont + island.side**
+ 
+- **pro.range.log ~ year + sqrt.hdist.cont + region.3**
+
+- **pro.range.log ~ year + sqrt.hdist.cont**
+
+- **pro.range.log ~ year + hum_dist**
+
+
+
 
 
 
@@ -1059,13 +994,15 @@ ggplot(mpq.1.range, aes(x=plan.range.t)) +
 # lmv1.1 <- lm(plan.range.t ~ year, data = mpq)
 # plot(lmv1.1)
 
+#REMOVE ROW 54
+mpq.1.range <- mpq.1[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cells without any coverage in the plot. 
 
 #MUCH BETTER
-mpq.1.range$plan.range.t2 <- log10(mpq.1.range$plan.range)
-ggplot(mpq.1.range, aes(x=plan.range.t2)) + 
+mpq.1.range$plan.range.log <- log10(mpq.1.range$plan.range)
+ggplot(mpq.1.range, aes(x=plan.range.log)) + 
  geom_histogram(aes(y=..density..), colour="black", fill="white", bins= 30)+
- geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Plan.Curv.Range LOG", y = "Density") + geom_vline(aes(xintercept = mean(plan.range.t2)),col='red',size=0.3) + geom_vline(aes(xintercept = median(plan.range.t2)),col='blue',size=0.3)+ ggtitle("Log10 Transformed")
-# lmv2 <- lm(plan.range.t2 ~ year, data = mpq)
+ geom_density(alpha=.2, fill="#FF6666") + labs(title="red = mean | blue = median",x="Plan.Curv.Range LOG", y = "Density") + geom_vline(aes(xintercept = mean(plan.range.log)),col='red',size=0.3) + geom_vline(aes(xintercept = median(plan.range.log)),col='blue',size=0.3)+ ggtitle("Log10 Transformed")
+# lmv2 <- lm(plan.range.log ~ year, data = mpq)
 # plot(lmv2)
 
 
@@ -1166,23 +1103,19 @@ nrow(mpq.1.range) #126 rows
  
 ```
 
-## Log Transformed Models
-
-**All models converge**
-
-**Top models are: plan2 < plan9 < plan10/1 <plan5/6**
+## A. Log Transformed Models
 
 ```{r plano curv log transformed modelling}
 #nrow(mpq.1)# 127 = Any model with 3 variables or less = can use AIC
 #colnames(mpq.1.range) #Call plano.range.t2
 
 # Models year + disturbance
-plan1 <- lm(plan.range.t2 ~ year + hum_dist, data = mpq.1.range)
-plan2 <- lm(plan.range.t2 ~ year + sqrt.hdist.cont, data = mpq.1.range)
-plan3 <- lm(plan.range.t2 ~ year * hum_dist, data = mpq.1.range)
-plan4 <- lm(plan.range.t2 ~ year*sqrt.hdist.cont, data = mpq.1.range)
+plan1 <- lm(plan.range.log ~ year + hum_dist, data = mpq.1.range)
+plan2 <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.1.range)
+plan3 <- lm(plan.range.log ~ year * hum_dist, data = mpq.1.range)
+plan4 <- lm(plan.range.log ~ year*sqrt.hdist.cont, data = mpq.1.range)
 
-AIC(plan1, plan2,plan3,plan4) #Top model = plan2/plan1
+AICc(plan1, plan2,plan3,plan4) #Top model = plan2/plan1
 summary(plan1)
 summary(plan2)
 summary(plan3)
@@ -1190,39 +1123,33 @@ summary(plan4)
 
 
 #Categorical human disturbance against region, then categorical interaction with year
-plan5 <- lm(plan.range.t2 ~ year + hum_dist + island.side, data = mpq.1.range)
-plan6 <- lm(plan.range.t2 ~ year + hum_dist + region.3, data = mpq.1.range)
-plan7 <- lm(plan.range.t2 ~ year*hum_dist + island.side, data = mpq.1.range)
-plan8 <- lm(plan.range.t2 ~ year*hum_dist + region.3, data = mpq.1.range)
+plan5 <- lm(plan.range.log ~ year + hum_dist + island.side, data = mpq.1.range)
+plan6 <- lm(plan.range.log ~ year + hum_dist + region.3, data = mpq.1.range)
+plan7 <- lm(plan.range.log ~ year*hum_dist + island.side, data = mpq.1.range)
+plan8 <- lm(plan.range.log ~ year*hum_dist + region.3, data = mpq.1.range)
 
-AIC(plan5, plan6, plan7, plan8) #plan5/6 fit better (without interaction)
+AICc(plan5, plan6, plan7, plan8) #plan5/6 fit better (without interaction)
 summary(plan5)
 summary(plan6) #Conflicting region ~human disturbance, so good thing these weren't selected
 
 #Continuous human disturbance against region, then Continuous disturbance interaction with year
-plan9 <- lm(plan.range.t2 ~ year + sqrt.hdist.cont + island.side, data = mpq.1.range)
-plan10 <- lm(plan.range.t2 ~ year + sqrt.hdist.cont + region.3, data = mpq.1.range)
-plan11 <- lm(plan.range.t2 ~ year*sqrt.hdist.cont + island.side, data = mpq.1.range)
-plan12 <- lm(plan.range.t2 ~ year*sqrt.hdist.cont + region.3, data = mpq.1.range)
+plan9 <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1.range)
+plan10 <- lm(plan.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1.range)
+plan11 <- lm(plan.range.log ~ year*sqrt.hdist.cont + island.side, data = mpq.1.range)
+plan12 <- lm(plan.range.log ~ year*sqrt.hdist.cont + region.3, data = mpq.1.range)
 
-AIC(plan9, plan10, plan11, plan12) #plan9>plan10>plan11>plan12
+AICc(plan9, plan10, plan11, plan12) #plan9>plan10>plan11>plan12
 
 summary(plan9)
 summary(plan10)
 
-#AIC's for all thus far....
-AIC(plan1, plan2,plan3,plan4, plan5, plan6, plan7, plan8,plan9, plan10, plan11, plan12)  #plan9 > plan10 > plan2 >plan1 ...
-
-
-
-
 #Continuous disturbance- no interaction (13,14,15 models do not converge!)
-plan13 <- lmer(plan.range.t2 ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
-plan14 <- lmer(plan.range.t2 ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1.range)
-plan15 <- lmer(plan.range.t2 ~ year + sqrt.hdist.cont + (1|site), data = mpq.1.range)
-plan16 <- lmer(plan.range.t2 ~ year + hum_dist + (1|site), data = mpq.1.range)
+plan13 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
+plan14 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1.range)
+plan15 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1.range)
+plan16 <- lmer(plan.range.log ~ year + hum_dist + (1|site), data = mpq.1.range)
 
-AIC(plan13, plan14, plan15, plan16) #plan16 < plan15 < plan13 < plan14
+AICc(plan13, plan14, plan15, plan16) #plan16 < plan15 < plan13 < plan14
 
 #Results of models
 summary(plan15)
@@ -1230,23 +1157,20 @@ summary(plan16)
 
 
 #With interactions (17,18,19 do not converge)
-plan17 <- lmer(plan.range.t2 ~ year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
-plan18 <- lmer(plan.range.t2 ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1.range)
-plan19 <- lmer(plan.range.t2 ~ year * sqrt.hdist.cont + (1|site), data = mpq.1.range)
-plan20 <- lmer(plan.range.t2 ~ year * hum_dist + (1|site), data = mpq.1.range)
+plan17 <- lmer(plan.range.log ~ year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1.range)
+plan18 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1.range)
+plan19 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1.range)
+plan20 <- lmer(plan.range.log ~ year * hum_dist + (1|site), data = mpq.1.range)
 
 
-AIC(plan17, plan18, plan19, plan20) #plan20 < plan19 < plan17 <plan18
+AICc(plan17, plan18, plan19, plan20) #plan20
 
 #Results of best fitting models
-summary(plan17)
-summary(plan18)
-summary(plan19)
 summary(plan20)
 
 
 #Choosing top model
-AIC(plan1, plan2,plan3,plan4, plan5, plan6, plan7, plan8,plan9, plan10, plan11, plan12, plan13, plan14, plan15, plan16,plan17, plan18, plan19, plan20) #Best fit models are: plan 2 < plan9 < plan10/1 <plan5/6 
+AICc(plan1, plan2,plan3,plan4, plan5, plan6, plan7, plan8,plan9, plan10, plan11, plan12, plan13, plan14, plan15, plan16,plan17, plan18, plan19, plan20) #Best fit models are: plan 2 < plan9 < plan10/1  *** plan5/6/7/8 all have multiple categorical variables, so DOM recommends not using
 
 #AICc(plan1, plan2,plan3,plan4, plan5, plan6, plan7, plan8,plan9, plan10, plan11, plan12, plan13, plan14, plan15, plan16,plan17, plan18, plan19, plan20) #Best fit models are: plan 2 < plan9 < plan10/1 <plan5/6 
 
@@ -1254,6 +1178,17 @@ AIC(plan1, plan2,plan3,plan4, plan5, plan6, plan7, plan8,plan9, plan10, plan11, 
 ```
 
 
+## B. Final Findings
+
+**All models converge ---> Top models are: plan2 < plan9 < plan10/1 **
+
+- **plan.range.log ~ year + sqrt.hdist.cont **
+ 
+- **plan.range.log ~ year + sqrt.hdist.cont + island.side**
+
+- **plan.range.log ~ year + sqrt.hdist.cont + region.3**
+
+- **plan.range.log ~ year + hum_dist**
 
 
 
@@ -1263,304 +1198,1440 @@ AIC(plan1, plan2,plan3,plan4, plan5, plan6, plan7, plan8,plan9, plan10, plan11, 
 
 
 
-
-
-
-
-# 10. JM MAGEL MODELLING STYLE
-
-Global Model = "Ideally, your global model would consist of all variables thought to be useful to your particular research question" Burnham and Andersen (2002) 
-
-Variance Structure = 
-
-```{r JM modelling style, eval=FALSE, include=FALSE}
-library(arm) 
-library(nlme) #NEEDED TO RUN LME models
-library(MuMIn)
-library(knitr)
-options(na.action = "na.fail")
-
-
-# 1. Model Assumptions
-# Fit the global model(s)
-modelv <- lme(vrm ~ year * hdist.cont + island.side, random = ~1 | site, 
-               data = mpq.1, method = "ML")
-
-modelvv <- lme(vrm ~ year * hdist.cont + region.3, random = ~1 | site, 
-               data = mpq.1, method = "ML")
-#summary(modelv)
-#summary(modelvv)
-
-
-# Check goodness of fit of global model
-r.squaredGLMM(modelv)
-r.squaredGLMM(modelvv)
-
-
-# Make residual plots for the global model
-plot(modelv)
-qqnorm(resid(modelv))
-
-plot(modelvv)
-qqnorm(resid(modelvv))
-
-# Compare to global model with variance structure
-#Region.3
-modelvx <- lme(vrm ~ year * hdist.cont + region.3, random = ~1 | site, 
-                weights = varIdent(form = ~1 | year), data = mpq.1, method = "ML")
-modelvy <- lme(vrm ~ year * hdist.cont + region.3, random = ~1 | site, 
-                weights = varIdent(form = ~1 | hdist.cont), data = mpq.1, method = "ML")
-
-AIC(modelv, modelvx, modelvy) #Model v = top model
-
-#For Island.side
-modelvxx <- lme(vrm ~ year * hdist.cont + island.side, random = ~1 | site, 
-                weights = varIdent(form = ~1 | year), data = mpq.1, method = "ML")
-modelvyy <- lme(vrm ~ year * hdist.cont + island.side, random = ~1 | site, 
-                weights = varIdent(form = ~1 | hdist.cont), data = mpq.1, method = "ML")
-
-AIC(modelvv,modelvxx, modelvyy) #modelvyy = top model, followed closely by modelv/modelvy
-
-
-
-dredged.models.islandside <- dredge(modelv, beta = c("none"), evaluate = TRUE,
-    rank = "AIC", fixed = "island.side", "region.3")
-dredged.models.islandside
-
-
-
-
-####################################################################################
-# 2. Model Selection
-# Generate model set
-model.setv <- dredge(modelvv, extra = "r.squaredGLMM")
-
-# Create model selection table
-model_tablev <- model.sel(model.setv)
-options(scipen = 7)
-names(model_tablev) <- c("(Int)", "Dist", "Year", "Year*Dist", "R2m", "R2c", "df",
-                        "LL", "AICc", "delta", "weight")
-kable(model_tablev, digits = 3)
-
-# Model averaging
-model.setv4 <- get.models(model.setv, subset = delta < 4)
-avg_modelv <- model.avg(model.setv4)
-summary(avg_modelv)
-confint(avg_modelv, full = TRUE)
-
-
-####################################################################################
-
-# 3. Parameter Plot
-library(ggplot2)
-library(cowplot)
-
-#Set Theme
-theme_set(theme_bw() + theme(plot.title = element_text(hjust = 0.5)) + 
-            theme(axis.text = element_text(size = 14, color = "black"),
-                  axis.title.y = element_blank(),
-                  axis.title.x = element_text(size = 17, margin = margin(20,0,0,0)),
-                  plot.title = element_text(size = 22, margin = margin(0,0,15,0)),
-                  plot.margin = margin(10,10,10,20), 
-                  strip.background = element_rect(fill = "black"),
-                  strip.text = element_text(colour = "white", size = 12),
-                  panel.border = element_rect(color = "black", fill = NA, size = 1),
-                  panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
-
-
-#Get data values for the plot
-vrm_coef <- data.frame(summary(avg_modelv)[9])
-vrm_ci <- data.frame(confint(avg_modelv, full = TRUE))
-vrm_coef <- cbind(vrm_coef, vrm_ci)
-
-names(vrm_coef)[names(vrm_coef) == "coefmat.full.Estimate"] <- "Estimate"
-names(vrm_coef)[names(vrm_coef) == "X2.5.."] <- "LowerCI"
-names(vrm_coef)[names(vrm_coef) == "X97.5.."] <- "UpperCI"
-
-### Order of coefficients in data frame may change - check with FINAL data
-vrm_coef <- vrm_coef[-1, ] #Delete first row (intercept)
-rownames(vrm_coef)[1] <- "Human Disturbance"
-rownames(vrm_coef)[2] <- "2016a"
-rownames(vrm_coef)[3] <- "2016b"
-rownames(vrm_coef)[4] <- "2017"
-rownames(vrm_coef)[5] <- "2019"
-rownames(vrm_coef)[6] <- "Dist*2016a"
-rownames(vrm_coef)[7] <- "Dist*2016b"
-rownames(vrm_coef)[8] <- "Dist*2017"
-rownames(vrm_coef)[9] <- "Dist*2019"
-
-vrm_coef$Variable <- rownames(vrm_coef)
-vrm_coef$Variable <- as.factor(vrm_coef$Variable)
-
-p1 <- ggplot(vrm_coef, aes(x = reorder(Variable, Estimate), y = Estimate)) + geom_hline(yintercept = 0, color = gray(1/2), lty = 2)
-p1 <- p1 + geom_pointrange(aes(x = reorder(Variable, Estimate), y = Estimate, ymin = LowerCI, ymax = UpperCI), position = position_dodge(width = 1/2), shape = 21, fatten = 4, size = 1/2, fill = "black")
-p1 <- p1 + coord_flip() + theme_cowplot() + xlab("")
-p1
-
-
-```
-
-
-
-
-# Random Forest
+# 8. Random Forest {.tabset}
 
 This is to determine the significant contributing morphologies to each metric of complexity
 
-```{r random forest, eval=FALSE, include=FALSE}
-#Data
-mpq.dig.1 #DEM 1cm
-mpq.dig.4 #DEM 4cm
-mpq.dig.8 #DEM 8cm
+```{r random forest prep, eval=FALSE, include=FALSE}
+#Load Data
+mpq.dig.full.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_FULL_1cm_Data_11Jan21.csv", row.names = 1)
+mpq.dig.semi.1cm<- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_1cm_Data_11Jan21.csv", row.names = 1)
+mpq.dig.simple.1cm<- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SIMPLE_1cm_Data_11Jan21.csv", row.names = 1)
+
+
+#Create a full dataframe + dataframe without abiotic structures
+#Full Dataframe
+
+#1. VRM
+vrm.per.1cm.full <- mpq.dig.full.1cm[c(13,21:44)] #1cm full df, all
+vrm.per.1cm.full.live <- mpq.dig.full.1cm[c(13,21:40,43:44)]  #no abiotic str 
+ 
+vrm.per.1cm.semi <- mpq.dig.semi.1cm[c(13,21:42)] #1cm semi df, all
+vrm.per.1cm.semi.live <- mpq.dig.semi.1cm[c(13,21:38,41:42)] #no abiotic str
+
+vrm.per.1cm.simple <- mpq.dig.simple.1cm[c(13,21:27)] #1cm simple df, all
+vrm.per.1cm.simple.live <-mpq.dig.simple.1cm[c(13,21:25,26:27)] #no abiotic str
+
+
+#2. Surface Complexity
+
+
+
+
+#### TEST TO SEE HOW ^^THESE LOOK AND COME BACK TO DO REST.... ####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# SCRIPT FOR 3 DIFFERENT RESOLUTIONS I ATTEMPTED EARLIER- DISREGARD
 
 #Create Data Matrix of complexity metric ~ morphology percentages
-#1. VRM
-vrm.per.1 <- mpq.dig.1[,c(17:69)]
-vrm.per.1 <- vrm.per.1[,-c(2:4)] #drop other complexity metrics
+#Drop collumns of rare non-coral morphs and abiotic structure (sand, rubble)
+# #1. VRM
+# vrm.per.1cm <- mpq.dig.1[c(13,21:39,42:43)] #1cm
+# vrm.per.4cm <- mpq.dig.4[c(13,20:42)] #4cm
+# vrm.per.8cm <- mpq.dig.8[c(13,20:42)] #8cm
+# 
+# #2. Rug
+# rug.per.1cm <- mpq.dig.1[c(12,21:43)] #1cm
+# rug.per.4cm <- mpq.dig.4[c(12,20:42)] #4cm
+# rug.per.8cm <- mpq.dig.8[c(12,20:42)] #8cm
+# 
+# #2. Fractal Dimension
+# frac.forest <- mpq.dig.1[c(20:43)] #1cm
+# 
+# #4a. Profile Curvature Mean
+# pro.mean.per.1cm <- mpq.dig.1[c(16,21:43)] #1cm
+# pro.mean.per.4cm <- mpq.dig.4[c(16,20:42)] #4cm
+# pro.mean.per.8cm <- mpq.dig.8[c(16,20:42)] #8cm
+# 
+# #4b. Profile Curvature Range
+# pro.range.per.1cm <- mpq.dig.1[c(17,21:43)] #1cm
+# pro.range.per.4cm <- mpq.dig.4[c(17,20:42)] #4cm
+# pro.range.per.8cm <- mpq.dig.8[c(17,20:42)] #8cm
+# 
+# #5. Planform Curvature Mean
+# plan.mean.per.1cm <- mpq.dig.1[c(18,21:43)] #1cm
+# plan.mean.per.4cm <- mpq.dig.4[c(18,20:42)] #4cm
+# plan.mean.per.8cm <- mpq.dig.8[c(18,20:42)] #8cm
+# 
+# #4b. Planform Curvature Range
+# plan.range.per.1cm <- mpq.dig.1[c(19,21:43)] #1cm
+# plan.range.per.4cm <- mpq.dig.4[c(19,20:42)] #4cm
+# plan.range.per.8cm <- mpq.dig.8[c(19,20:42)] #8cm
 
 
-
-# Set prunescale 
-prunescale = 0.0001
-
-# Prune out rare OTUs by mean relative abundance set by prunescale
-tax.mean <- taxa_sums(sites.scale)/nsamples(sites.scale)
-sites.prune <- prune_taxa(tax.mean > prunescale*minlib, sites.scale)
-
-sites.prune
-
-# Make a dataframe of training data with OTUs as column and samples as rows
-predictors <- t(otu_table(sites.prune))
-dim(predictors)
-## [1]  40 387
-
-
-# Make one column for our outcome/response variable 
-response <- as.factor(sample_data(sites.prune)$Station)
-
-# Combine them into 1 data frame
-rf.data <- data.frame(response, predictors)
-
-
-#Random Forest Results
-set.seed(2)
-erie.classify <- randomForest(response~., data = rf.data, ntree = 100)
-print(erie.classify)
 
 ```
 
-# Models at different DEM's
-## VRM
-### 1cm
-```{r vrm 1cm dem, eval=FALSE, include=FALSE}
-#Models looking at disturbance gradient and if interaction between year&disturbance fit better
-vrm1 <- lm(vrm ~ year + hum_dist, data = mpq.1) #Hum_Dist = Categorical
-vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1)
-vrm3 <- lm(vrm ~ year * hum_dist, data = mpq.1)
-vrm4 <- lm(vrm~year*sqrt.hdist.cont, data = mpq.1)
 
-nrow(mpq.1)
-AIC(vrm1,vrm2,vrm3,vrm4)
+## Computing Optimal mtry values
+### VRM - FULL (optimal mtry = 4)
+```{r surface complexity random forrest, include=FALSE}
+#<------------------ Rugosity ------------------------>
+#Create training Sample with 300 observations
+nrow(vrm.per.1cm.full) #80
+train=sample(1:nrow(vrm.per.1cm.full),80) #80 rows
 
-#Models without interaction of disturbance added with different regions
-vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq.1) 
-vrm6 <- lm(vrm~ year + hum_dist + region.3, data = mpq.1)
-vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq.1)
-vrm8 <- lm(vrm~year*hum_dist + region.3, data = mpq.1)
+#Run Random Forest
+vrm.classify1 <- randomForest(vrm ~., data = vrm.per.1cm.full, subset = train, ntree = 500)
+print(vrm.classify1)
+plot(vrm.classify1)
 
-AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.full) #There are 24 predictors in this dataset
 
-#Continuous human disturbance against region, then Continuous disturbance interaction with year
-vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1)
-vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq.1)
-vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq.1)
-vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq.1)
+oob.err=double(24)
+test.err=double(24)
 
-AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:24) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.full , subset = train,mtry=mtry,ntree=100) 
+  oob.err[mtry] = rf$mse[100] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.full[-train,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.full[-train,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
 
+#Get the test error
+test.err
 
-#Continuous disturbance- no interaction
-vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
-vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1)
-vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq.1)
-vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq.1)
-
-AIC(vrm13, vrm14, vrm15, vrm16) #VRM15 best fit, but vrm16 is close  (1AIC)
-
-#With interactions
-vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.1)
-vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1)
-vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq.1)
-vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq.1)
-
-AIC(vrm17, vrm18, vrm19, vrm20) #vrm19 best fit
-
-#Choosing top model
-AIC(vrm1, vrm2, vrm3, vrm4, vrm5, vrm6,vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16,vrm17, vrm18, vrm19, vrm20 ) #Best fit models are: vrm9<8<1
+#Get the OOB error
+oob.err
 
 
-summary(vrm9)
-summary(vrm8)
-summary(vrm1)
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
 
 
+```
+
+### VRM - FULL (no abiotic) (optimal mtry = 4)
+```{r vrm full no abiotic random forrest, include=FALSE}
+#<------------------ Rugosity ------------------------>
+#Create training Sample with 300 observations
+nrow(vrm.per.1cm.full.live) #80
+train2=sample(1:nrow(vrm.per.1cm.full.live),80) #80 rows
+
+#Run Random Forest
+vrm.classify2 <- randomForest(vrm ~., data = vrm.per.1cm.full.live, subset = train2, ntree = 100)
+print(vrm.classify2)
+plot(vrm.classify2)
+
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.full.live) #There are 23-1 = 22 predictors in this dataset
+
+oob.err=double(22)
+test.err=double(22)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:22) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.full.live , subset = train2,mtry=mtry,ntree=100) 
+  oob.err[mtry] = rf$mse[100] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.full.live[-train2,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.full.live[-train2,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the test error
+test.err
+
+#Get the OOB error
+oob.err
+
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
+
+
+```
+
+### VRM - Semi (optimal mtry = 2)
+```{r surface complexity random forrest, include=FALSE}
+#<------------------ Rugosity ------------------------>
+#Create training Sample with 300 observations
+nrow(vrm.per.1cm.semi) #80
+train3=sample(1:nrow(vrm.per.1cm.semi),80) #80 rows
+
+#Run Random Forest
+vrm.classify3 <- randomForest(vrm ~., data = vrm.per.1cm.semi, subset = train3, ntree = 100)
+print(vrm.classify3)
+plot(vrm.classify3)
+
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.semi) #There are 23-1 = 22 predictors in this dataset
+
+oob.err=double(22)
+test.err=double(22)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:22) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.semi , subset = train,mtry=mtry,ntree=100) 
+  oob.err[mtry] = rf$mse[100] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.semi[-train3,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.semi[-train3,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the test error
+test.err
+
+#Get the OOB error
+oob.err
+
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
+
+
+```
+
+### VRM - Semi (no abiotic) (optimal mtry = 4) (set of 10: 4,9,5,4,3,7,5,3,4,4 = mode =4) 
+```{r surface complexity random forrest, include=FALSE}
+#<------------------ Rugosity ------------------------>
+#Create training Sample with 300 observations
+nrow(vrm.per.1cm.semi.live) #80
+train4=sample(1:nrow(vrm.per.1cm.semi.live),80) #80 rows
+
+#Run Random Forest
+vrm.classify4 <- randomForest(vrm ~., data = vrm.per.1cm.semi.live, subset = train4, ntree = 100)
+print(vrm.classify4)
+plot(vrm.classify4)
+
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.semi.live) #There are 21-1 = 20 predictors in this dataset
+
+oob.err=double(20)
+test.err=double(20)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:20) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.semi.live , subset = train,mtry=mtry,ntree=100) 
+  oob.err[mtry] = rf$mse[100] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.semi.live[-train4,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.semi.live[-train4,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the test error
+test.err
+
+#Get the OOB error
+oob.err
+
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
+
+
+```
+
+### VRM - Simple (optimal mtry = 3)
+```{r surface complexity random forrest, include=FALSE}
+#<------------------ Rugosity ------------------------>
+#Create training Sample with 300 observations
+nrow(vrm.per.1cm.simple) #80
+train5=sample(1:nrow(vrm.per.1cm.simple),80) #80 rows
+
+#Run Random Forest
+vrm.classify5 <- randomForest(vrm ~., data = vrm.per.1cm.simple, subset = train5, ntree = 100)
+print(vrm.classify5)
+plot(vrm.classify5)
+
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.simple) #There are 8-1 = 7 predictors in this dataset
+
+oob.err=double(7)
+test.err=double(7)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:7) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.simple , subset = train5,mtry=mtry,ntree=100) 
+  oob.err[mtry] = rf$mse[100] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.simple[-train5,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.simple[-train5,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the test error
+test.err
+
+#Get the OOB error
+oob.err
+
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
+
+
+```
+
+### VRM - Semi (no abiotic) (optimal mtry = 3)
+```{r surface complexity random forrest, include=FALSE}
+#<------------------ Rugosity ------------------------>
+#Create training Sample with 300 observations
+nrow(vrm.per.1cm.simple.live) #80
+train6=sample(1:nrow(vrm.per.1cm.simple.live),80) #80 rows
+
+#Run Random Forest
+vrm.classify6 <- randomForest(vrm ~., data = vrm.per.1cm.simple.live, subset = train6, ntree = 100)
+print(vrm.classify6)
+plot(vrm.classify6)
+
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.simple.live) #There are 8-1 = 7 predictors in this dataset
+
+oob.err=double(7)
+test.err=double(7)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:7) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.simple.live , subset = train6,mtry=mtry,ntree=100) 
+  oob.err[mtry] = rf$mse[100] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.simple.live[-train6,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.simple.live[-train6,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the test error
+test.err
+
+#Get the OOB error
+oob.err
+
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
+
+
+```
+
+
+## Computing Random Forests with Semi dataframe
+
+### VRM- semi
+```{r vrm semi random forest}
+############## 1cm DEM SEMI DATABASE #################
+#Random Forrest
+set.seed(2)
+vrm.classify3 <- randomForest(vrm~., data = vrm.per.1cm.semi, mtry =4, ntree = 100)
+print(vrm.classify3)
+names(vrm.classify3)
+
+#Make a dataframe with predictor names and their importance
+imp.vrm3.full.1cm <- importance(vrm.classify3)
+imp.vrm3.full.1cm <- data.frame(predictors = rownames(imp.vrm3.full.1cm), imp.vrm3.full.1cm)
+
+colnames(imp.vrm3.full.1cm)
+
+# Order the predictor levels by importance
+imp.vrm3.full.1cm.sort <- arrange(imp.vrm3.full.1cm, desc(IncNodePurity))
+imp.vrm3.full.1cm.sort$predictors <- factor(imp.vrm3.full.1cm.sort$predictors, levels = imp.vrm3.full.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm3.full.1cm.top.5 <- imp.vrm3.full.1cm.sort[1:5, ]
+imp.vrm3.full.1cm.top.10 <- imp.vrm3.full.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+ggplot(imp.vrm3.full.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 1cm classification")
+
+```
+
+### VRM semi (no abiotic)
+```{r}
+############## 1cm DEM SEMI DATABASE - ABIOTIC (RUBBLE/SAND) #################
+#Random Forrest
+vrm.classify4 <- randomForest(vrm~., data = vrm.per.1cm.semi.live, ntree = 100)
+print(vrm.classify4)
+names(vrm.classify4)
+
+#Make a dataframe with predictor names and their importance
+imp.vrm4.full.1cm <- importance(vrm.classify4)
+imp.vrm4.full.1cm <- data.frame(predictors = rownames(imp.vrm4.full.1cm), imp.vrm4.full.1cm)
+
+colnames(imp.vrm4.full.1cm)
+
+# Order the predictor levels by importance
+imp.vrm4.full.1cm.sort <- arrange(imp.vrm4.full.1cm, desc(IncNodePurity))
+imp.vrm4.full.1cm.sort$predictors <- factor(imp.vrm4.full.1cm.sort$predictors, levels = imp.vrm4.full.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm4.full.1cm.top.5 <- imp.vrm4.full.1cm.sort[1:5, ]
+imp.vrm4.full.1cm.top.10 <- imp.vrm4.full.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+ggplot(imp.vrm4.full.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 1cm classification")
+
+```
+
+
+
+
+
+
+```{r simple and full databases if I do}
+############## 1cm DEM FULL DATABASE - ABIOTIC (RUBBLE/SAND) #################
+#Random Forrest
+set.seed(2)
+vrm.classify2 <- randomForest(vrm~., data = vrm.per.1cm.full.live, ntree = 100)
+print(vrm.classify2)
+names(vrm.classify2)
+
+#Make a dataframe with predictor names and their importance
+imp.vrm2.full.1cm <- importance(vrm.classify2)
+imp.vrm2.full.1cm <- data.frame(predictors = rownames(imp.vrm2.full.1cm), imp.vrm2.full.1cm)
+
+colnames(imp.vrm2.full.1cm)
+
+# Order the predictor levels by importance
+imp.vrm2.full.1cm.sort <- arrange(imp.vrm2.full.1cm, desc(IncNodePurity))
+imp.vrm2.full.1cm.sort$predictors <- factor(imp.vrm2.full.1cm.sort$predictors, levels = imp.vrm2.full.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm2.full.1cm.top.5 <- imp.vrm2.full.1cm.sort[1:5, ]
+imp.vrm2.full.1cm.top.10 <- imp.vrm2.full.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+ggplot(imp.vrm2.full.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 1cm classification")
+
+
+############## 1cm DEM SIMPLE DATABASE #################
+#Random Forrest
+set.seed(2)
+vrm.classify5 <- randomForest(vrm~., data = vrm.per.1cm.simple, ntree = 100, mtry = 2)
+print(vrm.classify5)
+names(vrm.classify5)
+
+#Make a dataframe with predictor names and their importance
+imp.vrm5.full.1cm <- importance(vrm.classify5)
+imp.vrm5.full.1cm <- data.frame(predictors = rownames(imp.vrm5.full.1cm), imp.vrm5.full.1cm)
+
+colnames(imp.vrm5.full.1cm)
+
+# Order the predictor levels by importance
+imp.vrm5.full.1cm.sort <- arrange(imp.vrm5.full.1cm, desc(IncNodePurity))
+imp.vrm5.full.1cm.sort$predictors <- factor(imp.vrm5.full.1cm.sort$predictors, levels = imp.vrm5.full.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm5.full.1cm.top.5 <- imp.vrm5.full.1cm.sort[1:5, ]
+imp.vrm5.full.1cm.top.10 <- imp.vrm5.full.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+ggplot(imp.vrm5.full.1cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 1cm classification")
+
+```
+
+
+
+
+
+
+
+#Disregard below
+
+```{r}
+###########
+
+mean(vrm.classify1$mse) #0.0001727692
+
+vrm.classify1$err.rate[,1] #NUKK
+
+
+
+#Make a dataframe with predictor names and their importance
+imp.vrm.full.1cm <- importance(vrm.classify1)
+imp.vrm.full.1cm <- data.frame(predictors = rownames(imp.vrm.full.1cm), imp.vrm.full.1cm)
+
+colnames(imp.vrm.full.1cm)
+
+# Order the predictor levels by importance
+imp.vrm.full.1cm.sort <- arrange(imp.vrm.full.1cm, desc(IncNodePurity))
+imp.vrm.full.1cm.sort$predictors <- factor(imp.vrm.full.1cm.sort$predictors, levels = imp.vrm.full.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm.full1.1cm.top.5 <- imp.vrm.full.1cm.sort[1:5, ]
+imp.vrm.full1.1cm.top.10 <- imp.vrm.full.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+ggplot(imp.vrm.full1.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 1cm classification")
+
+```
+
+
+
+
+
+
+
+## 8a. Surface Complexity
+```{r surface complexity random forrest, include=FALSE}
+#<------------------ Rugosity ------------------------>
+# 1cm DEM 
+#Random Forrest
+set.seed(2)
+rug.classify <- randomForest(rug~., data = rug.per.1cm, ntree = 100)
+print(rug.classify)
+names(rug.classify)
+
+#Make a dataframe with predictor names and their importance
+imp.rug.1cm <- importance(rug.classify)
+imp.rug.1cm <- data.frame(predictors = rownames(imp.rug.1cm), imp.rug.1cm)
+
+colnames(imp.rug.1cm)
+
+# Order the predictor levels by importance
+imp.rug.1cm.sort <- arrange(imp.rug.1cm, desc(IncNodePurity))
+imp.rug.1cm.sort$predictors <- factor(imp.rug.1cm.sort$predictors, levels = imp.rug.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.rug.1cm.top.5 <- imp.rug.1cm.sort[1:5, ]
+imp.rug.1cm.top.20 <- imp.rug.1cm.sort[1:20, ]
+
+
+# Plot top morphologies
+# ggplot(imp.rug.1cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 1cm classification")
+
+# ggplot(imp.rug.1cm.top.20, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for RUG 1cm classification")
+
+
+################### 4cm DEM ###########################
+#Random Forrest
+set.seed(2)
+rug.classify.4cm <- randomForest(rug~., data = rug.per.4cm, ntree = 100)
+print(rug.classify.4cm)
+names(rug.classify.4cm)
+
+#Make a dataframe with predictor names and their importance
+imp.rug.4cm <- importance(rug.classify.4cm)
+imp.rug.4cm <- data.frame(predictors = rownames(imp.rug.4cm), imp.rug.4cm)
+
+colnames(imp.rug.4cm)
+
+# Order the predictor levels by importance
+imp.rug.4cm.sort <- arrange(imp.rug.4cm, desc(IncNodePurity))
+imp.rug.4cm.sort$predictors <- factor(imp.rug.4cm.sort$predictors, levels = imp.rug.4cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.rug.4cm.top.5 <- imp.rug.4cm.sort[1:5, ]
+imp.rug.4cm.top.10 <- imp.rug.4cm.sort[1:10, ]
+
+
+# Plot top morphologies
+#ggplot(imp.rug.4cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 4cm classification")
+
+#ggplot(imp.rug.4cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for RUG 4cm classification")
+
+################### 8cm DEM ###########################
+#Random Forrest
+set.seed(2)
+rug.classify.8cm <- randomForest(rug~., data = rug.per.8cm, ntree = 100)
+print(rug.classify.8cm)
+names(rug.classify.8cm)
+
+#Make a dataframe with predictor names and their importance
+imp.rug.8cm <- importance(rug.classify.8cm)
+imp.rug.8cm <- data.frame(predictors = rownames(imp.rug.8cm), imp.rug.8cm)
+
+colnames(imp.rug.8cm)
+
+# Order the predictor levels by importance
+imp.rug.8cm.sort <- arrange(imp.rug.8cm, desc(IncNodePurity))
+imp.rug.8cm.sort$predictors <- factor(imp.rug.8cm.sort$predictors, levels = imp.rug.8cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.rug.8cm.top.5 <- imp.rug.8cm.sort[1:5, ]
+imp.rug.8cm.top.10 <- imp.rug.8cm.sort[1:10, ]
+
+
+# Plot top morphologies
+#ggplot(imp.rug.8cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 8cm classification")
+
+#ggplot(imp.rug.8cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for RUG 8cm classification")
+
+
+```
+
+### 1cm DEM 
+```{r 1cm DEM surface rug morphologies, echo=FALSE}
+ggplot(imp.rug.1cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 1cm classification")
+
+```
+
+### 4cm DEM
+```{r 4cm dem rug random forest, echo=FALSE}
+ggplot(imp.rug.4cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 4cm classification")
+
+```
+
+### 8cm DEM
+```{r 8cm dem rug Rforrest, echo=FALSE}
+ggplot(imp.rug.8cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 4cm classification")
+```
+
+## 8b. VRM
+```{r vrm random forrest, include=FALSE}
+################### 1cm DEM ###########################
+#Random Forrest
+set.seed(2)
+vrm.classify <- randomForest(vrm~., data = vrm.per.1cm, ntree = 100)
+print(vrm.classify)
+names(vrm.classify)
+
+#Make a dataframe with predictor names and their importance
+imp.vrm.1cm <- importance(vrm.classify)
+imp.vrm.1cm <- data.frame(predictors = rownames(imp.vrm.1cm), imp.vrm.1cm)
+
+colnames(imp.vrm.1cm)
+
+# Order the predictor levels by importance
+imp.vrm.1cm.sort <- arrange(imp.vrm.1cm, desc(IncNodePurity))
+imp.vrm.1cm.sort$predictors <- factor(imp.vrm.1cm.sort$predictors, levels = imp.vrm.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm.1cm.sort.top.5 <- imp.vrm.1cm.sort[1:5, ]
+imp.vrm.1cm.sort.top.10 <- imp.vrm.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+# ggplot(imp.vrm.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 1cm classification")
+
+# ggplot(imp.vrm.1cm.sort.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for VRM 1cm classification")
+
+
+################### 4cm DEM ###########################
+#Random Forrest
+set.seed(2)
+vrm.classify.4cm <- randomForest(vrm~., data = vrm.per.4cm, ntree = 100)
+print(vrm.classify.4cm)
+names(vrm.classify.4cm)
+
+#Make a dataframe with predictor names and their importance
+imp.vrm.4cm <- importance(vrm.classify.4cm)
+imp.vrm.4cm <- data.frame(predictors = rownames(imp.vrm.4cm), imp.vrm.4cm)
+
+colnames(imp.vrm.4cm)
+
+# Order the predictor levels by importance
+imp.vrm.4cm.sort <- arrange(imp.vrm.4cm, desc(IncNodePurity))
+imp.vrm.4cm.sort$predictors <- factor(imp.vrm.4cm.sort$predictors, levels = imp.vrm.4cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm.4cm.top.5 <- imp.vrm.4cm.sort[1:5, ]
+imp.vrm.4cm.top.10 <- imp.vrm.4cm.sort[1:10, ]
+
+
+# Plot top morphologies
+# ggplot(imp.vrm.4cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 4cm classification")
+
+#ggplot(imp.vrm.4cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for VRM 4cm classification")
+
+################### 8cm DEM ###########################
+#Random Forrest
+set.seed(2)
+vrm.classify.8cm <- randomForest(vrm~., data = vrm.per.8cm, ntree = 100)
+print(vrm.classify.8cm)
+names(vrm.classify.8cm)
+
+#Make a dataframe with predictor names and their importance
+imp.vrm.8cm <- importance(vrm.classify.8cm)
+imp.vrm.8cm <- data.frame(predictors = rownames(imp.vrm.8cm), imp.vrm.8cm)
+
+colnames(imp.vrm.8cm)
+
+# Order the predictor levels by importance
+imp.vrm.8cm.sort <- arrange(imp.vrm.8cm, desc(IncNodePurity))
+imp.vrm.8cm.sort$predictors <- factor(imp.vrm.8cm.sort$predictors, levels = imp.vrm.8cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.vrm.8cm.top.5 <- imp.vrm.8cm.sort[1:5, ]
+imp.vrm.8cm.top.10 <- imp.vrm.8cm.sort[1:10, ]
+
+
+# Plot top morphologies
+#ggplot(imp.vrm.8cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 8cm classification")
+
+#ggplot(imp.vrm.8cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for VRM 8cm classification")
+
+
+```
+
+### 1cm 
+```{r vrm random forest 1cm, echo=FALSE}
+ggplot(imp.vrm.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 1cm classification")
 ```
 
 ### 4cm
+```{r 4cm vrm random forest, echo=FALSE}
+ggplot(imp.vrm.4cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 4cm classification")
+
+```
 
 ### 8cm
-```{r vrm 8cm dem, eval=FALSE, include=FALSE}
-mpq.1
-#Models looking at disturbance gradient and if interaction between year&disturbance fit better
-vrm1 <- lm(vrm ~ year + hum_dist, data = mpq.8) #Hum_Dist = Categorical
-vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.8)
-vrm3 <- lm(vrm ~ year * hum_dist, data = mpq.8)
-vrm4 <- lm(vrm~year*sqrt.hdist.cont, data = mpq.8)
-
-nrow(mpq.8)
-AIC(vrm1,vrm2,vrm3,vrm4)
-
-#Models without interaction of disturbance added with different regions
-vrm5 <- lm(vrm ~ year + hum_dist + island.side, data = mpq.8) 
-vrm6 <- lm(vrm~ year + hum_dist + region.3, data = mpq.8)
-vrm7 <- lm(vrm ~ year*hum_dist + island.side, data = mpq.8)
-vrm8 <- lm(vrm~year*hum_dist + region.3, data = mpq.8)
-
-AIC(vrm5, vrm6, vrm7, vrm8) #VRM7/8 fit better (with interaction)
-
-#Continuous human disturbance against region, then Continuous disturbance interaction with year
-vrm9 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.8)
-vrm10  <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq.8)
-vrm11 <- lm(vrm ~ year*sqrt.hdist.cont + island.side, data = mpq.8)
-vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq.8)
-
-AIC(vrm9, vrm10, vrm11, vrm12) #All super close, vrm10 fits best (but all within 3AIC)
+```{r 8cm vrm random forest, echo= FALSE}
+ggplot(imp.vrm.8cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 8cm classification")
+```
 
 
-#Continuous disturbance- no interaction
-vrm13 <- lmer(vrm~year + sqrt.hdist.cont + island.side + (1|site), data = mpq.8)
-vrm14 <- lmer(vrm~year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.8)
-vrm15 <- lmer(vrm~year + sqrt.hdist.cont + (1|site), data = mpq.8)
-vrm16 <- lmer(vrm~year + hum_dist + (1|site), data = mpq.8)
+## 8c. Fractal Dimension
 
-AIC(vrm13, vrm14, vrm15, vrm16) #VRM15 best fit, but vrm16 is close  (1AIC)
+```{r fractal dimension random frrest, include = FALSE}
+#Random Forrest
+set.seed(2)
+frac.classify <- randomForest(fractal.dimension~., data = frac.forest, ntree = 100)
+print(frac.classify)
+names(frac.classify)
 
-#With interactions
-vrm17 <- lmer(vrm~year *sqrt.hdist.cont + island.side + (1|site), data = mpq.8)
-vrm18 <- lmer(vrm~year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.8)
-vrm19 <- lmer(vrm~year * sqrt.hdist.cont + (1|site), data = mpq.8)
-vrm20 <- lmer(vrm~year * hum_dist + (1|site), data = mpq.8)
+#Make a dataframe with predictor names and their importance
+imp.frac.1cm <- importance(frac.classify)
+imp.frac.1cm <- data.frame(predictors = rownames(imp.frac.1cm), imp.frac.1cm)
 
-AIC(vrm17, vrm18, vrm19, vrm20) #vrm19 best fit
+colnames(imp.frac.1cm)
 
-#Choosing top model
-AIC(vrm1, vrm2, vrm3, vrm4, vrm5, vrm6,vrm7, vrm8, vrm9, vrm10,vrm11, vrm12, vrm13, vrm14, vrm15, vrm16,vrm17, vrm18, vrm19, vrm20 ) #Best fit models are: vrm11<12<9
+# Order the predictor levels by importance
+imp.frac.1cm.sort <- arrange(imp.frac.1cm, desc(IncNodePurity))
+imp.frac.1cm.sort$predictors <- factor(imp.frac.1cm.sort$predictors, levels = imp.frac.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.frac.1cm.sort.top.5 <- imp.frac.1cm.sort[1:5, ]
+imp.frac.1cm.sort.top.10 <- imp.frac.1cm.sort[1:10, ]
 
 
-summary(vrm11)
-summary(vrm12)
-summary(vrm9)
+# Plot top morphologies
+# ggplot(imp.frac.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for Fractal Dimension")
+
+# ggplot(imp.frac.1cm.sort.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for Fractal Dimension")
 
 
 ```
 
+```{r frac plot randomforrest, echo= FALSE}
+ggplot(imp.frac.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for Fractal Dimension")
+```
+
+## 8d. Profile Curvature Mean
+```{r profile curv mean random forrest, include=FALSE}
+################### 1cm DEM ###########################
+#Random Forrest
+set.seed(2)
+pro.m.classify <- randomForest(pro.curv~., data = pro.mean.per.1cm, ntree = 100)
+print(pro.m.classify)
+names(pro.m.classify)
+
+#Make a dataframe with predictor names and their importance
+imp.pro.m.1cm <- importance(pro.m.classify)
+imp.pro.m.1cm <- data.frame(predictors = rownames(imp.pro.m.1cm), imp.pro.m.1cm)
+
+colnames(imp.pro.m.1cm)
+
+# Order the predictor levels by importance
+imp.pro.m.1cm.sort <- arrange(imp.pro.m.1cm, desc(IncNodePurity))
+imp.pro.m.1cm.sort$predictors <- factor(imp.pro.m.1cm.sort$predictors, levels = imp.pro.m.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.pro.m.1cm.sort.top.5 <- imp.pro.m.1cm.sort[1:5, ]
+imp.pro.m.1cm.sort.top.10 <- imp.pro.m.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+# ggplot(imp.pro.m.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 1cm classification")
+
+# ggplot(imp.pro.m.1cm.sort.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for ProCurv Mean 1cm classification")
+
+
+################### 4cm DEM ###########################
+#Random Forrest
+set.seed(2)
+pro.m.classify.4cm <- randomForest(pro.curv~., data = pro.mean.per.4cm, ntree = 100)
+print(pro.m.classify.4cm)
+names(pro.m.classify.4cm)
+
+#Make a dataframe with predictor names and their importance
+imp.pro.m.4cm <- importance(pro.m.classify.4cm)
+imp.pro.m.4cm <- data.frame(predictors = rownames(imp.pro.m.4cm), imp.pro.m.4cm)
+
+colnames(imp.pro.m.4cm)
+
+# Order the predictor levels by importance
+imp.pro.m.4cm.sort <- arrange(imp.pro.m.4cm, desc(IncNodePurity))
+imp.pro.m.4cm.sort$predictors <- factor(imp.pro.m.4cm.sort$predictors, levels = imp.pro.m.4cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.pro.m.4cm.top.5 <- imp.pro.m.4cm.sort[1:5, ]
+imp.pro.m.4cm.top.10 <- imp.pro.m.4cm.sort[1:10, ]
+
+
+# Plot top morphologies
+# ggplot(imp.pro.m.4cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 4cm classification")
+
+#ggplot(imp.pro.m.4cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for ProCurv Mean 4cm classification")
+
+################### 8cm DEM ###########################
+#Random Forrest
+set.seed(2)
+pro.m.classify.8cm <- randomForest(pro.curv~., data = pro.mean.per.8cm, ntree = 100)
+print(pro.m.classify.8cm)
+names(pro.m.classify.8cm)
+
+#Make a dataframe with predictor names and their importance
+imp.pro.m.8cm <- importance(pro.m.classify.8cm)
+imp.pro.m.8cm <- data.frame(predictors = rownames(imp.pro.m.8cm), imp.pro.m.8cm)
+
+colnames(imp.pro.m.8cm)
+
+# Order the predictor levels by importance
+imp.pro.m.8cm.sort <- arrange(imp.pro.m.8cm, desc(IncNodePurity))
+imp.pro.m.8cm.sort$predictors <- factor(imp.pro.m.8cm.sort$predictors, levels = imp.pro.m.8cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.pro.m.8cm.top.5 <- imp.pro.m.8cm.sort[1:5, ]
+imp.pro.m.8cm.top.10 <- imp.pro.m.8cm.sort[1:10, ]
+
+
+# Plot top morphologies
+#ggplot(imp.pro.m.8cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 8cm classification")
+
+#ggplot(imp.pro.m.8cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for ProCurv Mean 8cm classification")
+
+
+```
+
+### 1cm
+```{r 1cmDEM pro. mean random forrest, echo=FALSE}
+ggplot(imp.pro.m.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 1cm classification")
+```
+
+### 4cm
+```{r 4cm DEM pro.curv mean, echo=FALSE}
+ggplot(imp.pro.m.4cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 4cm classification")
+```
+
+### 8cm 
+```{r 8cm dem pro.curv mean, echo=FALSE}
+ggplot(imp.pro.m.8cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 8cm classification")
+```
+
+
+## 8e. Profile Curvature Range
+```{r pro range random forrest, include=FALSE}
+################### 1cm DEM ###########################
+#Random Forrest
+set.seed(2)
+pro.r.classify <- randomForest(pro.range~., data = pro.range.per.1cm, ntree = 100)
+print(pro.r.classify)
+names(pro.r.classify)
+
+#Make a dataframe with predictor names and their importance
+imp.pro.m.1cm <- importance(pro.r.classify)
+imp.pro.m.1cm <- data.frame(predictors = rownames(imp.pro.m.1cm), imp.pro.m.1cm)
+
+colnames(imp.pro.m.1cm)
+
+# Order the predictor levels by importance
+imp.pro.m.1cm.sort <- arrange(imp.pro.m.1cm, desc(IncNodePurity))
+imp.pro.m.1cm.sort$predictors <- factor(imp.pro.m.1cm.sort$predictors, levels = imp.pro.m.1cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.pro.m.1cm.sort.top.5 <- imp.pro.m.1cm.sort[1:5, ]
+imp.pro.m.1cm.sort.top.10 <- imp.pro.m.1cm.sort[1:10, ]
+
+
+# Plot top morphologies
+# ggplot(imp.pro.m.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 1cm classification")
+
+# ggplot(imp.pro.m.1cm.sort.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for ProCurv Mean 1cm classification")
+
+
+################### 4cm DEM ###########################
+#Random Forrest
+set.seed(2)
+pro.m.classify.4cm <- randomForest(pro.curv~., data = pro.mean.per.4cm, ntree = 100)
+print(pro.m.classify.4cm)
+names(pro.m.classify.4cm)
+
+#Make a dataframe with predictor names and their importance
+imp.pro.m.4cm <- importance(pro.m.classify.4cm)
+imp.pro.m.4cm <- data.frame(predictors = rownames(imp.pro.m.4cm), imp.pro.m.4cm)
+
+colnames(imp.pro.m.4cm)
+
+# Order the predictor levels by importance
+imp.pro.m.4cm.sort <- arrange(imp.pro.m.4cm, desc(IncNodePurity))
+imp.pro.m.4cm.sort$predictors <- factor(imp.pro.m.4cm.sort$predictors, levels = imp.pro.m.4cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.pro.m.4cm.top.5 <- imp.pro.m.4cm.sort[1:5, ]
+imp.pro.m.4cm.top.10 <- imp.pro.m.4cm.sort[1:10, ]
+
+
+# Plot top morphologies
+# ggplot(imp.pro.m.4cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 4cm classification")
+
+#ggplot(imp.pro.m.4cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for ProCurv Mean 4cm classification")
+
+################### 8cm DEM ###########################
+#Random Forrest
+set.seed(2)
+pro.m.classify.8cm <- randomForest(pro.curv~., data = pro.mean.per.8cm, ntree = 100)
+print(pro.m.classify.8cm)
+names(pro.m.classify.8cm)
+
+#Make a dataframe with predictor names and their importance
+imp.pro.m.8cm <- importance(pro.m.classify.8cm)
+imp.pro.m.8cm <- data.frame(predictors = rownames(imp.pro.m.8cm), imp.pro.m.8cm)
+
+colnames(imp.pro.m.8cm)
+
+# Order the predictor levels by importance
+imp.pro.m.8cm.sort <- arrange(imp.pro.m.8cm, desc(IncNodePurity))
+imp.pro.m.8cm.sort$predictors <- factor(imp.pro.m.8cm.sort$predictors, levels = imp.pro.m.8cm.sort$predictors)
+
+# Select the top 10 predictors
+imp.pro.m.8cm.top.5 <- imp.pro.m.8cm.sort[1:5, ]
+imp.pro.m.8cm.top.10 <- imp.pro.m.8cm.sort[1:10, ]
+
+
+# Plot top morphologies
+#ggplot(imp.pro.m.8cm.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for ProCurv Mean 8cm classification")
+
+#ggplot(imp.pro.m.8cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for ProCurv Mean 8cm classification")
+
+
+```
+
+
+
+
+# Simplified, Clean Models from help with DOM
+```{r testing to see if island side vs region3 should be used}
+#Incorporating Island Side
+global.vrma <- lmer(vrm~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.vrmb <- lmer(vrm~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+vrm1 <- lm(vrm ~ year, data = mpq.1cm) 
+vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1cm)
+vrm3 <- lm(vrm ~ year * sqrt.hdist.cont, data = mpq.1cm)
+vrm4 <- lm(vrm ~ sqrt.hdist.cont, data = mpq.1cm)
+
+vrm5 <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+vrm6 <- lm(vrm ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+vrm7 <- lm(vrm~ year + region.3, data = mpq.1cm)
+
+vrm8 <- lmer(vrm ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+vrm9 <- lmer(vrm ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+vrm10 <- lmer(vrm ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm11 <- lmer(vrm ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm12 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+vrm13 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+
+
+vrm14 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+vrm15 <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+vrm16 <- lm(vrm~ year + island.side, data = mpq.1cm)
+vrm17 <- lmer(vrm ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+vrm18 <- lmer(vrm ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_vrm.table <- model.sel(vrm1,vrm2,vrm3,vrm4,vrm5,vrm6,vrm7,vrm8,vrm9,vrm10,vrm11,vrm12, vrm13, vrm14, vrm15, vrm16, vrm17, vrm18, global.vrma, global.vrmb)
+
+# ## AIC summary table 
+# names(AIC_vrm.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Region", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "Weight")
+# AIC_vrm.table$weight <- c(akaike.weights(AIC_vrm.table$AICc)$weights)
+# 
+# summary(vrm6)
+# 
+# <- ---------
+global.ruga <- lmer(rug ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.rugb <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+rug1 <- lm(rug ~ year, data = mpq.1cm) 
+rug2 <- lm(rug ~ year + sqrt.hdist.cont, data = mpq.1cm)
+rug3 <- lm(rug ~ year * sqrt.hdist.cont, data = mpq.1cm)
+rug4 <- lm(rug ~ sqrt.hdist.cont, data = mpq.1cm)
+
+rug5 <- lm(rug ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+rug6 <- lm(rug ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+rug7 <- lm(rug~ year + region.3, data = mpq.1cm)
+
+rug8 <- lmer(rug ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+rug9 <- lmer(rug ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+rug10 <- lmer(rug ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug11 <- lmer(rug ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug12 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+rug13 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+
+
+rug14 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+rug15 <- lm(rug ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+rug16 <- lm(rug~ year + island.side, data = mpq.1cm)
+rug17 <- lmer(rug ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+rug18 <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_rug.table <- model.sel(rug1,rug2,rug3,rug4,rug5,rug6,rug7,rug8,rug9,rug10,rug11,rug12, rug13, rug14, rug15, rug16, rug17, rug18, global.ruga, global.rugb)
+
+#<---------------
+global.fraca <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.fracb <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+frac1 <- lm(fractal.dimension ~ year, data = mpq.1cm) 
+frac2 <- lm(fractal.dimension ~ year + sqrt.hdist.cont, data = mpq.1cm)
+frac3 <- lm(fractal.dimension ~ year * sqrt.hdist.cont, data = mpq.1cm)
+frac4 <- lm(fractal.dimension ~ sqrt.hdist.cont, data = mpq.1cm)
+
+frac5 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+frac6 <- lm(fractal.dimension ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+frac7 <- lm(fractal.dimension~ year + region.3, data = mpq.1cm)
+
+frac8 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+frac9 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+frac10 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+frac11 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+frac12 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+frac13 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+
+
+frac14 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+frac15 <- lm(fractal.dimension ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+frac16 <- lm(fractal.dimension~ year + island.side, data = mpq.1cm)
+frac17 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+frac18 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_frac.table <- model.sel(frac1,frac2,frac3,frac4,frac5,frac6,frac7,frac8,frac9,frac10,frac11,frac12, frac13, frac14, frac15, frac16, frac17, frac18, global.fraca, global.fracb)
+
+# <- ---------
+global.pro.rangea <- lmer(pro.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.pro.rangeb <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+pro.range1 <- lm(pro.range.log ~ year, data = mpq.1cm) 
+pro.range2 <- lm(pro.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+pro.range3 <- lm(pro.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+pro.range4 <- lm(pro.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+pro.range5 <- lm(pro.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+pro.range6 <- lm(pro.range.log ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+pro.range7 <- lm(pro.range.log~ year + region.3, data = mpq.1cm)
+
+pro.range8 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+pro.range9 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+pro.range10 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range11 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range12 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+pro.range13 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+
+
+pro.range14 <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+pro.range15 <- lm(pro.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+pro.range16 <- lm(pro.range.log~ year + island.side, data = mpq.1cm)
+pro.range17 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+pro.range18 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_pro.range.table <- model.sel(pro.range1,pro.range2,pro.range3,pro.range4,pro.range5,pro.range6,pro.range7,pro.range8,pro.range9,pro.range10,pro.range11,pro.range12, pro.range13, pro.range14, pro.range15, pro.range16, pro.range17, pro.range18, global.pro.rangea, global.pro.rangeb)
+
+
+
+
+# <- ---------
+global.plan.rangea <- lmer(plan.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.plan.rangeb <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+plan.range1 <- lm(plan.range.log ~ year, data = mpq.1cm) 
+plan.range2 <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+plan.range3 <- lm(plan.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+plan.range4 <- lm(plan.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+plan.range5 <- lm(plan.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+plan.range6 <- lm(plan.range.log ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+plan.range7 <- lm(plan.range.log~ year + region.3, data = mpq.1cm)
+
+plan.range8 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+plan.range9 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+plan.range10 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range11 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range12 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+plan.range13 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+
+
+plan.range14 <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+plan.range15 <- lm(plan.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+plan.range16 <- lm(plan.range.log~ year + island.side, data = mpq.1cm)
+plan.range17 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+plan.range18 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_plan.range.table <- model.sel(plan.range1,plan.range2,plan.range3,plan.range4,plan.range5,plan.range6,plan.range7,plan.range8,plan.range9,plan.range10,plan.range11,plan.range12, plan.range13, plan.range14, plan.range15, plan.range16, plan.range17, plan.range18, global.plan.rangea, global.plan.rangeb)
+```
+
+## VRM
+```{r vrm simplfied models}
+#Available model variables:
+sqrt.hdist.cont #Square Root Transformed Human Disturbance
+year #Expedition Year
+island.side #2 coarse regions of island side
+site #site (as random effect)
+
+
+#Data
+mpq.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_1cm_Data_14Jan21.csv", row.names=1)
+
+
+library(qpcR)
+
+#Models
+global.vrm <- lmer(vrm~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+vrm1 <- lm(vrm ~ year, data = mpq.1cm) 
+vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1cm)
+vrm3 <- lm(vrm ~ year * sqrt.hdist.cont, data = mpq.1cm)
+vrm4 <- lm(vrm ~ sqrt.hdist.cont, data = mpq.1cm)
+
+vrm5 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+vrm6 <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+vrm7 <- lm(vrm~ year + island.side, data = mpq.1cm)
+
+vrm8 <- lmer(vrm ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+vrm9 <- lmer(vrm ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+vrm10 <- lmer(vrm ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm11 <- lmer(vrm ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm12 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+vrm13 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_vrm.table <- model.sel(vrm1,vrm2,vrm3,vrm4,vrm5,vrm6,vrm7,vrm8,vrm9,vrm10,vrm11,vrm12, vrm13, global.vrm)
+
+## AIC summary table 
+names(AIC_vrm.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "Weight")
+AIC_vrm.table$weight <- c(akaike.weights(AIC_vrm.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(vrm6)
+summary(vrm5)
+
+```
+
+## Surface Complexity
+```{r rug simplfied models}
+#Available model variables:
+sqrt.hdist.cont #Square Root Transformed Human Disturbance
+year #Expedition Year
+island.side #2 coarse regions of island side
+site #site (as random effect)
+
+
+#Data
+mpq.1cm 
+
+library(qpcR)
+
+#Models
+global.rug <- lmer(rug~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+rug1 <- lm(rug ~ year, data = mpq.1cm) 
+rug2 <- lm(rug ~ year + sqrt.hdist.cont, data = mpq.1cm)
+rug3 <- lm(rug ~ year * sqrt.hdist.cont, data = mpq.1cm)
+rug4 <- lm(rug ~ sqrt.hdist.cont, data = mpq.1cm)
+
+rug5 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+rug6 <- lm(rug ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+rug7 <- lm(rug~ year + island.side, data = mpq.1cm)
+
+rug8 <- lmer(rug ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+rug9 <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+rug10 <- lmer(rug ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug11 <- lmer(rug ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug12 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+rug13 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_rug.table <- model.sel(rug1,rug2,rug3,rug4,rug5,rug6,rug7,rug8,rug9,rug10,rug11,rug12, rug13, global.rug)
+
+## AIC summary table 
+names(AIC_rug.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "Weight")
+AIC_rug.table$weight <- c(akaike.weights(AIC_rug.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(rug5)
+summary(rug6)
+
+```
+
+## Fractal Dimension
+```{r frac simplfied models}
+#Available model variables:
+sqrt.hdist.cont #Square Root Transformed Human Disturbance
+year #Expedition Year
+island.side #2 coarse regions of island side
+site #site (as random effect)
+
+
+#Data
+mpq.1cm
+
+library(qpcR)
+
+#Models
+global.fractal.dimension <- lmer(fractal.dimension~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+fractal.dimension1 <- lm(fractal.dimension ~ year, data = mpq.1cm) 
+fractal.dimension2 <- lm(fractal.dimension ~ year + sqrt.hdist.cont, data = mpq.1cm)
+fractal.dimension3 <- lm(fractal.dimension ~ year * sqrt.hdist.cont, data = mpq.1cm)
+fractal.dimension4 <- lm(fractal.dimension ~ sqrt.hdist.cont, data = mpq.1cm)
+
+fractal.dimension5 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+fractal.dimension6 <- lm(fractal.dimension ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+fractal.dimension7 <- lm(fractal.dimension~ year + island.side, data = mpq.1cm)
+
+fractal.dimension8 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+fractal.dimension9 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+fractal.dimension10 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+fractal.dimension11 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+fractal.dimension12 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+fractal.dimension13 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_fractal.dimension.table <- model.sel(fractal.dimension1,fractal.dimension2,fractal.dimension3,fractal.dimension4,fractal.dimension5,fractal.dimension6,fractal.dimension7,fractal.dimension8,fractal.dimension9,fractal.dimension10,fractal.dimension11,fractal.dimension12, fractal.dimension13, global.fractal.dimension)
+
+## AIC summary table 
+names(AIC_fractal.dimension.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "Weight")
+AIC_fractal.dimension.table$weight <- c(akaike.weights(AIC_fractal.dimension.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(fractal.dimension6)
+summary(fractal.dimension7)
+summary(fractal.dimension5)
+
+```
+
+## Profile Curvature Range
+```{r pro.range.log simplfied models}
+#Available model variables:
+sqrt.hdist.cont #Square Root Transformed Human Disturbance
+year #Expedition Year
+island.side #2 coarse regions of island side
+site #site (as random effect)
+
+
+#Data
+mpq.1cm 
+
+library(qpcR)
+
+#Models
+global.pro.range.log <- lmer(pro.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+pro.range.log1 <- lm(pro.range.log ~ year, data = mpq.1cm) 
+pro.range.log2 <- lm(pro.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+pro.range.log3 <- lm(pro.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+pro.range.log4 <- lm(pro.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+pro.range.log5 <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+pro.range.log6 <- lm(pro.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+pro.range.log7 <- lm(pro.range.log~ year + island.side, data = mpq.1cm)
+
+pro.range.log8 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+pro.range.log9 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+pro.range.log10 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range.log11 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range.log12 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+pro.range.log13 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_pro.range.log.table <- model.sel(pro.range.log1,pro.range.log2,pro.range.log3,pro.range.log4,pro.range.log5,pro.range.log6,pro.range.log7,pro.range.log8,pro.range.log9,pro.range.log10,pro.range.log11,pro.range.log12, pro.range.log13, global.pro.range.log)
+
+## AIC summary table 
+names(AIC_pro.range.log.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "Weight")
+AIC_pro.range.log.table$weight <- c(akaike.weights(AIC_pro.range.log.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(pro.range.log4)
+summary(pro.range.log5)
+summary(pro.range.log2)
+
+
+```
+
+## Planform Curvature Range
+```{r plan.range.log simplfied models}
+#Available model variables:
+sqrt.hdist.cont #Square Root Transformed Human Disturbance
+year #Expedition Year
+island.side #2 coarse regions of island side
+site #site (as random effect)
+
+
+#Data
+mpq.1cm 
+
+library(qpcR)
+
+#Models
+global.plan.range.log <- lmer(plan.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+plan.range.log1 <- lm(plan.range.log ~ year, data = mpq.1cm) 
+plan.range.log2 <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+plan.range.log3 <- lm(plan.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+plan.range.log4 <- lm(plan.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+plan.range.log5 <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+plan.range.log6 <- lm(plan.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+plan.range.log7 <- lm(plan.range.log~ year + island.side, data = mpq.1cm)
+
+plan.range.log8 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+plan.range.log9 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+plan.range.log10 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range.log11 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range.log12 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+plan.range.log13 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_plan.range.log.table <- model.sel(plan.range.log1,plan.range.log2,plan.range.log3,plan.range.log4,plan.range.log5,plan.range.log6,plan.range.log7,plan.range.log8,plan.range.log9,plan.range.log10,plan.range.log11,plan.range.log12, plan.range.log13, global.plan.range.log)
+
+## AIC summary table 
+names(AIC_plan.range.log.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "Weight")
+AIC_plan.range.log.table$weight <- c(akaike.weights(AIC_plan.range.log.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(plan.range.log2)
+summary(plan.range.log5)
+
+```
+
+## Habitat Volume
+```{r hab.vol simplified models}
+CC.final <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_FINAL_14Jan2021.csv", row.names = 1)
+
+
+#Subset out the overall changes in data (2015-2019 datapoints)
+cc <- subset(CC.final, timepoint == "2015-2017" | timepoint == "2017-2019")
+
+#Level time interval
+cc$time.interval <- factor(cc$time.interval, levels = c("'15-'17","'17-'19"))
+
+
+#Available model variables:
+sqrt.hdist.cont #Square Root Transformed Human Disturbance
+time.interval #Time interval between two samples taken
+island.side #2 coarse regions of island side
+site #site (as random effect)
+cc
+
+library(qpcR)
+
+#Models
+global.volume.change <- lmer(volume.change~ time.interval * sqrt.hdist.cont + island.side + (1|site), data = cc)
+
+volume.change1 <- lm(volume.change ~ time.interval, data = cc) 
+volume.change2 <- lm(volume.change ~ time.interval + sqrt.hdist.cont, data = cc)
+volume.change3 <- lm(volume.change ~ time.interval * sqrt.hdist.cont, data = cc)
+volume.change4 <- lm(volume.change ~ sqrt.hdist.cont, data = cc)
+
+volume.change5 <- lm(volume.change ~ time.interval + sqrt.hdist.cont + island.side, data = cc) 
+volume.change6 <- lm(volume.change ~ time.interval * sqrt.hdist.cont + island.side, data = cc)
+volume.change7 <- lm(volume.change~ time.interval + island.side, data = cc)
+
+volume.change8 <- lmer(volume.change ~ time.interval + sqrt.hdist.cont + island.side + (1|site), data = cc)
+volume.change9 <- lmer(volume.change ~ time.interval * sqrt.hdist.cont + island.side + (1|site), data = cc)
+volume.change10 <- lmer(volume.change ~ time.interval + sqrt.hdist.cont + (1|site), data = cc)
+volume.change11 <- lmer(volume.change ~ time.interval * sqrt.hdist.cont + (1|site), data = cc)
+volume.change12 <- lmer(volume.change ~ time.interval + (1|site), data = cc)
+volume.change13 <- lmer(volume.change ~ time.interval + (1|site), data = cc)
+
+## AIC model selection
+AIC_volume.change.table <- model.sel(volume.change1,volume.change2,volume.change3,volume.change4,volume.change5,volume.change6,volume.change7,volume.change8,volume.change9,volume.change10,volume.change11,volume.change12, volume.change13, global.volume.change)
+
+## AIC summary table 
+names(AIC_volume.change.table) <- c("(Int)", "time.interval", "Human Disturbance", "Disturbance*time.interval", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "Weight")
+AIC_volume.change.table$weight <- c(akaike.weights(AIC_volume.change.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(volume.change7)
+summary(volume.change5)
+summary(volume.change6)
+summary(volume.change1)
+
+
+
+```
+
+
+
+
+
+
+
+#a 

@@ -1,0 +1,2733 @@
+---
+title: "1.5.1 Cleaned.Modelling"
+author: "Kevin Bruce"
+date: "15/01/2021"
+output: html_document
+---
+
+#Load Packages/Data
+```{r Load the packages and load mpq data, include=FALSE}
+rm(list = ls()) #This clears the environment
+dev.off()
+
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+library(ade4)
+library(MASS)
+library(ellipse)
+library(FactoMineR)
+library(arm)
+library(ape)
+library(ggrepel)
+library(FactoMineR)
+library(ggpubr)
+library(corrplot)
+library(Matrix)
+library(lme4)
+library(TMB)
+library(glmmTMB)
+library(MuMIn)
+library(vegan)
+library(nlme)
+library(randomForest)
+library(qpcR)
+library(emmeans)
+library(sjPlot)
+library(lmtest) #Durbin-Watson Test
+
+# <---------------------------- DATA -------------------------->
+#ArcMap Complexity/Curvature Data
+mpq.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_1cm_Data_14Jan21.csv", row.names=1)
+
+mpq.4cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_4cm_Data_22Jan21.csv")
+
+mpq.8cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_8cm_Data_22Jan21.csv")
+
+
+#Digitization + Complexity Dataframes (3years, 2015, 2017, 2019)
+mpq.dig.semi.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_1cm_Data_11Jan21.csv")
+
+
+mpq.dig.jm.1cm <-read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_JM.Classificaition_1cm_Data_11Jan21.csv")
+
+
+
+
+
+#Habitat Volume Data
+CC.final <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_FINAL_14Jan2021.csv", row.names = 1)
+
+#Subset out the overall changes in data (2015-2019 datapoints)
+cc <- subset(CC.final, timepoint == "2015-2017" | timepoint == "2017-2019")
+
+#Level time interval
+cc$time.interval <- factor(cc$time.interval, levels = c("'15-'17","'17-'19"))
+
+cc.2tps <- subset(cc, timepoint == "2015-2017" | timepoint == "2017-2019")
+
+
+#<----------------------- Random Forest Data ------------------------->
+#Detailed Morphological Categorization
+mpq.dig.semi.1cm<- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_1cm_Data_11Jan21.csv", row.names = 1)
+
+#Simplified Morphological Categorization
+mpq.dig.simple.1cm<- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SIMPLE_1cm_Data_11Jan21.csv", row.names = 1)
+
+#JM's Classification
+mpq.dig.jm.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_JM.Classificaition_1cm_Data_11Jan21.csv", row.names = 1)
+
+#Create Dataframes of all options, then just coral morphologys (no abiotic sand/rubble)
+vrm.per.1cm.semi <- mpq.dig.semi.1cm[c(12,20:41)] #1cm semi df, all colonies
+vrm.per.1cm.semi.live <- mpq.dig.semi.1cm[c(12,26:35,37,40:41)] #no abiotic str or macroalgae
+vrm.per.1cm.jm <- mpq.dig.jm.1cm[c(12,20:24)] #All colonies
+vrm.per.1cm.jm.live <- mpq.dig.jm.1cm[c(12,21,23:24)] #Only live coral colonies (No abiotic + Macroalgae)
+
+#Surface Complexity
+rug.per.1cm.semi <- mpq.dig.semi.1cm[c(11,20:41)] #1cm semi df, all
+rug.per.1cm.semi.live <- mpq.dig.semi.1cm[c(11,26:35,37,40:41)] #no abiotic str or macroalgae
+rug.per.1cm.jm<- mpq.dig.jm.1cm[c(11,20:24)] #entire simple dataframe
+rug.per.1cm.jm.live <- mpq.dig.jm.1cm[c(11,21,23:24)]
+
+#Fractal Dimension
+fractal.dimension.per.1cm.semi <- mpq.dig.semi.1cm[c(19,20:41)] #1cm semi df, all
+fractal.dimension.per.1cm.semi.live <- mpq.dig.semi.1cm[c(19,26:35,37,40:41)] #no abiotic str or macroalgae
+fractal.dimension.per.1cm.jm <- mpq.dig.jm.1cm[c(19,20:24)] #entire simple dataframe
+fractal.dimension.per.1cm.jm.live <- mpq.dig.jm.1cm[c(19,21,23:24)] #Only live coral colonies (No abiotic + Macroalgae)
+
+#Profile Curvature
+pro.per.1cm.semi <- mpq.dig.semi.1cm[c(16,20:41)] #1cm semi df, all
+pro.per.1cm.semi.live <- mpq.dig.semi.1cm[c(16,26:35,37,40:41)] #no abiotic str
+pro.per.1cm.jm <- mpq.dig.jm.1cm[c(16,20:24)] #entire simple dataframe
+pro.per.1cm.jm.live <- mpq.dig.jm.1cm[c(16,21,23:24)] #entire simple dataframe
+
+#Planform Curvature
+plan.per.1cm.semi <- mpq.dig.semi.1cm[c(18,20:41)] #1cm semi df, all
+plan.per.1cm.semi.live <- mpq.dig.semi.1cm[c(18,26:35,37,40:41)] #no abiotic str
+plan.per.1cm.jm <- mpq.dig.jm.1cm[c(18,20:24)] #entire simple dataframe
+plan.per.1cm.jm.live <- mpq.dig.jm.1cm[c(18,21,23:24)] #entire simple dataframe
+
+
+
+```
+
+
+# Simplified, Clean Models from help with DOM
+```{r testing to see if island side vs region3 should be used}
+#Incorporating Island Side
+global.vrma <- lmer(vrm~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.vrmb <- lmer(vrm~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+vrm1 <- lm(vrm ~ year, data = mpq.1cm) 
+vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1cm)
+vrm3 <- lm(vrm ~ year * sqrt.hdist.cont, data = mpq.1cm)
+vrm4 <- lm(vrm ~ sqrt.hdist.cont, data = mpq.1cm)
+
+vrm5 <- lm(vrm ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+vrm6 <- lm(vrm ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+vrm7 <- lm(vrm~ year + region.3, data = mpq.1cm)
+
+vrm8 <- lmer(vrm ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+vrm9 <- lmer(vrm ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+vrm10 <- lmer(vrm ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm11 <- lmer(vrm ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm12 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+vrm13 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+
+
+vrm14 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+vrm15 <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+vrm16 <- lm(vrm~ year + island.side, data = mpq.1cm)
+vrm17 <- lmer(vrm ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+vrm18 <- lmer(vrm ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_vrm.table <- model.sel(vrm1,vrm2,vrm3,vrm4,vrm5,vrm6,vrm7,vrm8,vrm9,vrm10,vrm11,vrm12, vrm13, vrm14, vrm15, vrm16, vrm17, vrm18, global.vrma, global.vrmb)
+
+# ## AIC summary table 
+# names(AIC_vrm.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Region", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+# AIC_vrm.table$weight <- c(akaike.weights(AIC_vrm.table$AICc)$weights)
+# 
+# summary(vrm6)
+# 
+# <- ---------
+global.ruga <- lmer(rug ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.rugb <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+rug1 <- lm(rug ~ year, data = mpq.1cm) 
+rug2 <- lm(rug ~ year + sqrt.hdist.cont, data = mpq.1cm)
+rug3 <- lm(rug ~ year * sqrt.hdist.cont, data = mpq.1cm)
+rug4 <- lm(rug ~ sqrt.hdist.cont, data = mpq.1cm)
+
+rug5 <- lm(rug ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+rug6 <- lm(rug ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+rug7 <- lm(rug~ year + region.3, data = mpq.1cm)
+
+rug8 <- lmer(rug ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+rug9 <- lmer(rug ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+rug10 <- lmer(rug ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug11 <- lmer(rug ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug12 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+rug13 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+
+
+rug14 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+rug15 <- lm(rug ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+rug16 <- lm(rug~ year + island.side, data = mpq.1cm)
+rug17 <- lmer(rug ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+rug18 <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_rug.table <- model.sel(rug1,rug2,rug3,rug4,rug5,rug6,rug7,rug8,rug9,rug10,rug11,rug12, rug13, rug14, rug15, rug16, rug17, rug18, global.ruga, global.rugb)
+
+#<---------------
+global.fraca <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.fracb <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+frac1 <- lm(fractal.dimension ~ year, data = mpq.1cm) 
+frac2 <- lm(fractal.dimension ~ year + sqrt.hdist.cont, data = mpq.1cm)
+frac3 <- lm(fractal.dimension ~ year * sqrt.hdist.cont, data = mpq.1cm)
+frac4 <- lm(fractal.dimension ~ sqrt.hdist.cont, data = mpq.1cm)
+
+frac5 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+frac6 <- lm(fractal.dimension ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+frac7 <- lm(fractal.dimension~ year + region.3, data = mpq.1cm)
+
+frac8 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+frac9 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+frac10 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+frac11 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+frac12 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+frac13 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+
+
+frac14 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+frac15 <- lm(fractal.dimension ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+frac16 <- lm(fractal.dimension~ year + island.side, data = mpq.1cm)
+frac17 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+frac18 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_frac.table <- model.sel(frac1,frac2,frac3,frac4,frac5,frac6,frac7,frac8,frac9,frac10,frac11,frac12, frac13, frac14, frac15, frac16, frac17, frac18, global.fraca, global.fracb)
+
+# <- ---------
+global.pro.rangea <- lmer(pro.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.pro.rangeb <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+pro.range1 <- lm(pro.range.log ~ year, data = mpq.1cm) 
+pro.range2 <- lm(pro.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+pro.range3 <- lm(pro.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+pro.range4 <- lm(pro.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+pro.range5 <- lm(pro.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+pro.range6 <- lm(pro.range.log ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+pro.range7 <- lm(pro.range.log~ year + region.3, data = mpq.1cm)
+
+pro.range8 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+pro.range9 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+pro.range10 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range11 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range12 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+pro.range13 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+
+
+pro.range14 <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+pro.range15 <- lm(pro.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+pro.range16 <- lm(pro.range.log~ year + island.side, data = mpq.1cm)
+pro.range17 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+pro.range18 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_pro.range.table <- model.sel(pro.range1,pro.range2,pro.range3,pro.range4,pro.range5,pro.range6,pro.range7,pro.range8,pro.range9,pro.range10,pro.range11,pro.range12, pro.range13, pro.range14, pro.range15, pro.range16, pro.range17, pro.range18, global.pro.rangea, global.pro.rangeb)
+
+
+
+
+# <- ---------
+global.plan.rangea <- lmer(plan.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+global.plan.rangeb <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+plan.range1 <- lm(plan.range.log ~ year, data = mpq.1cm) 
+plan.range2 <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+plan.range3 <- lm(plan.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+plan.range4 <- lm(plan.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+plan.range5 <- lm(plan.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+plan.range6 <- lm(plan.range.log ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+plan.range7 <- lm(plan.range.log~ year + region.3, data = mpq.1cm)
+
+plan.range8 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+plan.range9 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + region.3 + (1|site), data = mpq.1cm)
+plan.range10 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range11 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range12 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+plan.range13 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+
+
+plan.range14 <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+plan.range15 <- lm(plan.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+plan.range16 <- lm(plan.range.log~ year + island.side, data = mpq.1cm)
+plan.range17 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+plan.range18 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+
+## AIC model selection
+AIC_plan.range.table <- model.sel(plan.range1,plan.range2,plan.range3,plan.range4,plan.range5,plan.range6,plan.range7,plan.range8,plan.range9,plan.range10,plan.range11,plan.range12, plan.range13, plan.range14, plan.range15, plan.range16, plan.range17, plan.range18, global.plan.rangea, global.plan.rangeb)
+```
+
+Take Home Message:  **USE ISLAND.SIDE OVER REGION.3**
+
+## Exploring simple linear regressions to ensure I understand the outputs
+```{r understanding the linear regressions better}
+mpq.1cm
+
+#Subset so that only 2 years exist
+mpq.2yrs <- subset(mpq.1cm, year == "2015" | year == "2016a")
+
+#Run top model for vrm
+vrm.2yr.simple <- lm(vrm ~ sqrt.hdist.cont, data = mpq.2yrs)
+summary(vrm.2yr.simple)
+
+#Calculate slope
+emtrends(vrm.2yr.simple, ~ 1, var = "sqrt.hdist.cont" )
+
+#Repeat steps
+vrm.2yr.2 <- lm(vrm ~ year +sqrt.hdist.cont, data = mpq.2yrs)
+summary(vrm.2yr.2)
+emtrends(vrm.2yr.2, ~ 1, var = "sqrt.hdist.cont" )
+
+#Slope of human dist is the same as when it was the sole variable in the model
+#Slope of year is -0.0218294
+vrm.2yr.3 <- lm(vrm ~ year, data = mpq.2yrs)
+summary(vrm.2yr.3)
+emtrends(vrm.2yr.3, ~ 1, var = "sqrt.hdist.cont" )
+
+
+
+#Continuous vs categorical variable with interaction
+vrm.2yr <- lm(vrm ~ year * sqrt.hdist.cont, data = mpq.2yrs)
+summary(vrm.2yr)
+emtrends(vrm.2yr, ~ year, var="sqrt.hdist.cont")
+
+emtrends(vrm.2yr, pairwise ~ year, var="sqrt.hdist.cont") #Tests the differences in the slopes
+#So from 2015 - 2016a, the slope of the line decreased by 0.000223 units
+
+
+
+
+
+
+
+#Run top model for vrm
+vrm.a <- lm(vrm ~ sqrt.hdist.cont, data = mpq.1cm)
+summary(vrm.a)
+
+#Calculate slope
+emtrends(vrm.a, ~ 1, var = "sqrt.hdist.cont" )
+
+#Repeat steps
+vrm.a2 <- lm(vrm ~ year*sqrt.hdist.cont, data = mpq.1cm)
+summary(vrm.a2)
+emtrends(vrm.a2, ~ 1, var = "sqrt.hdist.cont" )
+
+emtrends(vrm.a2, pairwise ~ year, var="sqrt.hdist.cont") #Tests the differences in the slopes
+
+#Summary:
+# -Slopes are all negative, however the steepest slope (IE: differentiation bewteen disturbance levels) occured at 2015 and the lowest differentiation was in 2019.The slopes between 2015 and 2017/2019 were significantly different from one another. 
+
+
+#Try for full model:
+summary(vrm6)
+emtrends(vrm6, pairwise ~ year, var="sqrt.hdist.cont") #Tests the differences in the slopes
+
+#All values are negative, with the largest negative slope occurring in 2015, lowest slope value is in 2017. 2019 there is a slight uptick in slope, indicating that the differences between levels of disturbance is getting more pronounced again.
+
+
+#You get these values by taking the baseline's slope (IE: the estimate for sqrt.hdist.cont = 2015 (baseline) slope) and adding the estimate of the interaction term you are looking to find the slope for. Ex: 2016a: -0.000369 + 0.0001318 = -0.0002372 (which is what we are told it is in the emtrends code output!)
+
+```
+
+## VRM
+```{r vrm simplfied models}
+# #Available model variables:
+# sqrt.hdist.cont #Square Root Transformed Human Disturbance
+# year #Expedition Year
+# island.side #2 coarse regions of island side
+# site #site (as random effect)
+
+#First, compute min and max values of metric to denote range of values
+min(mpq.1cm$vrm) #0.02109
+max(mpq.1cm$vrm) #0.11092
+
+#Models
+global.vrm <- lmer(vrm~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+vrm1 <- lm(vrm ~ year, data = mpq.1cm) 
+vrm2 <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.1cm)
+vrm3 <- lm(vrm ~ year * sqrt.hdist.cont, data = mpq.1cm)
+vrm4 <- lm(vrm ~ sqrt.hdist.cont, data = mpq.1cm)
+
+vrm5 <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+vrm6 <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+vrm7 <- lm(vrm~ year + island.side, data = mpq.1cm)
+
+vrm8 <- lmer(vrm ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+vrm9 <- lmer(vrm ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+vrm10 <- lmer(vrm ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm11 <- lmer(vrm ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+vrm12 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+vrm13 <- lmer(vrm ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_vrm.table <- model.sel(vrm1,vrm2,vrm3,vrm4,vrm5,vrm6,vrm7,vrm8,vrm9,vrm10,vrm11,vrm12, vrm13, global.vrm)
+
+## AIC summary table 
+names(AIC_vrm.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_vrm.table$weight <- c(akaike.weights(AIC_vrm.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(vrm6)
+summary(vrm5)
+
+
+#Check out slopes of interaction
+summary(vrm6)
+emtrends(vrm6, pairwise ~ year, var="sqrt.hdist.cont") #Tests the differences in the slopes
+
+vrm.predicted <- plot_model(vrm6, type = "pred", terms = c("sqrt.hdist.cont", "year"))
+anova(vrm6) 
+#Summary:
+# There is a significant difference between all years, with island side and human disturbance gradient also significant. There are also significant interactions between the years 2017:dist and 2019:disturbance. 
+#For the interaction, slope becomes less negative through time, with the 2017 slope the only one significantly different than 2015.
+#Intersting note, the slope is ever so slightly positive for the 2017-2019 comparison.....
+
+#Ensure Model is fitted nicely --> It does
+dwtest(vrm6) #Durbin-Watson test: Null = residual errors are serially uncorrelated
+#Result: Residual errors are on correlated
+
+plot(vrm6)
+#Residuals vs fitted: Are there clear trends present? If so, thats bad
+#Normal Q-Q: Dots need to be close to the abline 
+#Scale-Location: Should be no discerbable trends
+#Residuals Vs. Leverage: Is there points causing skew of the line?
+
+
+ggplot(mpq.1cm, aes(x=year, y=vrm, fill=hum_dist)) + geom_boxplot()
+
+
+```
+
+## Surface Complexity
+```{r rug simplfied models}
+# #Available model variables:
+# sqrt.hdist.cont #Square Root Transformed Human Disturbance
+# year #Expedition Year
+# island.side #2 coarse regions of island side
+# site #site (as random effect)
+
+#Data
+mpq.1cm 
+
+
+#Models
+global.rug <- lmer(rug~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+rug1 <- lm(rug ~ year, data = mpq.1cm) 
+rug2 <- lm(rug ~ year + sqrt.hdist.cont, data = mpq.1cm)
+rug3 <- lm(rug ~ year * sqrt.hdist.cont, data = mpq.1cm)
+rug4 <- lm(rug ~ sqrt.hdist.cont, data = mpq.1cm)
+
+rug5 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+rug6 <- lm(rug ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+rug7 <- lm(rug~ year + island.side, data = mpq.1cm)
+
+rug8 <- lmer(rug ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+rug9 <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+rug10 <- lmer(rug ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug11 <- lmer(rug ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+rug12 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+rug13 <- lmer(rug ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_rug.table <- model.sel(rug1,rug2,rug3,rug4,rug5,rug6,rug7,rug8,rug9,rug10,rug11,rug12, rug13, global.rug)
+
+## AIC summary table 
+names(AIC_rug.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_rug.table$weight <- c(akaike.weights(AIC_rug.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(rug5)
+summary(rug6)
+
+#There is no interaction, so therefore the slopes of the lines are the same
+rug.predicted <- plot_model(rug5, type = "pred", terms = c("sqrt.hdist.cont", "year"))
+
+#See which years are significantly different from one another
+summary(rug5)
+rug.emm.s <- emmeans(rug5, "year")
+pairs(rug.emm.s) 
+
+#Summary: 2015 sig different than all years but 2019. 2017 and 2019 are not signifantly different, but recall 2017 is different from 2015. 
+
+# ggplot(mpq.1cm, aes(x=year, y=rug)) + geom_boxplot()
+
+#VL sites are higher than sites of VH dist
+# ggplot(mpq.1cm, aes(x=year, y=rug, fill=hum_dist)) + geom_boxplot()
+
+
+```
+
+## Fractal Dimension
+```{r frac simplfied models}
+# #Available model variables:
+# sqrt.hdist.cont #Square Root Transformed Human Disturbance
+# year #Expedition Year
+# island.side #2 coarse regions of island side
+# site #site (as random effect)
+str(mpq.1cm)
+head(mpq.1cm)
+
+#Models
+global.fractal.dimension <- lmer(fractal.dimension~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+fractal.dimension1 <- lm(fractal.dimension ~ year, data = mpq.1cm) 
+fractal.dimension2 <- lm(fractal.dimension ~ year + sqrt.hdist.cont, data = mpq.1cm)
+fractal.dimension3 <- lm(fractal.dimension ~ year * sqrt.hdist.cont, data = mpq.1cm)
+fractal.dimension4 <- lm(fractal.dimension ~ sqrt.hdist.cont, data = mpq.1cm)
+
+fractal.dimension5 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+fractal.dimension6 <- lm(fractal.dimension ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+fractal.dimension7 <- lm(fractal.dimension~ year + island.side, data = mpq.1cm)
+
+fractal.dimension8 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+fractal.dimension9 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+fractal.dimension10 <- lmer(fractal.dimension ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+fractal.dimension11 <- lmer(fractal.dimension ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+fractal.dimension12 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+fractal.dimension13 <- lmer(fractal.dimension ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_fractal.dimension.table <- model.sel(fractal.dimension1,fractal.dimension2,fractal.dimension3,fractal.dimension4,fractal.dimension5,fractal.dimension6,fractal.dimension7,fractal.dimension8,fractal.dimension9,fractal.dimension10,fractal.dimension11,fractal.dimension12, fractal.dimension13, global.fractal.dimension)
+
+## AIC summary table 
+names(AIC_fractal.dimension.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_fractal.dimension.table$weight <- c(akaike.weights(AIC_fractal.dimension.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(fractal.dimension5)
+summary(fractal.dimension6)
+
+
+#Check out slopes of interaction
+summary(fractal.dimension5)
+emmeans(fractal.dimension5, pairwise ~ year) #Tests the differences between years
+
+frac.predicted <- plot_model(fractal.dimension5, type = "pred", terms = c("sqrt.hdist.cont", "year"))
+
+
+ggplot(mpq.1cm, aes(x = year, y=fractal.dimension, fill=year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("Year") + ylab("Fractal Dimension") +  theme(legend.position="none")
+
+
+
+```
+
+## Profile Curvature Range
+```{r pro.range.log simplfied models}
+# #Available model variables:
+# sqrt.hdist.cont #Square Root Transformed Human Disturbance
+# year #Expedition Year
+# island.side #2 coarse regions of island side
+# site #site (as random effect)
+
+#Data
+mpq.1cm 
+
+
+#Models
+global.pro.range.log <- lmer(pro.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+pro.range.log1 <- lm(pro.range.log ~ year, data = mpq.1cm) 
+pro.range.log2 <- lm(pro.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+pro.range.log3 <- lm(pro.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+pro.range.log4 <- lm(pro.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+pro.range.log5 <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+pro.range.log6 <- lm(pro.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+pro.range.log7 <- lm(pro.range.log~ year + island.side, data = mpq.1cm)
+
+pro.range.log8 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+pro.range.log9 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+pro.range.log10 <- lmer(pro.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range.log11 <- lmer(pro.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+pro.range.log12 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+pro.range.log13 <- lmer(pro.range.log ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_pro.range.log.table <- model.sel(pro.range.log1,pro.range.log2,pro.range.log3,pro.range.log4,pro.range.log5,pro.range.log6,pro.range.log7,pro.range.log8,pro.range.log9,pro.range.log10,pro.range.log11,pro.range.log12, pro.range.log13, global.pro.range.log)
+
+## AIC summary table 
+names(AIC_pro.range.log.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_pro.range.log.table$weight <- c(akaike.weights(AIC_pro.range.log.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(pro.range.log5)
+summary(pro.range.log4)
+summary(pro.range.log2)
+
+
+#See which years are significantly different from one another
+pro.emm.s <- emmeans(pro.range.log5, "year")
+pairs(pro.emm.s) #None significantly different from one another
+
+
+
+
+
+ggplot(mpq.1cm, aes(x=year, y=pro.range.log)) + geom_boxplot()
+
+# 
+# 
+# 
+# ggplot(mpq.1cm, aes(x=year, y=pro.range.log, fill=hum_dist)) + geom_boxplot()
+
+
+
+```
+
+## Planform Curvature Range
+```{r plan.range.log simplfied models}
+# #Available model variables:
+# sqrt.hdist.cont #Square Root Transformed Human Disturbance
+# year #Expedition Year
+# island.side #2 coarse regions of island side
+# site #site (as random effect)
+# 
+
+#Models
+global.plan.range.log <- lmer(plan.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+
+plan.range.log1 <- lm(plan.range.log ~ year, data = mpq.1cm) 
+plan.range.log2 <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+plan.range.log3 <- lm(plan.range.log ~ year * sqrt.hdist.cont, data = mpq.1cm)
+plan.range.log4 <- lm(plan.range.log ~ sqrt.hdist.cont, data = mpq.1cm)
+
+plan.range.log5 <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+plan.range.log6 <- lm(plan.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
+plan.range.log7 <- lm(plan.range.log~ year + island.side, data = mpq.1cm)
+
+plan.range.log8 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+plan.range.log9 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.1cm)
+plan.range.log10 <- lmer(plan.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range.log11 <- lmer(plan.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.1cm)
+plan.range.log12 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+plan.range.log13 <- lmer(plan.range.log ~ year + (1|site), data = mpq.1cm)
+
+## AIC model selection
+AIC_plan.range.log.table <- model.sel(plan.range.log1,plan.range.log2,plan.range.log3,plan.range.log4,plan.range.log5,plan.range.log6,plan.range.log7,plan.range.log8,plan.range.log9,plan.range.log10,plan.range.log11,plan.range.log12, plan.range.log13, global.plan.range.log)
+
+## AIC summary table 
+names(AIC_plan.range.log.table) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_plan.range.log.table$weight <- c(akaike.weights(AIC_plan.range.log.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(plan.range.log2)
+summary(plan.range.log5)
+
+
+#See which years are significantly different from one another
+plan.emm.s <- emmeans(plan.range.log2, "year")
+pairs(plan.emm.s) #None significantly different from one another
+
+#Summary: 2015 sig different than all years but 2019. 2017 sig different than 2019.
+
+```
+
+## Habitat Volume
+```{r hab.vol simplified models}
+# #Available model variables:
+# sqrt.hdist.cont #Square Root Transformed Human Disturbance
+# time.interval #Time interval between two samples taken
+# island.side #2 coarse regions of island side
+# site #site (as random effect)
+# cc.2tps
+
+#Models
+global.volume.change <- lmer(volume.change~ time.interval * sqrt.hdist.cont + island.side + (1|site), data = cc.2tps)
+
+volume.change1 <- lm(volume.change ~ time.interval, data = cc.2tps) 
+volume.change2 <- lm(volume.change ~ time.interval + sqrt.hdist.cont, data = cc.2tps)
+volume.change3 <- lm(volume.change ~ time.interval * sqrt.hdist.cont, data = cc.2tps)
+volume.change4 <- lm(volume.change ~ sqrt.hdist.cont, data = cc.2tps)
+
+volume.change5 <- lm(volume.change ~ time.interval + sqrt.hdist.cont + island.side, data = cc.2tps) 
+volume.change6 <- lm(volume.change ~ time.interval * sqrt.hdist.cont + island.side, data = cc.2tps)
+volume.change7 <- lm(volume.change~ time.interval + island.side, data = cc.2tps)
+
+volume.change8 <- lmer(volume.change ~ time.interval + sqrt.hdist.cont + island.side + (1|site), data = cc.2tps)
+volume.change9 <- lmer(volume.change ~ time.interval * sqrt.hdist.cont + island.side + (1|site), data = cc.2tps)
+volume.change10 <- lmer(volume.change ~ time.interval + sqrt.hdist.cont + (1|site), data = cc.2tps)
+volume.change11 <- lmer(volume.change ~ time.interval * sqrt.hdist.cont + (1|site), data = cc.2tps)
+volume.change12 <- lmer(volume.change ~ time.interval + (1|site), data = cc.2tps)
+volume.change13 <- lmer(volume.change ~ time.interval + (1|site), data = cc.2tps)
+
+## AIC model selection
+AIC_volume.change.table <- model.sel(volume.change1,volume.change2,volume.change3,volume.change4,volume.change5,volume.change6,volume.change7,volume.change8,volume.change9,volume.change10,volume.change11,volume.change12, volume.change13, global.volume.change)
+
+## AIC summary table 
+names(AIC_volume.change.table) <- c("(Int)", "time.interval", "Human Disturbance", "Disturbance*time.interval", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_volume.change.table$weight <- c(akaike.weights(AIC_volume.change.table$AICc)$weights)
+
+#Top Models within 4AIC
+summary(volume.change7)
+summary(volume.change5)
+summary(volume.change6)
+summary(volume.change1)
+
+#Compute Range of each boxplot
+cc.2015to2017 <- cc.2tps[c(1:26),c(1:10)]
+cc.2017to2019 <- cc.2tps[c(27:50),c(1:10)]
+cc.2015to2019 <- CC.final[c(51:71),c(1:10)]
+
+range(cc.2015to2017$volume.change) #-1.365 to 0.419
+range(cc.2017to2019$volume.change) #-0.883 to 0.641
+range(cc.2015to2019$volume.change) #-1.979 to 0.513 5/21 plots gained structure over period of study
+
+
+#Reorder dataframe by disturbance publication site names (VH -- M -- VL)
+row.names(cc.2015to2019) <- 1:nrow(cc.2015to2019) #Changes the row names so that they are re-orderd 1-80
+
+CC.final
+
+```
+
+## Predicted Values Plot
+```{r predicted values plot}
+
+vrm.predicted <- plot_model(vrm6,show.legend = FALSE,type = "pred", terms = c("sqrt.hdist.cont", "year"), title(main = "", sub = NULL, xlab = "Human Disturbance", ylab = "VRM"))
+rug.predicted <- plot_model(rug5,show.legend = FALSE, title = NULL, type = "pred", terms = c("sqrt.hdist.cont", "year"))
+frac.predicted <- plot_model(fractal.dimension5,show.legend = FALSE, title = NULL, type = "pred", terms = c("sqrt.hdist.cont", "year"))
+
+pro.range.predicted <- plot_model(pro.range.log5,show.legend = FALSE, title = NULL, type = "pred", terms = c("sqrt.hdist.cont", "year"))
+plan.range.predicted <- plot_model(plan.range.log2,show.legend = FALSE, title = NULL, type = "pred", terms = c("sqrt.hdist.cont", "year"))
+# 
+# frac.predicted <- plot_model(volume.change7, type = "pred", terms = c("island.side", "time.interval"))
+
+
+ggarrange(vrm.predicted, rug.predicted, frac.predicted,pro.range.predicted, plan.range.predicted)
+
+library(cowplot)
+
+left.side <- plot_grid(vrm.predicted, rug.predicted, frac.predicted,
+                align = 'vh',
+                labels = NULL,
+                label_x = 0.36,
+                ncol=1,
+                nrow = 3)
+
+right.side <- plot_grid(p.1.1, p.2.1, p.3.1,
+                align = 'vh',
+                labels = NULL,
+                label_x = 0.36,
+                ncol=1,
+                nrow = 3)
+
+plot_grid(p.4, p.5, rel_widths = c(0.5,1))
+
+
+
+fit <- lm(Achievement ~ east * factor(year) + agea + gndr + income + educ, data = dat)
+library(dplyr)
+new_dat <- summarise_at(dat, vars(agea, gndr, income, educ), mean)
+new_dat <- cbind(expand.grid(year = seq(2002, 2016, 2), east = 0:1), new_dat)
+new_dat
+new_dat$predicted <- predict(fit, new_dat)
+library(ggplot2)
+ggplot(new_dat, aes(x = year, y = predicted, colour = factor(east), group = east)) +
+  geom_line()
+
+
+vrm.pred <- summarise_at(mpq.1cm, vars(year, sqrt.hdist.cont), mean)
+
+
+
+
+
+
+
+
+
+vrm.predict <- predict(vrm6)
+vrm.an <- anova(vrm6)
+ggplot(vrm.predict)
+
+
+ggplot(Predict(vrm6), anova=vrm.an, pval=TRUE)
+
+
+
+#Parameter estimate plots
+# create plot-object
+p.rug5 <- plot_model(rug5)
+
+# change theme
+p.rug5 + theme_sjplot()
+
+
+
+```
+
+# Sensitivity Analysis
+```{r Sensitivity Analysis}
+mpq.1cm #Full Dataset
+cc #Full Habitat Volume Dataset
+
+#Remove sites 15, 19, 37 from dataset
+mpq.1cm.sen <- subset(mpq.1cm, site == "5" | site == "8" |site == "35" |site == "34" |site == "27" |site == "32" |site == "30")
+
+cc.sen <- subset(cc.2tps, site == "5" | site == "8" |site == "35" |site == "34" |site == "27" |site == "32" |site == "30")
+
+str(mpq.1cm.sen)
+
+#Top Models Vs. Sensitivity Models (models lacking site 15,19,37)
+vrm.top <- lm(vrm ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+vrm.sen <- lm(vrm ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm.sen)
+
+summary(vrm.sen)
+summary(vrm.top)
+
+rug.sen <- lm(rug ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm.sen) 
+rug.top <- lm(rug ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm)
+
+summary(rug.sen)
+summary(rug.top)
+
+fractal.dimension.sen <- lm(fractal.dimension ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm.sen)
+fractal.dimension.top<- lm(fractal.dimension ~ year * sqrt.hdist.cont + region.3, data = mpq.1cm)
+
+summary(fractal.dimension.sen)
+summary(fractal.dimension.top)
+
+
+
+pro.range.log.sen <- lm(pro.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm.sen) 
+pro.range.log.top <- lm(pro.range.log ~ year + sqrt.hdist.cont + region.3, data = mpq.1cm) 
+
+summary(pro.range.log.sen)
+summary(pro.range.log.top)
+
+
+plan.range.log.sen <- lm(plan.range.log ~ year + region.3, data = mpq.1cm.sen)
+plan.range.log.top <- lm(plan.range.log ~ year + region.3, data = mpq.1cm)
+
+summary(plan.range.log.sen)
+summary(plan.range.log.top)
+
+volume.change.sen <- lm(volume.change~ time.interval + region.3, data = cc.sen)
+volume.change.top <- lm(volume.change~ time.interval + region.3, data = cc)
+
+
+summary(volume.change.sen)
+summary(volume.change.top)
+
+```
+
+# DEM changes across resolutions 
+## VRM
+```{r VRM resolution modelling with top model}
+
+#Models
+global.vrm.4cm <- lmer(vrm~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+
+vrm1.4cm <- lm(vrm ~ year, data = mpq.4cm) 
+vrm2.4cm <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.4cm)
+vrm3.4cm <- lm(vrm ~ year * sqrt.hdist.cont, data = mpq.4cm)
+vrm4.4cm <- lm(vrm ~ sqrt.hdist.cont, data = mpq.4cm)
+
+vrm5.4cm <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.4cm) 
+vrm6.4cm <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.4cm)
+vrm7.4cm <- lm(vrm~ year + island.side, data = mpq.4cm)
+
+vrm8.4cm <- lmer(vrm ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+vrm9.4cm <- lmer(vrm ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+vrm10.4cm <- lmer(vrm ~ year + sqrt.hdist.cont + (1|site), data = mpq.4cm)
+vrm11.4cm <- lmer(vrm ~ year * sqrt.hdist.cont + (1|site), data = mpq.4cm)
+vrm12.4cm <- lmer(vrm ~ year + (1|site), data = mpq.4cm)
+vrm13.4cm <- lmer(vrm ~ year + (1|site), data = mpq.4cm)
+
+## AIC model selection
+AIC_vrm.table.4cm <- model.sel(vrm1.4cm,vrm2.4cm,vrm3.4cm,vrm4.4cm,vrm5.4cm,vrm6.4cm,vrm7.4cm,vrm8.4cm,vrm9.4cm,vrm10.4cm,vrm11.4cm,vrm12.4cm, vrm13.4cm, global.vrm.4cm)
+
+## AIC summary table 
+names(AIC_vrm.table.4cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_vrm.table.4cm$weight <- c(akaike.weights(AIC_vrm.table.4cm$AICc)$weights)
+
+#Top Model at 4cm: 
+vrm5.4cm
+
+#Summary:
+summary(vrm5.4cm)
+anova(vrm5.4cm)
+vrm.4cm.mean <- emmeans(vrm5.4cm, "year")
+pairs(vrm.4cm.mean)
+
+#Summary: 
+#Island Side and hum_dist are sig
+#Year is still significant for some year combinations (2015- 2016b,2017, 2017-2019)
+
+
+#<------
+#8cm DEM
+#Models
+global.vrm.8cm <- lmer(vrm~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+
+vrm1.8cm <- lm(vrm ~ year, data = mpq.8cm) 
+vrm2.8cm <- lm(vrm ~ year + sqrt.hdist.cont, data = mpq.8cm)
+vrm3.8cm <- lm(vrm ~ year * sqrt.hdist.cont, data = mpq.8cm)
+vrm4.8cm <- lm(vrm ~ sqrt.hdist.cont, data = mpq.8cm)
+
+vrm5.8cm <- lm(vrm ~ year + sqrt.hdist.cont + island.side, data = mpq.8cm) 
+vrm6.8cm <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.8cm)
+vrm7.8cm <- lm(vrm~ year + island.side, data = mpq.8cm)
+
+vrm8.8cm <- lmer(vrm ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+vrm9.8cm <- lmer(vrm ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+vrm10.8cm <- lmer(vrm ~ year + sqrt.hdist.cont + (1|site), data = mpq.8cm)
+vrm11.8cm <- lmer(vrm ~ year * sqrt.hdist.cont + (1|site), data = mpq.8cm)
+vrm12.8cm <- lmer(vrm ~ year + (1|site), data = mpq.8cm)
+vrm13.8cm <- lmer(vrm ~ year + (1|site), data = mpq.8cm)
+
+## AIC model selection
+AIC_vrm.table.8cm <- model.sel(vrm1.8cm,vrm2.8cm,vrm3.8cm,vrm4.8cm,vrm5.8cm,vrm6.8cm,vrm7.8cm,vrm8.8cm,vrm9.8cm,vrm10.8cm,vrm11.8cm,vrm12.8cm, vrm13.8cm, global.vrm.8cm)
+
+## AIC summary table 
+names(AIC_vrm.table.8cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_vrm.table.8cm$weight <- c(akaike.weights(AIC_vrm.table.8cm$AICc)$weights)
+
+#Top 8cm Model:
+vrm5.8cm
+
+#8cm Resolution
+summary(vrm5.8cm)
+anova(vrm5.8cm)
+vrm.8cm <- emmeans(vrm5.8cm, "year")
+pairs(vrm.8cm)
+
+#Summary: 
+#All years are no longer sig different
+#Island side + human disturbance are sig different still
+
+```
+
+## Surface Complexity
+```{r SC resolution modelling with top model}
+#Models
+global.rug.4cm <- lmer(rug~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+
+rug1.4cm <- lm(rug ~ year, data = mpq.4cm) 
+rug2.4cm <- lm(rug ~ year + sqrt.hdist.cont, data = mpq.4cm)
+rug3.4cm <- lm(rug ~ year * sqrt.hdist.cont, data = mpq.4cm)
+rug4.4cm <- lm(rug ~ sqrt.hdist.cont, data = mpq.4cm)
+
+rug5.4cm <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.4cm) 
+rug6.4cm <- lm(rug ~ year * sqrt.hdist.cont + island.side, data = mpq.4cm)
+rug7.4cm <- lm(rug~ year + island.side, data = mpq.4cm)
+
+rug8.4cm <- lmer(rug ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+rug9.4cm <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+rug10.4cm <- lmer(rug ~ year + sqrt.hdist.cont + (1|site), data = mpq.4cm)
+rug11.4cm <- lmer(rug ~ year * sqrt.hdist.cont + (1|site), data = mpq.4cm)
+rug12.4cm <- lmer(rug ~ year + (1|site), data = mpq.4cm)
+
+## AIC model selection
+AIC_rug.table.4cm <- model.sel(rug1.4cm,rug2.4cm,rug3.4cm,rug4.4cm,rug5.4cm,rug6.4cm,rug7.4cm,rug8.4cm,rug9.4cm,rug10.4cm,rug11.4cm,rug12.4cm, rug13.4cm, global.rug.4cm)
+
+## AIC summary table 
+names(AIC_rug.table.4cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_rug.table.4cm$weight <- c(akaike.weights(AIC_rug.table.4cm$AICc)$weights)
+
+
+#Summary:
+#4cm Resolution top model: rug5.4cm
+summary(rug5.4cm)
+anova(rug5.4cm)
+rug.emm.4cm <- emmeans(rug5.4cm, "year")
+pairs(rug.emm.4cm)
+
+#Summary:
+#Island.Side & Human disturbance gradient by itself is significant
+#Year differences are no longer significant
+
+#<----------------
+#8cm Resolution
+#Models
+global.rug.8cm <- lmer(rug~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+
+rug1.8cm <- lm(rug ~ year, data = mpq.8cm) 
+rug2.8cm <- lm(rug ~ year + sqrt.hdist.cont, data = mpq.8cm)
+rug3.8cm <- lm(rug ~ year * sqrt.hdist.cont, data = mpq.8cm)
+rug4.8cm <- lm(rug ~ sqrt.hdist.cont, data = mpq.8cm)
+
+rug5.8cm <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.8cm) 
+rug6.8cm <- lm(rug ~ year * sqrt.hdist.cont + island.side, data = mpq.8cm)
+rug7.8cm <- lm(rug~ year + island.side, data = mpq.8cm)
+
+rug8.8cm <- lmer(rug ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+rug9.8cm <- lmer(rug ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+rug10.8cm <- lmer(rug ~ year + sqrt.hdist.cont + (1|site), data = mpq.8cm)
+rug11.8cm <- lmer(rug ~ year * sqrt.hdist.cont + (1|site), data = mpq.8cm)
+rug12.8cm <- lmer(rug ~ year + (1|site), data = mpq.8cm)
+rug13.8cm <- lmer(rug ~ year + (1|site), data = mpq.8cm)
+
+## AIC model selection
+AIC_rug.table.8cm <- model.sel(rug1.8cm,rug2.8cm,rug3.8cm,rug4.8cm,rug5.8cm,rug6.8cm,rug7.8cm,rug8.8cm,rug9.8cm,rug10.8cm,rug11.8cm,rug12.8cm, rug13.8cm, global.rug.8cm)
+
+## AIC summary table 
+names(AIC_rug.table.8cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_rug.table.8cm$weight <- c(akaike.weights(AIC_rug.table.8cm$AICc)$weights)
+
+
+
+#Top 8cm Resolution: rug6.8cm
+rug4.8cm
+summary(rug4.8cm)
+anova(rug4.8cm)
+
+#Summary:
+#Human disturbance remains significant, nothing else does (diff between years nor island.side)
+
+
+
+
+```
+
+## Profile Curvature
+```{r ProCurvRange resolution modelling with top model}
+#4cm Resolution Models
+global.pro.range.log.4cm <- lmer(pro.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+
+pro.range.log1.4cm <- lm(pro.range.log ~ year, data = mpq.4cm) 
+pro.range.log2.4cm <- lm(pro.range.log ~ year + sqrt.hdist.cont, data = mpq.4cm)
+pro.range.log3.4cm <- lm(pro.range.log ~ year * sqrt.hdist.cont, data = mpq.4cm)
+pro.range.log4.4cm <- lm(pro.range.log ~ sqrt.hdist.cont, data = mpq.4cm)
+
+pro.range.log5.4cm <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.4cm) 
+pro.range.log6.4cm <- lm(pro.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.4cm)
+pro.range.log7.4cm <- lm(pro.range.log~ year + island.side, data = mpq.4cm)
+
+pro.range.log8.4cm <- lmer(pro.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+pro.range.log9.4cm <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+pro.range.log10.4cm <- lmer(pro.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.4cm)
+pro.range.log11.4cm <- lmer(pro.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.4cm)
+pro.range.log12.4cm <- lmer(pro.range.log ~ year + (1|site), data = mpq.4cm)
+pro.range.log13.4cm <- lmer(pro.range.log ~ year + (1|site), data = mpq.4cm)
+
+## AIC model selection
+AIC_pro.range.log.table.4cm <- model.sel(pro.range.log1.4cm, pro.range.log2.4cm, pro.range.log3.4cm, pro.range.log4.4cm, pro.range.log5.4cm, pro.range.log6.4cm, pro.range.log7.4cm, pro.range.log8.4cm, pro.range.log9.4cm, pro.range.log10.4cm, pro.range.log11.4cm, pro.range.log12.4cm, pro.range.log13.4cm, global.pro.range.log.4cm)
+
+## AIC summary table 
+names(AIC_pro.range.log.table.4cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_pro.range.log.table.4cm$weight <- c(akaike.weights(AIC_pro.range.log.table.4cm$AICc)$weights)
+
+#Summary 4cm Resolution
+summary(pro.range.log5.4cm)
+anova(pro.range.log5.4cm)
+pro.range.4cm.mean <- emmeans(pro.range.log5.4cm, "year")
+pairs(pro.range.4cm.mean)
+
+#Summary:
+#Difference between years is no longer significant
+#Human disturbance gradient is significant
+#Island Side is significant
+
+
+
+
+#<-----------------------
+#Models 4cm Resolution
+global.pro.range.log.8cm <- lmer(pro.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+
+pro.range.log1.8cm <- lm(pro.range.log ~ year, data = mpq.8cm) 
+pro.range.log2.8cm <- lm(pro.range.log ~ year + sqrt.hdist.cont, data = mpq.8cm)
+pro.range.log3.8cm <- lm(pro.range.log ~ year * sqrt.hdist.cont, data = mpq.8cm)
+pro.range.log4.8cm <- lm(pro.range.log ~ sqrt.hdist.cont, data = mpq.8cm)
+
+pro.range.log5.8cm <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.8cm) 
+pro.range.log6.8cm <- lm(pro.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.8cm)
+pro.range.log7.8cm <- lm(pro.range.log~ year + island.side, data = mpq.8cm)
+
+pro.range.log8.8cm <- lmer(pro.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+pro.range.log9.8cm <- lmer(pro.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+pro.range.log10.8cm <- lmer(pro.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.8cm)
+pro.range.log11.8cm <- lmer(pro.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.8cm)
+pro.range.log12.8cm <- lmer(pro.range.log ~ year + (1|site), data = mpq.8cm)
+
+## AIC model selection
+AIC_pro.range.log.table.8cm <- model.sel(pro.range.log1.8cm, pro.range.log2.8cm, pro.range.log3.8cm, pro.range.log4.8cm, pro.range.log5.8cm, pro.range.log6.8cm, pro.range.log7.8cm, pro.range.log8.8cm, pro.range.log9.8cm, pro.range.log10.8cm, pro.range.log11.8cm, pro.range.log12.8cm, pro.range.log13.8cm, global.pro.range.log.8cm)
+
+## AIC summary table 
+names(AIC_pro.range.log.table.8cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_pro.range.log.table.8cm$weight <- c(akaike.weights(AIC_pro.range.log.table.8cm$AICc)$weights)
+
+
+
+#Summary 8cm Resolution
+summary(pro.range.log12.8cm)
+anova(pro.range.log12.8cm)
+pro.range.8cm.mean <- emmeans(pro.range.log12.8cm, "year")
+pairs(pro.range.8cm.mean)
+
+
+#Compare top two models
+anova(pro.range.log12.8cm) #Random Effect included
+anova(pro.range.log4.8cm) #Fixed effect of human disturbance
+
+
+
+
+```
+
+## Planform Curvature
+```{r PlanCurvRange resolution modelling with top model}
+#4cm Resolution Models
+global.plan.range.log.4cm <- lmer(plan.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+
+plan.range.log1.4cm <- lm(plan.range.log ~ year, data = mpq.4cm) 
+plan.range.log2.4cm <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.4cm)
+plan.range.log3.4cm <- lm(plan.range.log ~ year * sqrt.hdist.cont, data = mpq.4cm)
+plan.range.log4.4cm <- lm(plan.range.log ~ sqrt.hdist.cont, data = mpq.4cm)
+
+plan.range.log5.4cm <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.4cm) 
+plan.range.log6.4cm <- lm(plan.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.4cm)
+plan.range.log7.4cm <- lm(plan.range.log~ year + island.side, data = mpq.4cm)
+
+plan.range.log8.4cm <- lmer(plan.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+plan.range.log9.4cm <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.4cm)
+plan.range.log10.4cm <- lmer(plan.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.4cm)
+plan.range.log11.4cm <- lmer(plan.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.4cm)
+plan.range.log12.4cm <- lmer(plan.range.log ~ year + (1|site), data = mpq.4cm)
+plan.range.log13.4cm <- lmer(plan.range.log ~ year + (1|site), data = mpq.4cm)
+
+## AIC model selection
+AIC_plan.range.log.table.4cm <- model.sel(plan.range.log1.4cm, plan.range.log2.4cm, plan.range.log3.4cm, plan.range.log4.4cm, plan.range.log5.4cm, plan.range.log6.4cm, plan.range.log7.4cm, plan.range.log8.4cm, plan.range.log9.4cm, plan.range.log10.4cm, plan.range.log11.4cm, plan.range.log12.4cm, plan.range.log13.4cm, global.plan.range.log.4cm)
+
+## AIC summary table 
+names(AIC_plan.range.log.table.4cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_plan.range.log.table.4cm$weight <- c(akaike.weights(AIC_plan.range.log.table.4cm$AICc)$weights)
+
+#Summary 4cm Resolution
+summary(plan.range.log5.4cm)
+anova(plan.range.log5.4cm)
+plan.range.4cm.mean <- emmeans(plan.range.log5.4cm, "year")
+pairs(plan.range.4cm.mean)
+
+#Summary:
+#Difference between years is no longer significant when conducting post-hoc comparisons
+#Human disturbance gradient is significant
+#Island Side is significant
+
+
+
+
+#<-----------------------
+#Models 8cm Resolution
+global.plan.range.log.8cm <- lmer(plan.range.log~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+
+plan.range.log1.8cm <- lm(plan.range.log ~ year, data = mpq.8cm) 
+plan.range.log2.8cm <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.8cm)
+plan.range.log3.8cm <- lm(plan.range.log ~ year * sqrt.hdist.cont, data = mpq.8cm)
+plan.range.log4.8cm <- lm(plan.range.log ~ sqrt.hdist.cont, data = mpq.8cm)
+
+plan.range.log5.8cm <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.8cm) 
+plan.range.log6.8cm <- lm(plan.range.log ~ year * sqrt.hdist.cont + island.side, data = mpq.8cm)
+plan.range.log7.8cm <- lm(plan.range.log~ year + island.side, data = mpq.8cm)
+
+plan.range.log8.8cm <- lmer(plan.range.log ~ year + sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+plan.range.log9.8cm <- lmer(plan.range.log ~ year * sqrt.hdist.cont + island.side + (1|site), data = mpq.8cm)
+plan.range.log10.8cm <- lmer(plan.range.log ~ year + sqrt.hdist.cont + (1|site), data = mpq.8cm)
+plan.range.log11.8cm <- lmer(plan.range.log ~ year * sqrt.hdist.cont + (1|site), data = mpq.8cm)
+plan.range.log12.8cm <- lmer(plan.range.log ~ year + (1|site), data = mpq.8cm)
+
+## AIC model selection
+AIC_plan.range.log.table.8cm <- model.sel(plan.range.log1.8cm, plan.range.log2.8cm, plan.range.log3.8cm, plan.range.log4.8cm, plan.range.log5.8cm, plan.range.log6.8cm, plan.range.log7.8cm, plan.range.log8.8cm, plan.range.log9.8cm, plan.range.log10.8cm, plan.range.log11.8cm, plan.range.log12.8cm, global.plan.range.log.8cm)
+
+## AIC summary table 
+names(AIC_plan.range.log.table.8cm) <- c("(Int)", "Year", "Human Disturbance", "Disturbance*Year", "Island.Side", "Family", "Model.Class","df", "LL", "AICc", "∆AICc", "weight")
+AIC_plan.range.log.table.8cm$weight <- c(akaike.weights(AIC_plan.range.log.table.8cm$AICc)$weights)
+
+
+
+#Summary 8cm Resolution
+summary(plan.range.log2.8cm)
+anova(plan.range.log2.8cm)
+plan.range.8cm.mean <- emmeans(plan.range.log2.8cm, "year")
+pairs(plan.range.8cm.mean)
+
+
+#Compare top two models
+anova(plan.range.log12.8cm) #Random Effect included
+anova(plan.range.log4.8cm) #Fixed effect of human disturbance
+
+
+
+
+```
+
+
+
+# Random Forests
+
+Progressed with Random Forest of Semi Dataframe (will rename later) to have Porities as its own independent morphology ("Mounding_Lobate" in manuscript, or even simply Porites lobata) and merged Live_Massive & Live_Massive_Grooved together, wiht Live_Branching & Live_Digitate merged into a singular Live_Branching category
+
+
+
+## VRM
+### VRM - Semi (all) (optimal mtry = 6) 
+
+```{r VRM with abiotic determining optimal mtry value using training dataset, include=FALSE}
+index.vrm <- 1:nrow(vrm.per.1cm.semi)
+trainindex.vrm <- sample(index.vrm, trunc(length(index.vrm)/2))
+trainset.vrm1 <- vrm.per.1cm.semi[trainindex.vrm, ]
+testset.vrm1 <- vrm.per.1cm.semi[-trainindex.vrm, ]
+
+# fit a model to the training set (column 1, Sepal.Length, will be the outcome)
+set.seed(2)
+model.vrm1 <- randomForest(x=trainset.vrm1[ ,-1],y=trainset.vrm1[ ,1])
+
+# predict values for the testing set (the first column is the outcome, leave it out)
+predicted.vrm1 <- predict(model.vrm1, testset.vrm1[ ,-1])
+
+# what's the squared correlation coefficient between predicted and actual values?
+cor(predicted.vrm1, testset.vrm1[, 1])^2   #51.4%
+
+# now, refit the model using built-in x.test and y.test
+set.seed(2)
+randomForest(x=trainset.vrm1[ ,-1], y=trainset.vrm1[ ,1], xtest=testset.vrm1[ ,-1], ytest=testset.vrm1[ ,1])
+
+#See if R2 match
+y <- testset.vrm1[,1]
+1 - sum((y-predicted.vrm1)^2)/sum((y-mean(y))^2) #78.27 (bottom value)
+
+
+#<------- Alternative way to do it^^ -------------->
+
+
+#Create training data
+set.seed(2)
+nrow(vrm.per.1cm.semi) #80rows total
+train.vrm = sample(1:nrow(vrm.per.1cm.semi),53) #53 = 66% of the rows in full dataset
+
+#Run Random Forest
+vrm.classify <- randomForest(vrm ~., data = vrm.per.1cm.semi, subset = train.vrm, ntree = 500, importance=TRUE)
+print(vrm.classify)
+plot(vrm.classify)
+varImpPlot(vrm.classify)
+
+
+# 
+# #1. Determine # of trees where mse is the lowest
+# which.min(vrm.classify$mse) #407 trees
+
+#2. Determine optimal # of variables/node
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.semi) #There are 23-1 = 22 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(22)
+test.err=double(22)
+
+#mtry is # of Variables randomly chosen at each split (we go up to maximum # which is 22 in this dataset)
+for(mtry in 1:22) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.semi , subset = train.vrm,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.semi[-train.vrm,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.semi[-train.vrm,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=19 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test.Error"),pch=19, col=c("red","blue"))
+
+#X axis value with lowest MSE = optimal # of variables/node
+
+
+#<------------ Run Random Forest Again with optimal variables --------->
+set.seed(2)
+vrm.classify <- randomForest(vrm~., data = vrm.per.1cm.semi, subset=train.vrm, mtry = 6, ntree = 500, importance = TRUE,keep.forest=TRUE)
+print(vrm.classify)
+varImpPlot(vrm.classify, cex=1)
+
+# #Make a dataframe with predictor names and their importance
+# imp.vrm.semi.1cm <- importance(vrm.classify)
+# imp.vrm.semi.1cm <- data.frame(predictors = rownames(imp.vrm.semi.1cm), imp.vrm.semi.1cm)
+# 
+# colnames(imp.vrm.semi.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.vrm.semi.1cm.sort <- arrange(imp.vrm.semi.1cm, desc(IncNodePurity))
+# imp.vrm.semi.1cm.sort$predictors <- factor(imp.vrm.semi.1cm.sort$predictors, levels = imp.vrm.semi.1cm.sort$predictors)
+# 
+# # Select the top 10 predictors
+# imp.vrm.semi.1cm.top.5 <- imp.vrm.semi.1cm.sort[1:5, ]
+# imp.vrm.semi.1cm.top.10 <- imp.vrm.semi.1cm.sort[1:10, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.vrm.semi.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for VRM 1cm classification")
+
+```
+
+
+### VRM - Semi (no abiotic or macroalgae) (optimal mtry = 4 ) 
+
+```{r VRM no abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(vrm.per.1cm.semi.live) #80
+train.vrm2=sample(1:nrow(vrm.per.1cm.semi.live),53) #53 rows
+
+#Run Random Forest
+vrm.classify2 <- randomForest(vrm ~., data = vrm.per.1cm.semi.live, subset = train.vrm2, ntree = 500, importance=TRUE)
+print(vrm.classify2)
+plot(vrm.classify2)
+varImpPlot(vrm.classify2)
+# #Determine # of trees where mse is the lowest
+# which.min(vrm.classify2$mse) #38 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.semi.live) #There are 14-1 = 13 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(13)
+test.err = double(13)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:13) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.semi.live , subset = train.vrm2,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.semi.live[-train.vrm2,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.semi.live[-train.vrm2,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red","blue"))
+
+
+
+#Random Forrest with Optimal Parameters
+set.seed(2)
+vrm.classify2 <- randomForest(vrm~., data = vrm.per.1cm.semi.live, subset=train.vrm2, mtry= 5, ntree = 500, importance=TRUE) #Add ,importance=TRUE if you want %IncMSE
+print(vrm.classify2)
+varImpPlot(vrm.classify2, cex=1)
+
+
+# #Make a dataframe with predictor names and their importance
+# imp.vrm2.full.1cm <- importance(vrm.classify2)
+# imp.vrm2.full.1cm <- data.frame(predictors = rownames(imp.vrm2.full.1cm), imp.vrm2.full.1cm)
+# 
+# colnames(imp.vrm2.full.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.vrm2.full.1cm.sort <- arrange(imp.vrm2.full.1cm, desc(IncNodePurity))
+# imp.vrm2.full.1cm.sort$predictors <- factor(imp.vrm2.full.1cm.sort$predictors, levels = imp.vrm2.full.1cm.sort$predictors)
+# 
+# # Select the top 10 predictors
+# imp.vrm2.full.1cm.top.5 <- imp.vrm2.full.1cm.sort[1:5, ]
+# imp.vrm2.full.1cm.top.10 <- imp.vrm2.full.1cm.sort[1:10, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.vrm2.full.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 1cm (without Abiotic) classification")
+
+
+```
+
+### VRM - Jenn Magel (all) (optimal mtry = 3) 
+
+```{r VRM JM determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(vrm.per.1cm.jm) #80
+train.vrm3=sample(1:nrow(vrm.per.1cm.jm),53) #80 rows
+
+#Run Random Forest
+vrm.classify3 <- randomForest(vrm ~., data = vrm.per.1cm.jm, subset = train.vrm3, ntree = 500, importance=TRUE)
+print(vrm.classify3)
+plot(vrm.classify3)
+varImpPlot(vrm.classify3)
+#Determine # of trees where mse is the lowest
+which.min(vrm.classify3$mse) #12 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.jm) #There are 6-1 = 5 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(5)
+test.err=double(5)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:5) 
+{
+  rf=randomForest(vrm ~ . , data = vrm.per.1cm.jm , subset = train.vrm3,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.jm[-train.vrm3,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.jm[-train.vrm3,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
+
+
+#Re-run random forest with optimal parameters 
+set.seed(2)
+vrm.classify3 <- randomForest(vrm~., data = vrm.per.1cm.jm, subset=train.vrm3, mtry = 4, ntree = 500, importance=TRUE)
+print(vrm.classify3)
+varImpPlot(vrm.classify3)
+
+# #Make a dataframe with predictor names and their importance
+# imp.vrm.jm.1cm <- importance(vrm.classify3)
+# imp.vrm.jm.1cm <- data.frame(predictors = rownames(imp.vrm.jm.1cm), imp.vrm.jm.1cm)
+# 
+# colnames(imp.vrm.jm.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.vrm.jm.1cm.sort <- arrange(imp.vrm.jm.1cm, desc(IncNodePurity))
+# imp.vrm.jm.1cm.sort$predictors <- factor(imp.vrm.jm.1cm.sort$predictors, levels = imp.vrm.jm.1cm.sort$predictors)
+# 
+# # Select all predictors (5)
+# imp.vrm.jm.1cm.top.7 <- imp.vrm.jm.1cm.sort[1:5, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.vrm.jm.1cm.top.7, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for RUG 1cm classification")
+# 
+# #varImpPlot(vrm.classify3, cex=1)
+# 
+
+```
+
+### VRM - Jenn Magel (no abiotic or macroalgae) (optimal mtry = 1 | # of trees = 188) 
+
+```{r VRM no abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(vrm.per.1cm.jm.live) #80
+train.vrm4=sample(1:nrow(vrm.per.1cm.jm.live),53) #53 rows
+
+#Run Random Forest
+vrm.classify4 <- randomForest(vrm ~., data = vrm.per.1cm.jm.live, subset = train.vrm4, ntree = 500, importance=TRUE)
+print(vrm.classify4)
+plot(vrm.classify4)
+varImpPlot(vrm.classify4)
+# #Determine # of trees where mse is the lowest
+# which.min(vrm.classify4$mse) #281 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(vrm.per.1cm.jm.live) #There are 4-1 = 3 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(3)
+test.err = double(3)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:3) 
+{ rf=randomForest(vrm ~ . , data = vrm.per.1cm.jm.live , subset = train.vrm4,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,vrm.per.1cm.jm.live[-train.vrm4,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(vrm.per.1cm.jm.live[-train.vrm4,], mean( (vrm - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Rerun Random Forrest with optimal parameters
+set.seed(2)
+vrm.classify4 <- randomForest(vrm~., data = vrm.per.1cm.jm.live, subset=train.vrm4, mtry= 3, ntree = 500, importance=TRUE) #Add ,importance=TRUE if you want %IncMSE
+print(vrm.classify4)
+varImpPlot(vrm.classify4, cex=1)
+# 
+# #Make a dataframe with predictor names and their importance
+# imp.vrm2.full.1cm <- importance(vrm.classify4)
+# imp.vrm2.full.1cm <- data.frame(predictors = rownames(imp.vrm2.full.1cm), imp.vrm2.full.1cm)
+# 
+# colnames(imp.vrm2.full.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.vrm2.full.1cm.sort <- arrange(imp.vrm2.full.1cm, desc(IncNodePurity))
+# imp.vrm2.full.1cm.sort$predictors <- factor(imp.vrm2.full.1cm.sort$predictors, levels = imp.vrm2.full.1cm.sort$predictors)
+# 
+# # Select the top 10 predictors
+# imp.vrm2.full.1cm.top.3 <- imp.vrm2.full.1cm.sort[1:3, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.vrm2.full.1cm.top.3, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 5 most important morphologies for VRM 1cm (without Abiotic) classification")
+
+```
+
+
+
+
+
+
+
+
+
+## Surface Complexity
+### Surface Complexity - Semi  (optimal mtry = 3) 
+
+```{r rug with abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(rug.per.1cm.semi) #80
+train.rug1=sample(1:nrow(rug.per.1cm.semi),53) #80 rows
+
+#Run Random Forest
+rug.classify <- randomForest(rug ~., data = rug.per.1cm.semi, subset = train.rug1, ntree = 500, importance = TRUE)
+print(rug.classify)
+plot(rug.classify)
+varImpPlot(rug.classify)
+
+#Determine # of trees where mse is the lowest
+which.min(rug.classify$mse) #481 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(rug.per.1cm.semi) #There are 23-1 = 22 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(22)
+test.err=double(22)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:22) 
+{
+  rf=randomForest(rug ~ . , data = rug.per.1cm.semi , subset = train.rug1, mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,rug.per.1cm.semi[-train.rug1,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(rug.per.1cm.semi[-train.rug1,], mean( (rug - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+test.err
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+##### Re-Run Random Forest with optimal parameters ###
+set.seed(2)
+rug.classify <- randomForest(rug ~., data = rug.per.1cm.semi, subset = train.rug1, mtry= 3, ntree = 500, importance = TRUE)
+print(rug.classify)
+varImpPlot(rug.classify)
+
+
+# #Make a dataframe with predictor names and their importance
+# imp.rug.semi.1cm <- importance(rug.classify)
+# imp.rug.semi.1cm <- data.frame(predictors = rownames(imp.rug.semi.1cm), imp.rug.semi.1cm)
+# 
+# colnames(imp.rug.semi.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.rug.semi.1cm.sort <- arrange(imp.rug.semi.1cm, desc(IncNodePurity))
+# imp.rug.semi.1cm.sort$predictors <- factor(imp.rug.semi.1cm.sort$predictors, levels = imp.rug.semi.1cm.sort$predictors)
+# 
+# # Select the top 10 predictors
+# imp.rug.semi.1cm.top.5 <- imp.rug.semi.1cm.sort[1:5, ]
+# imp.rug.semi.1cm.top.15 <- imp.rug.semi.1cm.sort[1:15, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.rug.semi.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 15 most important morphologies for Surface Complexity with Abiotic 1cm classification") +labs(y= "Variable Importance (IncNodePurity)", x = "")
+# 
+# 
+
+```
+
+### Surface Complexity - Semi (no abiotic) (optimal mtry = 4) 
+
+```{r rug no abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(rug.per.1cm.semi.live) #80
+train.rug2=sample(1:nrow(rug.per.1cm.semi.live),53) #80 rows
+
+#Run Random Forest
+rug.classify2 <- randomForest(rug ~., data = rug.per.1cm.semi.live, subset = train.rug2, ntree = 500, importance=TRUE)
+print(rug.classify2)
+plot(rug.classify2)
+varImpPlot(rug.classify2)
+
+#Determine # of trees where mse is the lowest
+which.min(rug.classify2$mse) #104 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(rug.per.1cm.semi.live) #There are 14-1 = 13 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(13)
+test.err=double(13)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:13) 
+{
+  rf=randomForest(rug ~ . , data = rug.per.1cm.semi.live , subset = train.rug2,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,rug.per.1cm.semi.live[-train.rug2,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(rug.per.1cm.semi.live[-train.rug2,], mean( (rug - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red"))
+
+#Re-Run Random Forrest with tuned parameters
+set.seed(2)
+rug.classify2 <- randomForest(rug~., data = rug.per.1cm.semi.live, subset = train.rug2, mtry=4, ntree = 500, importance=TRUE)
+print(rug.classify2)
+varImpPlot(rug.classify2)
+
+# #Make a dataframe with predictor names and their importance
+# imp.rug2.full.1cm <- importance(rug.classify2)
+# imp.rug2.full.1cm <- data.frame(predictors = rownames(imp.rug2.full.1cm), imp.rug2.full.1cm)
+# 
+# colnames(imp.rug2.full.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.rug2.full.1cm.sort <- arrange(imp.rug2.full.1cm, desc(IncNodePurity))
+# imp.rug2.full.1cm.sort$predictors <- factor(imp.rug2.full.1cm.sort$predictors, levels = imp.rug2.full.1cm.sort$predictors)
+# 
+# # Select the top 10 predictors
+# imp.rug2.full.1cm.top.5 <- imp.rug2.full.1cm.sort[1:5, ]
+# imp.rug2.full.1cm.top.10 <- imp.rug2.full.1cm.sort[1:10, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.vrm2.full.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for Surface Complexity without Abiotic 1cm classification")
+
+```
+
+
+### Surface Complexity - JM full (optimal mtry = 2) 
+
+```{r rug JM with abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(rug.per.1cm.jm) #80
+train.rug3=sample(1:nrow(rug.per.1cm.jm),53) #80 rows
+
+#Run Random Forest
+rug.classify3 <- randomForest(rug ~., data = rug.per.1cm.jm, subset = train.rug3, ntree = 500, importance=TRUE)
+print(rug.classify3)
+plot(rug.classify3)
+varImpPlot(rug.classify3)
+
+#Determine # of trees where mse is the lowest
+which.min(rug.classify3$mse) #321 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(rug.per.1cm.jm) #There are 6-1 = 5 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(5)
+test.err=double(5)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:5) 
+{
+  rf=randomForest(rug ~ . , data = rug.per.1cm.jm , subset = train.rug3,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,rug.per.1cm.jm[-train.rug3,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(rug.per.1cm.jm[-train.rug3,], mean( (rug - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+
+#Re-run Random Forest with optimal parameters tuned
+set.seed(2)
+rug.classify3 <- randomForest(rug~., data = rug.per.1cm.jm, mtry= 2, subset = train.rug3, ntree = 500, importance=TRUE)
+print(rug.classify3)
+varImpPlot(rug.classify3)
+
+# #Make a dataframe with predictor names and their importance
+# imp.rug3.simple.1cm <- importance(rug.classify3)
+# imp.rug3.simple.1cm <- data.frame(predictors = rownames(imp.rug3.simple.1cm), imp.rug3.simple.1cm)
+# 
+# colnames(imp.rug3.simple.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.rug3.simple.1cm.sort <- arrange(imp.rug3.simple.1cm, desc(IncNodePurity))
+# imp.rug3.simple.1cm.sort$predictors <- factor(imp.rug3.simple.1cm.sort$predictors, levels = imp.rug3.simple.1cm.sort$predictors)
+# 
+# # Select all predictors (7)
+# imp.rug3.simple.1cm.sort.top.5 <- imp.rug3.simple.1cm.sort[1:5, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.rug3.simple.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top most important morphologies for Surface Complexity 1cm Simple classification")
+
+```
+
+
+### Surface Complexity - JM no abiotic (optimal mtry = 1 | # of trees = 102) 
+
+```{r rug JM no abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(rug.per.1cm.jm.live) #80
+train.rug4=sample(1:nrow(rug.per.1cm.jm.live),53) #80 rows
+
+#Run Random Forest
+rug.classify4 <- randomForest(rug ~., data = rug.per.1cm.jm.live, subset = train.rug4, ntree = 500, importance=TRUE)
+print(rug.classify4)
+plot(rug.classify4)
+varImpPlot(rug.classify4)
+
+#Determine # of trees where mse is the lowest
+which.min(rug.classify4$mse) #102 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(rug.per.1cm.jm.live) #There are 4-1 = 3 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(3)
+test.err=double(3)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:3) 
+{
+  rf=randomForest(rug ~ . , data = rug.per.1cm.jm.live , subset = train.rug4, mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,rug.per.1cm.jm.live[-train.rug4,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(rug.per.1cm.jm.live[-train.rug4,], mean( (rug - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Re-Run Random Forrest with tuned parametrs
+set.seed(3)
+rug.classify4 <- randomForest(rug~., data = rug.per.1cm.jm.live, subset=train.rug4,mtry= 1, ntree = 500, importance=TRUE)
+print(rug.classify4)
+varImpPlot(rug.classify4)
+
+# #Make a dataframe with predictor names and their importance
+# imp.rug3.simple.1cm <- importance(rug.classify3)
+# imp.rug3.simple.1cm <- data.frame(predictors = rownames(imp.rug3.simple.1cm), imp.rug3.simple.1cm)
+# 
+# colnames(imp.rug3.simple.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.rug3.simple.1cm.sort <- arrange(imp.rug3.simple.1cm, desc(IncNodePurity))
+# imp.rug3.simple.1cm.sort$predictors <- factor(imp.rug3.simple.1cm.sort$predictors, levels = imp.rug3.simple.1cm.sort$predictors)
+# 
+# # Select all predictors (7)
+# imp.rug3.simple.1cm.sort.top.5 <- imp.rug3.simple.1cm.sort[1:5, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.rug3.simple.1cm.sort.top.5, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top most important morphologies for Surface Complexity 1cm Simple classification")
+
+
+```
+
+## Fractal Dimension 
+### Fractal Dimension - Semi  (optimal mtry = 9) 
+
+```{r Fractal Dimension with abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(fractal.dimension.per.1cm.semi) #80
+frac.train1=sample(1:nrow(fractal.dimension.per.1cm.semi),53) #53/80 = 66% training data
+
+#Run Random Forest
+fractal.dimension.classify <- randomForest(fractal.dimension ~., data = fractal.dimension.per.1cm.semi, subset = frac.train1, ntree = 500, importance=TRUE)
+print(fractal.dimension.classify)
+plot(fractal.dimension.classify)
+varImpPlot(fractal.dimension.classify)
+
+# #Determine # of trees where mse is the lowest
+# which.min(fractal.dimension.classify$mse) #486 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(fractal.dimension.per.1cm.semi) #There are 23-1 = 22 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(22)
+test.err=double(22)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:22) 
+{
+  rf=randomForest(fractal.dimension ~ . , data = fractal.dimension.per.1cm.semi , subset = frac.train1, mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,fractal.dimension.per.1cm.semi[-frac.train1,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(fractal.dimension.per.1cm.semi[-frac.train1,], mean( (fractal.dimension - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+test.err
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+
+
+#Re-Random Forrest with tuned parameters
+set.seed(2)
+fractal.dimension.classify <- randomForest(fractal.dimension~., data = fractal.dimension.per.1cm.semi, subset = frac.train1, mtry= 9, ntree = 500, importance = TRUE)
+print(fractal.dimension.classify)
+varImpPlot(fractal.dimension.classify)
+
+
+```
+
+
+### Fractal Dimension - Semi (no abiotic) (optimal mtry = 10) 
+
+```{r Fractal Dimension no abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+frac.train2=sample(1:nrow(fractal.dimension.per.1cm.semi.live),53) #80 rows
+
+#Run Random Forest
+fractal.dimension.classify2 <- randomForest(fractal.dimension ~., data = fractal.dimension.per.1cm.semi.live, subset = frac.train2, ntree = 500, importance=TRUE)
+print(fractal.dimension.classify2)
+plot(fractal.dimension.classify2)
+varImpPlot(fractal.dimension.classify2)
+
+# #Determine # of trees where mse is the lowest
+# which.min(fractal.dimension.classify2$mse) #125 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(fractal.dimension.per.1cm.semi.live) #There are 14-1 = 13 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(13)
+test.err=double(13)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:13) 
+{
+  rf=randomForest(fractal.dimension ~ . , data = fractal.dimension.per.1cm.semi.live , subset = frac.train2,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,fractal.dimension.per.1cm.semi.live[-frac.train2,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(fractal.dimension.per.1cm.semi.live[-frac.train2,], mean( (fractal.dimension - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Random Forrest
+set.seed(2)
+fractal.dimension.classify2 <- randomForest(fractal.dimension~., data = fractal.dimension.per.1cm.semi.live, subset = frac.train2, mtry=10, ntree = 500, importance=TRUE)
+print(fractal.dimension.classify2)
+varImpPlot(fractal.dimension.classify2)
+
+
+```
+
+### Fractal Dimension - JM (with abiotic) (optimal mtry = 1) 
+
+```{r Fractal Dimension simple determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+frac.train3=sample(1:nrow(fractal.dimension.per.1cm.jm),53) 
+
+#Run Random Forest
+fractal.dimension.classify3 <- randomForest(fractal.dimension ~., data = fractal.dimension.per.1cm.jm, subset = frac.train3, ntree = 500, importance=TRUE)
+print(fractal.dimension.classify3)
+plot(fractal.dimension.classify3)
+varImpPlot(fractal.dimension.classify3)
+
+# #Determine # of trees where mse is the lowest
+# which.min(fractal.dimension.classify3$mse) #183 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(fractal.dimension.per.1cm.jm) #There are 7-1 = 5 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(5)
+test.err=double(5)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:5) 
+{
+  rf=randomForest(fractal.dimension ~ . , data = fractal.dimension.per.1cm.jm , subset = frac.train3,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,fractal.dimension.per.1cm.jm[-frac.train3,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(fractal.dimension.per.1cm.jm[-frac.train3,], mean( (fractal.dimension - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red","blue"))
+
+
+#Random Forrest
+set.seed(2)
+fractal.dimension.classify3 <- randomForest(fractal.dimension~., data = fractal.dimension.per.1cm.jm, subset=frac.train3, mtry= 1, ntree = 500, importance=TRUE)
+print(fractal.dimension.classify3)
+varImpPlot(fractal.dimension.classify3)
+
+
+```
+
+
+### Fractal Dimension - JM (no abiotic) (optimal mtry = 1) 
+
+```{r Fractal Dimension simple determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+frac.train4=sample(1:nrow(fractal.dimension.per.1cm.jm),53) 
+
+#Run Random Forest
+fractal.dimension.classify4 <- randomForest(fractal.dimension ~., data = fractal.dimension.per.1cm.jm.live, subset = frac.train4, ntree = 500, importance=TRUE)
+print(fractal.dimension.classify3)
+plot(fractal.dimension.classify3)
+varImpPlot(fractal.dimension.classify4)
+
+# #Determine # of trees where mse is the lowest
+# which.min(fractal.dimension.classify3$mse) #183 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(fractal.dimension.per.1cm.jm.live) #There are 4-1 = 3 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(3)
+test.err=double(3)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:3) 
+{
+  rf=randomForest(fractal.dimension ~ . , data = fractal.dimension.per.1cm.jm.live , subset = frac.train4,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,fractal.dimension.per.1cm.jm.live[-frac.train4,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(fractal.dimension.per.1cm.jm.live[-frac.train4,], mean( (fractal.dimension - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red","blue"))
+
+
+#Random Forrest
+set.seed(2)
+fractal.dimension.classify3 <- randomForest(fractal.dimension~., data = fractal.dimension.per.1cm.jm.live, subset=frac.train4, mtry= 1, ntree = 500, importance=TRUE)
+print(fractal.dimension.classify3)
+varImpPlot(fractal.dimension.classify3)
+
+
+```
+
+## Profile Curvature Range
+### Profile Curvature Range - Semi  (optimal mtry = 1) 
+
+```{r Profile Curvature Range with abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(pro.per.1cm.semi) #80
+train.pro1 =sample(1:nrow(pro.per.1cm.semi),53) #53 rows = 66% of data (2/3)
+
+#Run Random Forest
+pro.classify <- randomForest(pro.range.log ~., data = pro.per.1cm.semi, subset = train.pro1, ntree = 500,importance=TRUE)
+print(pro.classify)
+plot(pro.classify)
+varImpPlot(pro.classify)
+
+# #Determine # of trees where mse is the lowest
+# which.min(pro.classify$mse) #378 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(pro.per.1cm.semi) #There are 23-1 = 22 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(22)
+test.err=double(22)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:22) 
+{
+  rf=randomForest(pro.range.log ~ . , data = pro.per.1cm.semi , subset = train.pro1, mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,pro.per.1cm.semi[-train.pro1,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(pro.per.1cm.semi[-train.pro1,], mean( (pro.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+test.err
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Re-Run andom Forrest
+set.seed(2)
+pro.classify <- randomForest(pro.range.log ~., data = pro.per.1cm.semi, subset = train.pro1, ntree = 500, mtry=1, importance=TRUE)
+print(pro.classify)
+varImpPlot(pro.classify)
+
+
+# 
+# #Make a dataframe with predictor names and their importance
+# imp.pro.semi.1cm <- importance(pro.classify)
+# imp.pro.semi.1cm <- data.frame(predictors = rownames(imp.pro.semi.1cm), imp.pro.semi.1cm)
+# 
+# colnames(imp.pro.semi.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.pro.semi.1cm.sort <- arrange(imp.pro.semi.1cm, desc(IncNodePurity))
+# imp.pro.semi.1cm.sort$predictors <- factor(imp.pro.semi.1cm.sort$predictors, levels = imp.pro.semi.1cm.sort$predictors)
+# 
+# # Select the top 10 predictors
+# imp.pro.semi.1cm.top.5 <- imp.pro.semi.1cm.sort[1:5, ]
+# imp.pro.semi.1cm.top.20 <- imp.pro.semi.1cm.sort[1:20, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.pro.semi.1cm.top.20, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 20 most important morphologies for Pro (with abiotic) 1cm classification")
+# 
+
+```
+
+
+### Profile Curvature Range - Semi (no abiotic) (optimal mtry = 1) 
+```{r Profile Curvature Range no abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+train.pro2=sample(1:nrow(pro.per.1cm.semi.live),53) #80 rows
+
+#Run Random Forest
+pro.classify2 <- randomForest(pro.range.log ~., data = pro.per.1cm.semi.live, subset = train.pro2, ntree = 500, importance=TRUE)
+print(pro.classify2)
+plot(pro.classify2)
+varImpPlot(pro.classify2)
+
+
+# #Determine # of trees where mse is the lowest
+# which.min(pro.classify2$mse) #11 trees 
+
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(pro.per.1cm.semi.live) #There are 14-1 = 13 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(13)
+test.err=double(13)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:13) 
+{
+  rf=randomForest(pro.range.log ~ . , data = pro.per.1cm.semi.live , subset = train.pro2,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,pro.per.1cm.semi.live[-train.pro2,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(pro.per.1cm.semi.live[-train.pro2,], mean( (pro.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+
+
+
+#Re-Run Random Forrest
+set.seed(2)
+pro.classify2 <- randomForest(pro.range.log ~., data = pro.per.1cm.semi.live, subset = train.pro2, ntree = 500, mtry = 1, importance=TRUE)
+print(pro.classify2)
+varImpPlot(pro.classify2)
+
+# #Make a dataframe with predictor names and their importance
+# imp.pro2.full.1cm <- importance(pro.classify2)
+# imp.pro2.full.1cm <- data.frame(predictors = rownames(imp.pro2.full.1cm), imp.pro2.full.1cm)
+# 
+# colnames(imp.pro2.full.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.pro2.full.1cm.sort <- arrange(imp.pro2.full.1cm, desc(IncNodePurity))
+# imp.pro2.full.1cm.sort$predictors <- factor(imp.pro2.full.1cm.sort$predictors, levels = imp.pro2.full.1cm.sort$predictors)
+# 
+# # Select the top 10 predictors
+# imp.pro2.full.1cm.top.5 <- imp.pro2.full.1cm.sort[1:5, ]
+# imp.pro2.full.1cm.top.10 <- imp.pro2.full.1cm.sort[1:10, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.pro2.full.1cm.top.10, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top 10 most important morphologies for ProCurv (without Abiotic) 1cm classification")
+
+```
+
+
+### Profile Curvature Range - JM with Abiotic (optimal mtry = 1) 
+```{r Profile Curvature Range simple determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+train.pro3=sample(1:nrow(pro.per.1cm.jm),53) #80 rows
+
+#Run Random Forest
+pro.classify3 <- randomForest(pro.range.log ~., data = pro.per.1cm.jm, subset = train.pro3, ntree = 500, importance=TRUE)
+print(pro.classify3)
+plot(pro.classify3)
+varImpPlot(pro.classify3)
+
+# #Determine # of trees where mse is the lowest
+# which.min(pro.classify3$mse) #52 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(pro.per.1cm.jm) #There are 6-1 = 5 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(5)
+test.err=double(5)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:5) 
+{
+  rf=randomForest(pro.range.log ~ . , data = pro.per.1cm.jm , subset = train.pro3,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,pro.per.1cm.jm[-train.pro3,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(pro.per.1cm.jm[-train.pro3,], mean( (pro.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Random Forrest
+set.seed(2)
+pro.classify3 <- randomForest(pro.range.log~., data = pro.per.1cm.jm, subset = train.pro3, mtry= 1, ntree = 500, importance=TRUE)
+print(pro.classify3)
+varImpPlot(pro.classify3)
+
+# #Make a dataframe with predictor names and their importance
+# imp.pro3.simple.1cm <- importance(pro.classify3)
+# imp.pro3.simple.1cm <- data.frame(predictors = rownames(imp.pro3.simple.1cm), imp.pro3.simple.1cm)
+# 
+# colnames(imp.pro3.simple.1cm)
+# 
+# # Order the predictor levels by importance
+# imp.pro3.simple.1cm.sort <- arrange(imp.pro3.simple.1cm, desc(IncNodePurity))
+# imp.pro3.simple.1cm.sort$predictors <- factor(imp.pro3.simple.1cm.sort$predictors, levels = imp.pro3.simple.1cm.sort$predictors)
+# 
+# # Select all predictors (7)
+# imp.pro3.simple.1cm.top.7 <- imp.pro3.simple.1cm.sort[1:7, ]
+# 
+# 
+# # Plot top morphologies
+# ggplot(imp.pro3.simple.1cm.top.7, aes(x = predictors, y = IncNodePurity)) + geom_bar(stat = "identity", fill = "indianred") + coord_flip() + ggtitle("Top most important morphologies for Pro Curv Simple 1cm classification")
+
+
+```
+
+### Profile Curvature Range - JM without Abiotic (optimal mtry = 1) 
+
+```{r Profile Curvature Range simple determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+train.pro4=sample(1:nrow(pro.per.1cm.jm.live),53) #80 rows
+
+#Run Random Forest
+pro.classify4 <- randomForest(pro.range.log ~., data = pro.per.1cm.jm.live, subset = train.pro4, ntree = 500, importance=TRUE)
+print(pro.classify4)
+plot(pro.classify4)
+varImpPlot(pro.classify4)
+
+# #Determine # of trees where mse is the lowest
+# which.min(pro.classify4$mse) #116 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(pro.per.1cm.jm.live) #There are 4-1 = 3 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(3)
+test.err=double(3)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:3) 
+{
+  rf=randomForest(pro.range.log ~ . , data = pro.per.1cm.jm.live , subset = train.pro4,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,pro.per.1cm.jm.live[-train.pro4,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(pro.per.1cm.jm.live[-train.pro4,], mean( (pro.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Random Forrest
+set.seed(2)
+pro.classify4 <- randomForest(pro.range.log~., data = pro.per.1cm.jm.live, subset = train.pro4, mtry= 1, ntree = 500, importance=TRUE)
+print(pro.classify4)
+varImpPlot(pro.classify4)
+
+```
+
+
+
+## Planform Curvature Range
+### Planform Curvature Range - Semi  (optimal mtry = 2) 
+
+```{r Planform Curvature Range with abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+train.plan1=sample(1:nrow(plan.per.1cm.semi),53) #53 rows is 66% (2/3)
+
+#Run Random Forest
+plan.classify <- randomForest(plan.range.log ~., data = plan.per.1cm.semi, subset = train.plan1, ntree = 500, importance=TRUE)
+print(plan.classify)
+plot(plan.classify)
+varImpPlot(plan.classify)
+
+# #Determine # of trees where mse is the lowest
+# which.min(plan.classify$mse) #39 trees 
+# 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(plan.per.1cm.semi) #There are 23-1 = 22 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(22)
+test.err=double(22)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:22) 
+{
+  rf=randomForest(plan.range.log ~ . , data = plan.per.1cm.semi , subset = train.plan1, mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,plan.per.1cm.semi[-train.plan1,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(plan.per.1cm.semi[-train.plan1,], mean( (plan.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+test.err
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+
+#Re-Run Random Forrest
+set.seed(2)
+plan.classify <- randomForest(plan.range.log~., data = plan.per.1cm.semi, subset=train.plan1, mtry= 2, ntree = 500, importance = TRUE)
+print(plan.classify)
+varImpPlot(plan.classify)
+
+
+```
+
+### Planform Curvature Range - Semi (no abiotic) (optimal mtry = 2) 
+
+```{r Planform Curvature Range no abiotic determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+nrow(plan.per.1cm.semi.live) #80
+train.plan2=sample(1:nrow(plan.per.1cm.semi.live),53) 
+
+#Run Random Forest
+plan.classify2 <- randomForest(plan.range.log ~., data = plan.per.1cm.semi.live, subset = train.plan2, ntree = 500, importance=TRUE)
+print(plan.classify2)
+plot(plan.classify2)
+varImpPlot((plan.classify2))
+# #Determine # of trees where mse is the lowest
+# which.min(plan.classify2$mse) #71 trees 
+
+
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(plan.per.1cm.semi.live) #There are 14-1 = 13 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(13)
+test.err=double(13)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:13) 
+{
+  rf=randomForest(plan.range.log ~ . , data = plan.per.1cm.semi.live , subset = train.plan2,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,plan.per.1cm.semi.live[-train.plan2,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(plan.per.1cm.semi.live[-train.plan2,], mean( (plan.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err,test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error"),pch=1, col=c("red"))
+
+#Re-run Random Forrest
+set.seed(2)
+plan.classify2 <- randomForest(plan.range.log~., data = plan.per.1cm.semi.live, subset=train.plan2, mtry=2, ntree = 500, importance = TRUE)
+print(plan.classify2)
+varImpPlot(plan.classify2)
+
+```
+
+### Planform Curvature Range - JM with Abiotic (optimal mtry = 1) 
+```{r Planform Curvature Range simple determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+train.plan3=sample(1:nrow(plan.per.1cm.jm),53) #80 rows
+
+#Run Random Forest
+plan.classify3 <- randomForest(plan.range.log ~., data = plan.per.1cm.jm, subset = train.plan3, ntree = 500, importance=TRUE)
+print(plan.classify3)
+plot(plan.classify3)
+varImpPlot(plan.classify3)
+
+# #Determine # of trees where mse is the lowest
+# which.min(plan.classify3$mse) #67 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(plan.per.1cm.jm) #There are 6-1 = 5 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(5)
+test.err=double(5)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:5) 
+{
+  rf=randomForest(plan.range.log ~ . , data = plan.per.1cm.jm , subset = train.plan3,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,plan.per.1cm.jm[-train.plan3,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(plan.per.1cm.jm[-train.plan3,], mean( (plan.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Random Forrest
+set.seed(2)
+plan.classify3 <- randomForest(plan.range.log~., data = plan.per.1cm.jm, subset = train.plan3, mtry= 1, ntree = 500, importance=TRUE)
+print(plan.classify3)
+varImpPlot(plan.classify3)
+
+```
+
+### Planform Curvature Range - JM without Abiotic (optimal mtry = 1) 
+
+```{r Planform Curvature Range jm without determining optimal mtry value, include=FALSE}
+#Create training data
+set.seed(2)
+train.plan4=sample(1:nrow(plan.per.1cm.jm.live),53) #53/80 rows for training data
+
+#Run Random Forest
+plan.classify4 <- randomForest(plan.range.log ~., data = plan.per.1cm.jm.live, subset = train.plan4, ntree = 500, importance=TRUE)
+print(plan.classify4)
+plot(plan.classify4)
+varImpPlot(plan.classify4)
+# #Determine # of trees where mse is the lowest
+# which.min(plan.classify4$mse) #139 trees 
+
+#Testing to see what # of predictors chosen at each split is best (aka has lowest OOB)
+ncol(plan.per.1cm.jm.live) #There are 4-1 = 3 predictors in this dataset
+
+#Collect OOB Error
+oob.err=double(3)
+test.err=double(3)
+
+#mtry is no of Variables randomly chosen at each split
+for(mtry in 1:3) 
+{
+  rf=randomForest(plan.range.log ~ . , data = plan.per.1cm.jm.live , subset = train.plan4,mtry=mtry,ntree=500) 
+  oob.err[mtry] = rf$mse[500] #Error of all Trees fitted
+  
+  pred<-predict(rf,plan.per.1cm.jm.live[-train.plan4,]) #Predictions on Test Set for each Tree
+  test.err[mtry]= with(plan.per.1cm.jm.live[-train.plan4,], mean( (plan.range.log - pred)^2)) #Mean Squared Test Error
+  
+  cat(mtry," ") #printing the output to the console
+  
+}
+
+#Get the OOB error
+oob.err
+test.err
+
+#Plot it
+matplot(1:mtry , cbind(oob.err, test.err), pch=1 , col=c("red","blue"),type="b",ylab="Mean Squared Error",xlab="Number of Predictors Considered at each Split")
+legend("topright",legend=c("Out of Bag Error", "Test Error"),pch=1, col=c("red", "blue"))
+
+#Random Forrest
+set.seed(2)
+plan.classify4 <- randomForest(plan.range.log~., data = plan.per.1cm.jm.live, subset = train.plan4, mtry= 1, ntree = 500, importance=TRUE)
+print(plan.classify4)
+varImpPlot(plan.classify4)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+# Plots
+## 1. %MSE for each comparison as discussed with JKB
+```{r mse percent plots done by rbind instead}
+#To collect the importance values for each variable
+#VRM
+vrm.classify2$importance
+varImpPlot(vrm.classify2, cex=1, scale=TRUE)
+varImpPlot(vrm.classify2, cex=1, scale=FALSE)
+
+#The varImpPlot function when scale is not set to false provides % inc MSE by dividing the importance value in the table by the importanceSD. So in order to calculate the %'s, I will need to first collect the importance, importanceSD into same dataframe then divide importance/sd to get the %. 
+
+#Load 2 dataframes
+vrm.semi.imp <- vrm.classify2$importance
+vrm.semi.sd <- vrm.classify2$importanceSD
+
+#Convert to dataframe
+vrm.semi.imp <- as.data.frame(vrm.semi.imp)
+vrm.semi.sd <- as.data.frame(vrm.semi.sd)
+
+#Bind two df's together
+vrm.semi.imp.df  <- cbind(vrm.semi.imp,vrm.semi.sd)
+colnames(vrm.semi.imp.df) 
+str(vrm.semi.imp.df) #All numeric
+
+colnames(vrm.semi.imp.df)[which(names(vrm.semi.imp.df)=="%IncMSE")] <- "MSE"
+colnames(vrm.semi.imp.df)[which(names(vrm.semi.imp.df)=="IncNodePurity")] <- "nodepurity"
+colnames(vrm.semi.imp.df)[which(names(vrm.semi.imp.df)=="vrm.semi.sd")] <- "imp.sd"
+colnames(vrm.semi.imp.df)
+
+vrm.semi.imp.df$Percent.Inc.MSE <- (vrm.semi.imp.df$MSE) / (vrm.semi.imp.df$imp.sd)
+vrm.semi.imp.df$metric <- "vrm"
+vrm.semi.imp.df$morphology <- rownames(vrm.semi.imp.df)
+
+#Rename rownames as numbers
+dim(vrm.semi.imp.df)
+rownames(vrm.semi.imp.df)<-c(1:21)
+
+#Order from low% to high% mse
+vrm.semi.imp.df<- vrm.semi.imp.df[order(vrm.semi.imp.df$Percent.Inc.MSE),]
+row.names(vrm.semi.imp.df) <- 1:nrow(vrm.semi.imp.df) #Changes the row names so that they are re-orderd 1-21
+
+#Subset out only top 7 shared morphologies
+vrm.semi.imp.df <- vrm.semi.imp.df[c(4:13),c(1:6)]
+
+
+#Surface Complexity
+#Load 2 dataframes
+rug.semi.imp <- rug.classify2$importance
+rug.semi.sd <- rug.classify2$importanceSD
+
+#Convert to dataframe
+rug.semi.imp <- as.data.frame(rug.semi.imp)
+rug.semi.sd <- as.data.frame(rug.semi.sd)
+
+#Bind two df's together
+rug.semi.imp.df  <- cbind(rug.semi.imp,rug.semi.sd)
+colnames(rug.semi.imp.df) 
+str(rug.semi.imp.df) #All numeric
+
+colnames(rug.semi.imp.df)[which(names(rug.semi.imp.df)=="%IncMSE")] <- "MSE"
+colnames(rug.semi.imp.df)[which(names(rug.semi.imp.df)=="IncNodePurity")] <- "nodepurity"
+colnames(rug.semi.imp.df)[which(names(rug.semi.imp.df)=="rug.semi.sd")] <- "imp.sd"
+
+colnames(rug.semi.imp.df)
+
+rug.semi.imp.df$Percent.Inc.MSE <- (rug.semi.imp.df$MSE) / (rug.semi.imp.df$imp.sd)
+rug.semi.imp.df$metric <- "surface.complexity"
+rug.semi.imp.df$morphology <- rownames(rug.semi.imp.df)
+
+#Rename rownames as numbers
+dim(rug.semi.imp.df)
+rownames(rug.semi.imp.df)<-c(1:21)
+
+#Order from low% to high% mse
+rug.semi.imp.df<- rug.semi.imp.df[order(rug.semi.imp.df$Percent.Inc.MSE),]
+row.names(rug.semi.imp.df) <- 1:nrow(rug.semi.imp.df) #Changes the row names so that they are re-orderd 1-21
+
+#Subset out only top 7 morphologies
+rug.semi.imp.df2 <- rug.semi.imp.df[c(4:13),c(1:6)]
+
+
+rug.semi.imp.df #Compare with varImpPlot(rug.classify2, cex=1, scale=TRUE)
+
+
+#Combine rug _ vrm together
+complexity.inc.mse<- rbind(vrm.semi.imp.df,rug.semi.imp.df)
+
+#Check Levels of Morphology
+levels(complexity.inc.mse$morphology)
+complexity.inc.mse$morphology <- factor(complexity.inc.mse$morphology, levels = vrm.semi.imp.df$morphology)
+
+mse1 <- ggplot(complexity.inc.mse, aes(x = Percent.Inc.MSE, y=morphology, colour= metric, factor(Percent.Inc.MSE))) + geom_point() + theme_classic(base_size = 16) + xlab("") + ylab("") +  theme(legend.position="none")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#<------------ Jenn's Classification ------------>
+#VRM
+vrm.jm.imp <- vrm.classify3$importance
+vrm.jm.sd <- vrm.classify3$importanceSD
+
+#Convert to dataframe
+vrm.jm.imp <- as.data.frame(vrm.jm.imp)
+vrm.jm.sd <- as.data.frame(vrm.jm.sd)
+
+#Bind two df's together
+vrm.jm.imp.df  <- cbind(vrm.jm.imp,vrm.jm.sd)
+colnames(vrm.jm.imp.df) 
+str(vrm.jm.imp.df) #All numeric
+
+colnames(vrm.jm.imp.df)[which(names(vrm.jm.imp.df)=="%IncMSE")] <- "MSE"
+colnames(vrm.jm.imp.df)[which(names(vrm.jm.imp.df)=="IncNodePurity")] <- "nodepurity"
+colnames(vrm.jm.imp.df)[which(names(vrm.jm.imp.df)=="vrm.jm.sd")] <- "imp.sd"
+colnames(vrm.jm.imp.df)
+
+vrm.jm.imp.df$Percent.Inc.MSE <- (vrm.jm.imp.df$MSE) / (vrm.jm.imp.df$imp.sd)
+vrm.jm.imp.df$metric <- "vrm"
+vrm.jm.imp.df$morphology <- rownames(vrm.jm.imp.df)
+
+#Rename rownames as numbers
+dim(vrm.jm.imp.df)
+rownames(vrm.jm.imp.df)<-c(1:5)
+
+#Order from low% to high% mse
+vrm.jm.imp.df<- vrm.jm.imp.df[order(vrm.jm.imp.df$Percent.Inc.MSE),]
+row.names(vrm.jm.imp.df) <- 1:nrow(vrm.jm.imp.df) #Changes the row names so that they are re-orderd 1-21
+
+vrm.jm.imp.df #Compare with varImpPlot(vrm.classify2, cex=1, scale=TRUE)
+
+
+
+#<----- Surface Complexity ----->
+#Load 2 dataframes
+rug.jm.imp <- rug.classify3$importance
+rug.jm.sd <- rug.classify3$importanceSD
+
+#Convert to dataframe
+rug.jm.imp <- as.data.frame(rug.jm.imp)
+rug.jm.sd <- as.data.frame(rug.jm.sd)
+
+#Bind two df's together
+rug.jm.imp.df  <- cbind(rug.jm.imp,rug.jm.sd)
+colnames(rug.jm.imp.df) 
+str(rug.jm.imp.df) #All numeric
+
+colnames(rug.jm.imp.df)[which(names(rug.jm.imp.df)=="%IncMSE")] <- "MSE"
+colnames(rug.jm.imp.df)[which(names(rug.jm.imp.df)=="IncNodePurity")] <- "nodepurity"
+colnames(rug.jm.imp.df)[which(names(rug.jm.imp.df)=="rug.jm.sd")] <- "imp.sd"
+
+colnames(rug.jm.imp.df)
+
+rug.jm.imp.df$Percent.Inc.MSE <- (rug.jm.imp.df$MSE) / (rug.jm.imp.df$imp.sd)
+rug.jm.imp.df$metric <- "surface.complexity"
+rug.jm.imp.df$morphology <- rownames(rug.jm.imp.df)
+
+#Rename rownames as numbers
+dim(rug.jm.imp.df)
+rownames(rug.jm.imp.df)<-c(1:5)
+
+#Order from low% to high% mse
+rug.jm.imp.df<- rug.jm.imp.df[order(rug.jm.imp.df$Percent.Inc.MSE),]
+row.names(rug.jm.imp.df) <- 1:nrow(rug.jm.imp.df) #Changes the row names so that they are re-orderd 1-21
+
+rug.jm.imp.df #Compare with varImpPlot(rug.classify2, cex=1, scale=TRUE)
+
+
+#Combine rug _ vrm together
+complexity.jm.inc.mse<- rbind(vrm.jm.imp.df,rug.jm.imp.df)
+
+#Check Levels of Morphology
+levels(complexity.jm.inc.mse$morphology)
+complexity.jm.inc.mse$morphology <- factor(complexity.jm.inc.mse$morphology, levels = vrm.jm.imp.df$morphology)
+
+mse2 <- ggplot(complexity.jm.inc.mse, aes(x = Percent.Inc.MSE, y=morphology, colour= metric, factor(Percent.Inc.MSE))) + geom_point() + theme_classic(base_size = 16) + xlab("") + ylab("") +  theme(legend.position="none") 
+
+
+
+#Plot 2 figures together into publication-worthy plot as requested by JKB
+arrange <- ggarrange(mse1, mse2) 
+
+annotate_figure(arrange, top = text_grob("Blue=VRM | Red=SurfaceComplexity", color = "black", face = "bold", size = 18),  bottom = text_grob("% Increase MSE", color = "black", size = 18, face = "bold"))
+
+
+
+
+
+
+
+
+
+
+```

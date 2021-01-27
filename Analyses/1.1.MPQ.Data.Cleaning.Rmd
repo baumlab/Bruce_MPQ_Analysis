@@ -899,12 +899,16 @@ levels(slope$year.site.ppq)
 slope<- slope[order(slope$year.site.ppq),]
 row.names(slope) <- 1:nrow(slope) #Changes the row names so that they are re-orderd 1-80
 
+head(slope)
 #Reorder dataframe
-slope1 <- subset(slope, select = c("year", "hum_dist", "sqrt.hdist.cont","pub.site", "site", "ppq", "island.side", "region.3", "region.4", "region.full", "fractal.dimension"))
+slope1 <- subset(slope, select = c("year", "hum_dist", "sqrt.hdist.cont","pub.site", "site", "ppq", "island.side", "region.3", "fractal.dimension"))
 
-#Export Fractal Dimension Dataframe
-write.csv(slope1, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv")
 
+ggplot(slope1, aes(x = year, y=fractal.dimension, fill=year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("Year") + ylab("Fractal Dimension") +  theme(legend.position="none")
+
+#Fractal Dimension dataframe
+slope1
+frac <- subset(slope1, select = c("fractal.dimension")) #To combine with other metrics in 1cm DEM group
   
 ```
 
@@ -929,15 +933,43 @@ ranges$plan.range <- ranges$plan.max - ranges$plan.min
 #Create final dataframe to later merge with other complexity dataset
 range.final <- ranges[,-(6:14)]
 
+#ggplot(range.final, aes(x = year, y=pro.range, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") + year.colscale +  theme(legend.position="none") 
+
+
 
 #Add onto complexity dataframe
 mpq.all #complexity metrics
 colnames(mpq.all)
 mpq <- cbind(mpq.all, range.final)
 
+#Add collumns of log-transformed profile range
+mpq$pro.range.log <- log(mpq$pro.range)
+mpq$plan.range.log <- log(mpq$plan.range)
+
 #ReOrder dataframe
 colnames(mpq)
-mpq <- subset(mpq, select = c("year", "pub.site",  "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "region.full", "DEM", "year.site.ppq", "area_2d", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range", "plan.curv", "plan.range"))
+mpq <- subset(mpq, select = c("year", "pub.site",  "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "DEM", "year.site.ppq", "area_2d", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range.log", "plan.curv", "plan.range.log"))
+
+
+
+#Sumset total dataframe here by DEM scales
+mpq.1cm <- subset(mpq, DEM == 1)
+mpq.4cm <- subset(mpq, DEM == 4)
+mpq.8cm <- subset(mpq, DEM == 8)
+
+#Add Fractal Dimension data to 1cm
+mpq.1cm.t <- cbind(mpq.1cm, frac)
+
+#Export these dataframes as full complexity dataframe
+write.csv(mpq.1cm.t, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/MPQ.Habitat.Structure.1cm.FULL.14Jan2020.csv")
+write.csv(mpq.4cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/MPQ.Habitat.Structure.4cm.FULL.14Jan2020.csv")
+write.csv(mpq.8cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/MPQ.Habitat.Structure.8cm.FULL.14Jan2020.csv")
+
+
+
+
+
+
 
 #Dataframe to combine with digitization dataframe
 mpq.3yrs <- subset(mpq, year == 2015 | year == 2017 | year == 2019) #Dataframe to link with digitization datasets
@@ -945,6 +977,7 @@ mpq.3yrs.1cm <- subset(mpq.3yrs, DEM == 1)
 mpq.3yrs.4cm <- subset(mpq.3yrs, DEM == 4)
 mpq.3yrs.8cm <- subset(mpq.3yrs, DEM == 8)
 
+range.final
 #Export Fractal Dimension Dataframe
 write.csv(range.final, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Range.Data.Final.csv")
 write.csv(mpq, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Complexity.Data.Final.21Dec2020.csv")
@@ -1382,9 +1415,9 @@ row.names(dig) <- 1:nrow(dig) #Changes the row names so that they are re-orderd 
 
 #### A. Create simplified Live/Dead Dataframe and summarize
 ```{r Live dead dataframe, echo=FALSE}
-##################################################################################################
+############################################################################################
 #<-----------CREATE Simple Live/Dead Coral Cover Dataframe------------>#
-##################################################################################################
+############################################################################################
 dig.simple <- dig
 
 #Add new collumn
@@ -1555,7 +1588,7 @@ geom_vline(xintercept = 74.5, linetype="dashed", color="Magenta", size=0.5)+them
 dig2 <- dig
 
 dig2$Benthic_Morphology[dig2$Benthic_Morphology == "Live_Massive_Grooved"] <- "Live_Massive"
-dig2$Benthic_Morphology[dig2$Benthic_Morphology == "Live_Porites"] <- "Live_Massive"
+# dig2$Benthic_Morphology[dig2$Benthic_Morphology == "Live_Porites"] <- "Live_Massive"
 
 dig2
 
@@ -1596,6 +1629,7 @@ dig2_sum$prop_area <- (dig2_sum$Area / dig2_sum$Tot_Area)  #Calculate proportion
 
 #Convert to wide format
 dig2_prop_w <- dcast(dig2_sum, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="prop_area", fun.aggregate = sum) #Convert to wide format
+
 dig2_perc_w <- dcast(dig2_sum, year + hum_dist + region+ site + site.ppq + year.site.ppq ~Benthic_Morphology, value.var="per_area", fun.aggregate = sum) #Convert to wide format
 
 
@@ -1680,7 +1714,6 @@ dig_prop_w <- dcast(dig_cover, year + hum_dist + region+ site + site.ppq + year.
 #Dataframes
 dig_per_w #Percent coverage wide
 dig_prop_w #Proportional coverage wide
-
 
 
 # <--------- 3b. Calculating colony counts of this dataframe -------> #
@@ -1791,68 +1824,63 @@ write.csv(dig_prop_w, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Digitiza
 #Add in all digitization information at each DEM scale
 #This data will be from the coarse dataframe and full dataframe (doesn't include modified/reduced full classification system, so if I need that data, I will have to check back in and change the code here)
 
+#1. Create complexity dataframe first with ALL different metrics
 #Dataframe to combine with digitization dataframe
-mpq.3yrs.1cm <- subset(mpq.3yrs, DEM == 1)
+mpq.3yrs.1cm.need.frac <- subset(mpq.3yrs, DEM == 1)
 mpq.3yrs.4cm <- subset(mpq.3yrs, DEM == 4)
 mpq.3yrs.8cm <- subset(mpq.3yrs, DEM == 8)
-dig_simple_per_w  #Coarse Digitization dataframe
-dig_per_w         #Full Dataframe percent coverage
-dig.num.w1        #Full Dataframe colony count
 
+nrow(mpq.3yrs.1cm) #80
+nrow(mpq.3yrs.4cm) #80
+nrow(mpq.3yrs.8cm) #80
+
+#Need to add in fractal dimension to 1cm dataframe
+slope1 #Fractal dataframe
+nrow(slope1) #127
+slope <- subset(slope1, year == 2015 | year == 2017 | year == 2019)
+nrow(slope) #80
+
+
+mpq.1cm <- cbind(mpq.3yrs.1cm,slope)
+mpq.3yrs.1cm <- subset(mpq.1cm, select = c("year", "pub.site", "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "DEM", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range", "plan.curv", "plan.range", "fractal.dimension"))
+
+
+mpq.4cm <- cbind(mpq.3yrs.4cm,slope)
+mpq.3yrs.4cm <- subset(mpq.4cm, select = c("year", "pub.site", "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "DEM", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range", "plan.curv", "plan.range"))
+
+mpq.8cm <- cbind(mpq.3yrs.8cm,slope)
+mpq.3yrs.8cm <- subset(mpq.8cm, select = c("year", "pub.site", "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "DEM", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range", "plan.curv", "plan.range"))
+
+
+#Final Complexity Dataframes
+mpq.3yrs.1cm
+mpq.3yrs.4cm
+mpq.3yrs.8cm
+
+
+
+#<---------- Combine Complexity + Digitization dataframes ------>
 #1cm
-mpq.dig.1cm <- cbind(mpq.3yrs.1cm,dig_simple_per_w)
-mpq.dig.1cm <-mpq.dig.1cm[,-c(22:27)] #remove rows 21-27
-mpq.dig.1cm <-mpq.dig.1cm[,-c(24:27)] #remove rows NonCoral, Rubble, sand % cover
-
-#Now bind in full dataframe to this one
-mpq.dig.1cm <- cbind(mpq.dig.1cm,dig_per_w) #Percent coverage wide)
-mpq.dig.1cm <-mpq.dig.1cm[,-c(25:30)] #remove same metadata already present
-
-#Finally, add in colony count data
-mpq.dig.1cm <- cbind(mpq.dig.1cm,dig.num.w1) #Colony Count Data)
-ncol(mpq.dig.1cm)
-head(mpq.dig.1cm)
-mpq.dig.1cm <-mpq.dig.1cm[,-c(52:57)] #remove same metadata already present
-
-#Write data
-write.csv(mpq.dig.1cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_1cm_Data_11Dec20.csv")
+mpq.dig.full.1cm <- cbind(mpq.3yrs.1cm,dig.per.full)
+mpq.dig.semi.1cm <- cbind(mpq.3yrs.1cm,dig.per.semi)
+mpq.dig.simple.1cm <- cbind(mpq.3yrs.1cm,dig.per.simple)
 
 
-#<------ 4cm -------->
-mpq.dig.4cm <- cbind(mpq.3yrs.4cm,dig_simple_per_w)
-mpq.dig.4cm <-mpq.dig.4cm[,-c(22:27)] #remove rows 21-27
-mpq.dig.4cm <-mpq.dig.4cm[,-c(24:27)] #remove rows NonCoral, Rubble, sand % cover
 
-#Now bind in full dataframe to this one
-mpq.dig.4cm <- cbind(mpq.dig.4cm,dig_per_w) #Percent coverage wide)
-mpq.dig.4cm <-mpq.dig.4cm[,-c(25:30)] #remove same metadata already present
+############################################################################################
+#<---------- Export dataframes ------>
+#A. 1cm Dataframes
+write.csv(mpq.dig.full.1cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_FULL_1cm_Data_11Jan21.csv")
+write.csv(mpq.dig.semi.1cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_1cm_Data_11Jan21.csv")
+write.csv(mpq.dig.simple.1cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SIMPLE_1cm_Data_11Jan21.csv")
 
-#Finally, add in colony count data
-mpq.dig.4cm <- cbind(mpq.dig.4cm,dig.num.w1) #Colony Count Data)
-ncol(mpq.dig.4cm)
-head(mpq.dig.4cm)
-mpq.dig.4cm <-mpq.dig.4cm[,-c(52:57)] #remove same metadata already present
 
-#Write
-write.csv(mpq.dig.4cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_4cm_Data_11Dec20.csv")
 
-#<------ 8cm -------->
-mpq.dig.8cm <- cbind(mpq.3yrs.8cm,dig_simple_per_w)
-mpq.dig.8cm <-mpq.dig.8cm[,-c(22:27)] #remove rows 21-27
-mpq.dig.8cm <-mpq.dig.8cm[,-c(24:27)] #remove rows NonCoral, Rubble, sand % cover
 
-#Now bind in full dataframe to this one
-mpq.dig.8cm <- cbind(mpq.dig.8cm,dig_per_w) #Percent coverage wide)
-mpq.dig.8cm <-mpq.dig.8cm[,-c(25:30)] #remove same metadata already present
-
-#Finally, add in colony count data
-mpq.dig.8cm <- cbind(mpq.dig.8cm,dig.num.w1) #Colony Count Data)
-ncol(mpq.dig.8cm)
-head(mpq.dig.8cm)
-mpq.dig.8cm <-mpq.dig.8cm[,-c(52:57)] #remove same metadata already present
-
-#Write
-write.csv(mpq.dig.8cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_8cm_Data_11Dec20.csv")
+# write.csv(mpq.dig.4cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_FULL_4cm_Data_11Jan21.csv")
+# write.csv(mpq.dig.8cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_FULL_8cm_Data_11Jan21.csv")
+# write.csv(mpq.dig.semi.4cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_4cm_Data_11Jan21.csv")
+# write.csv(mpq.dig.semi.8cm, "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_8cm_Data_11Jan21.csv")
 
 
 ```
@@ -2311,7 +2339,7 @@ ki_AB <- ki.fish %>% dplyr::group_by(year, KI_Date, site, diver, transect) %>% d
 
 
 ## Total abundance
-ki_AB <- ki_full %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_total = sum(number))
+# ki_AB <- ki_full %>% group_by(heat, year, ki.date, site, observer) %>% summarise(AB_total = sum(number))
 
 ## Functional group abundance
 # Corallivores
@@ -2338,299 +2366,301 @@ ki_AB_plank <- ki_plank %>% group_by(heat, year, ki.date, site, observer) %>% su
 #Create unique collumn
 ki.fish$year.site.transect <- paste(ki.fish$year, ki.fish$site, ki.fish$transect, sep= ".")
 
-#Try subsetting by coarseFG
-ki.herbs <- subset(ki.fish, CoarseFG == "Herbivore")
+# #Try subsetting by coarseFG
+# ki.herbs <- subset(ki.fish, CoarseFG == "Herbivore")
+# 
+# str(ki.herbs$count) #numeric
+# 
+# #Summarize by year.site.transect
+# ki.herbs.sum <- ki.herbs %>% group_by(year, site, diver, transect, CoarseFG, year.site.transect) %>% summarise(Abundance = sum(count))
+# colnames(ki.herbs)
+# 
+# # ki.herbs.sum <- ddply(ki.herbs, c("year", "site", "diver", "transect", "species", "family", "CoarseFG"), summarise, Abundance = sum(count) )
+# 
+# ki.herbs.sum <- ddply(ki.herbs, c("year", "site", "transect", "CoarseFG"), summarise, Abundance = sum(count) )
+# ki.herbs.sum
+# 
 
-#Summarize fish counts by site.transect
 
 
-#Summarize all fish counts by site.spp
-ki.fish.sum <- ki.fish %>% group_by(year, site, transect, CoarseFG, year.site.transect) %>% summarise(Total = sum(count))
-
-# Summarize the total area of each morphology in Long format
-str(dig.simple$area)
-dig_sum_simple <- dig.simple %>% dplyr::group_by(year, hum_dist, region, site, ppq, year.site.ppq, status) %>% dplyr::summarise(Area = sum(area))
 
 
+
+
+#KB's WORK
+#Summarize all fish counts by transect
+ki.fish.sum <- ddply(ki.fish, c("year", "site", "transect", "CoarseFG"), summarise, Abundance = sum(count) )
+ki.fish.sum$year.site.transect <- paste(ki.fish.sum$year, ki.fish.sum$site, ki.fish.sum$transect, sep = ".")
+
+#Order levels by year.site.transect
+levels(ki.fish.sum$year.site.transect)
+ki.fish.sum$year.site.transect<- factor(ki.fish.sum$year.site.transect, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(ki.fish.sum$year.site.transect)
+
+#Re-Order dataframe
+ki.fish.sum<- ki.fish.sum[order(ki.fish.sum$year.site.transect),]
+ki.fish.sum <- na.omit(ki.fish.sum)
+row.names(ki.fish.sum) <- 1:nrow(ki.fish.sum) #Changes the row names so that they are re-orderd 1-80
+
+#Subset by functional group
+ki.herb <- subset(ki.fish.sum, CoarseFG == "Herbivore")
+nrow(ki.herb) #80 (Perfect!)
+
+ki.plank <- subset(ki.fish.sum, CoarseFG == "Planktivore")
+nrow(ki.plank) #80 (Perfect!)
+
+ki.carn <- subset(ki.fish.sum, CoarseFG == "Carnivore")
+nrow(ki.carn) #80 (Perfect!)
+
+ki.det <- subset(ki.fish.sum, CoarseFG == "Detritivore")
+nrow(ki.det) #68 
+
+ki.om <- subset(ki.fish.sum, CoarseFG == "Omnivore")
+nrow(ki.om) #79
+
+ki.plcr <-  subset(ki.fish.sum, CoarseFG == "Planktivore/Carnivore")
+nrow(ki.plcr) #11
+
+
+```
+
+# Subset fishes by size
+```{r }
+str(ki.fish)
+colnames(ki.fish)[which(names(ki.fish)=="size(cm)")] <- "size"
+ki.fish$size <- as.numeric(ki.fish$size)
+
+#Put fish sizes into bins (0-5cm, 6-10cm, 11-15cm, and 16-20cm)
+fish.xs <- subset(ki.fish, size <= 5)
+fish.small <- subset(ki.fish, size > 5 & size < 11)
+fish.med <- subset(ki.fish, size > 10 & size < 16)
+fish.large <- subset(ki.fish, size > 15 & size < 21)
+fish.xl <- subset(ki.fish, size > 20)
+
+
+
+#Summarize all fish counts by transect
+fish.xs <- ddply(ki.fish, c("year", "site", "transect", "CoarseFG"), summarise, Abundance = sum(count) )
+fish.xs$year.site.transect <- paste(fish.xs$year, fish.xs$site, fish.xs$transect, sep = ".")
+
+#Order levels by year.site.transect
+levels(fish.xs$year.site.transect)
+fish.xs$year.site.transect<- factor(fish.xs$year.site.transect, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(fish.xs$year.site.transect)
+
+#Re-Order dataframe
+fish.xs<- fish.xs[order(fish.xs$year.site.transect),]
+fish.xs <- na.omit(fish.xs)
+row.names(fish.xs) <- 1:nrow(fish.xs) #Changes the row names so that they are re-orderd 1-80
+
+
+#Subset by functional group
+xs.herb <- subset(fish.xs, CoarseFG == "Herbivore")
+nrow(xs.herb) #80 (Perfect!)
+
+xs.plank <- subset(fish.xs, CoarseFG == "Planktivore")
+nrow(xs.plank) #80 (Perfect!)
+
+xs.carn <- subset(fish.xs, CoarseFG == "Carnivore")
+nrow(xs.carn) #80 (Perfect!)
+
+xs.det <- subset(fish.xs, CoarseFG == "Detritivore")
+nrow(xs.det) #68 
+
+xs.om <- subset(fish.xs, CoarseFG == "Omnivore")
+nrow(xs.om) #79
+
+xs.plcr <-  subset(fish.xs, CoarseFG == "Planktivore/Carnivore")
+nrow(xs.plcr) #11
+
+#Add STR Complexity data
+#Merge together
+xs.herb.com.1cm  <-  cbind(mpq.fish.1cm, xs.herb)
+xs.herb.com.1cm <-xs.herb.com.1cm[,-c(20)] #remove row 20
+xs.herb.com.1cm <-xs.herb.com.1cm[,-c(15:17)] #remove row 15-17
+
+
+
+
+
+
+
+#Plot those
+ggscatter(xs.herb.com.1cm, x = "rug", y = "Abundance", add = "reg.line") + stat_cor(label.x = 2, label.y = 100) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
 
 
 
 
 ```
+# Summarise complexity data to merge with fish data
+```{r summarize complexity data}
+#<----- Complexity Data for 3 timepoints -----> 
+mpq.3yrs <- subset(mpq, year == 2015 | year == 2017 | year == 2019) #Dataframe to link with digitization datasets
+mpq.3yrs$year.site.transect <- paste(mpq.3yrs$year, mpq.3yrs$site, mpq.3yrs$ppq, sep=".")
 
-# old cleaning script form SD
+#Order levels by site.ppq.transect
+levels(mpq.3yrs$year.site.transect)
+mpq.3yrs$year.site.transect<- factor(mpq.3yrs$year.site.transect, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(mpq.3yrs$year.site.transect)
 
-```{r cleaning script from Sean, eval=FALSE, include=FALSE}
-### Cleaning the 2019 Data and creating a dataframe with 2017, 2018, and 2019 data###
+#Re-Order dataframe
+mpq.3yrs<- mpq.3yrs[order(mpq.3yrs$year.site.transect),]
+row.names(mpq.3yrs) <- 1:nrow(mpq.3yrs) #Changes the row names so that they are re-orderd 1-80
 
-### Add Family info
-ki_full$Family <- as.character(trophic$X[match(ki_full$Species, trophic$CREDSpecies)])
-dim(ki_full[is.na(ki_full$Family),])
+#Subset by DEM scale
+mpq.3yrs.1cm <- subset(mpq.3yrs, DEM == 1)
+mpq.3yrs.4cm <- subset(mpq.3yrs, DEM == 4)
+mpq.3yrs.8cm <- subset(mpq.3yrs, DEM == 8)
 
-# Add in Family info for species not in 'trophic' dataset
-unique(ki_full$Species[is.na(ki_full$Family)])
-
-ki_full$Family[ki_full$Species == "Arothron caeruleopunctatus"] <- "Tetraodontidae"
-ki_full$Family[ki_full$Species == "Bothus pantherinus"] <- "Bothidae"
-ki_full$Family[ki_full$Species == "Chlorurus sp."] <- "Scaridae"
-ki_full$Family[ki_full$Species == "Chromis atripes"] <- "Pomacentridae"
-ki_full$Family[ki_full$Species == "Cirripectes auritus"] <- "Blenniidae"
-ki_full$Family[ki_full$Species == "Cirripectes sp."] <- "Blenniidae"
-ki_full$Family[ki_full$Species == "Epinephelus sp."] <- "Serranidae"
-ki_full$Family[ki_full$Species == "Eviota cometa"] <- "Gobiidae"
-ki_full$Family[ki_full$Species == "Gnatholepis anjerensis"] <- "Gobiidae"
-ki_full$Family[ki_full$Species == "Gymnothorax thyrsoideus"] <- "Muraenidae"
-ki_full$Family[ki_full$Species == "Echidna nebulosus"] <- "Muraenidae"
-ki_full$Family[ki_full$Species == "Halichoeres sp."] <- "Labridae"
-ki_full$Family[ki_full$Species == "Halichoeres chrysus"] <- "Labridae"
-ki_full$Family[ki_full$Species == "Iniistius auropunctatus"] <- "Labridae"
-ki_full$Family[ki_full$Species == "Kyphosus sp"] <- "Kyphosidae"
-ki_full$Family[ki_full$Species == "Neosynchiropus ocellatus"] <- "Callionymidae"
-ki_full$Family[ki_full$Species == "Ostorhinchus angustatus"] <- "Apogonidae"
-ki_full$Family[ki_full$Species == "Ostorhinchus apogonoides"] <- "Apogonidae"
-ki_full$Family[ki_full$Species == "Parapercis lata"] <- "Pinguipedidae"
-ki_full$Family[ki_full$Species == "Parapercis sp."] <- "Pinguipedidae"
-ki_full$Family[ki_full$Species == "Plagiotremus sp."] <- "Blenniidae"
-ki_full$Family[ki_full$Species == "Priacanthus hamrur"] <- "Priacanthidae"
-ki_full$Family[ki_full$Species == "Pseudanthias sp"] <- "Serranidae"
-ki_full$Family[ki_full$Species == "Ptereleotris sp"] <- "Microdesmidae"
-ki_full$Family[ki_full$Species == "Pterocaesio sp."] <- "Caesionidae"
-ki_full$Family[ki_full$Species == "Pterocaesio lativittata"] <- "Caesionidae"
-ki_full$Family[ki_full$Species == "Pterois sp."] <- "Scorpaenidae"
-ki_full$Family[ki_full$Species == "Synodus jaculum"] <- "Synodontidae"
-ki_full$Family[ki_full$Species == "Synodus sp."] <- "Synodontidae"
-ki_full$Family[ki_full$Species == "Valenciennea sp."] <- "Gobiidae"
-ki_full$Family[ki_full$Species == "Valenciennea helsdingenii"] <- "Gobiidae"
-ki_full$Family[ki_full$Species == "Echidna unicolor"] <- "Muraenidae"
-ki_full$Family[ki_full$Species == "Sebastapistes cyanostigma"] <- "Scorpaenidae"
-
-unique(ki_full$Species[is.na(ki_full$Family)])
+#Create separate dataframe for each DEM scale
+mpq.f.1cm <- subset(mpq.3yrs.1cm, select = c("year", "site", "ppq", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "year.site.transect"))
+mpq.f.4cm <- subset(mpq.3yrs.4cm, select = c("year", "site", "ppq", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "year.site.transect"))
+mpq.f.8cm <- subset(mpq.3yrs.8cm, select = c("year", "site", "ppq", "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "year.site.transect"))
 
 
-### Add functional group data
-ki_full$CoarseFG <- as.character(cred.allo$CoarseFG[match(ki_full$Species, cred.allo$CREDSpecies)])
-ki_full$FineFG <- as.character(cred.allo$FineFG[match(ki_full$Species, trophic$CREDSpecies)])
+#<----- Fractal Dimension ----->
+frac.3yrs <- subset(slope1, year == 2015 | year == 2017 | year == 2019) #Dataframe to link with digitization datasets
+frac.3yrs$year.site.transect <- paste(frac.3yrs$year, frac.3yrs$site, frac.3yrs$ppq, sep=".")
+frac.3yrs.f <- subset(frac.3yrs, select = c("year", "site", "ppq", "fractal.dimension", "year.site.transect"))
+
+#Order levels by site.ppq.transect
+levels(frac.3yrs.f$year.site.transect)
+frac.3yrs.f$year.site.transect<- factor(frac.3yrs.f$year.site.transect, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(frac.3yrs.f$year.site.transect)
+
+#Re-Order dataframe
+frac.3yrs.f<- frac.3yrs.f[order(frac.3yrs.f$year.site.transect),]
+row.names(frac.3yrs.f) <- 1:nrow(frac.3yrs.f) #Changes the row names so that they are re-orderd 1-80
+
+frac.3yrs.f
 
 
-# Add in CoarseFG info for species not in 'trophic' dataset
-dim(ki_full[is.na(ki_full$CoarseFG),])
-unique(ki_full$Species[is.na(ki_full$CoarseFG)])
+#<----- Curvature Range Data ----->
+range.final
+range.final$year.site.transect <- paste(range.final$year, range.final$site, range.final$ppq, sep=".")
+range.finals <- subset(range.final, year == 2015 | year == 2017 | year == 2019)
 
-ki_full$CoarseFG[ki_full$Species == "Arothron caeruleopunctatus"] <- "Omnivore"
-ki_full$CoarseFG[ki_full$Species == "Bothus pantherinus"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Chlorurus sp."] <- "Herbivore"
-ki_full$CoarseFG[ki_full$Species == "Chromis atripes"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Cirripectes auritus"] <- "Herbivore"
-ki_full$CoarseFG[ki_full$Species == "Cirripectes sp."] <- "Herbivore"
-ki_full$CoarseFG[ki_full$Species == "Epinephelus sp."] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Eviota cometa"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Gnatholepis anjerensis"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Gobiidae sp"] <- "NA"
-ki_full$CoarseFG[ki_full$Species == "Gymnothorax thyrsoideus"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Halichoeres sp."] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Halichoeres chrysus"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Iniistius auropunctatus"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Kyphosus sp"] <- "Herbivore"
-ki_full$CoarseFG[ki_full$Species == "Naso sp"] <- "NA"
-ki_full$CoarseFG[ki_full$Species == "Neosynchiropus ocellatus"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Ostorhinchus angustatus"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Ostorhinchus apogonoides"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Parapercis sp."] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Parapercis lata"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Plagiotremus sp."] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Priacanthus hamrur"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Pseudanthias sp"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Ptereleotris sp"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Pterocaesio sp."] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Pterocaesio lativittata"] <- "Planktivore"
-ki_full$CoarseFG[ki_full$Species == "Pterois sp."] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Synodus jaculum"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Synodus sp."] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Valenciennea sp."] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Valenciennea helsdingenii"] <- "Carnivore"
-ki_full$CoarseFG[ki_full$Species == "Echidna nebulosus"] <- "Carnivore" #Based on Fishbase trophic level ~ 4 based on relatives
-ki_full$CoarseFG[ki_full$Species == "Echidna unicolor"] <- "Carnivore" #Based on Fishbase trophic level ~ 4 based on relatives
-ki_full$CoarseFG[ki_full$Species == "Sebastapistes cyanostigma"] <- "Omnivore" #Based on Musembi and Cowburn paper
-# Too much variation within Family/genus to assign CoarseFG to Gobiidae sp or Naso sp
+#Order levels by site.ppq.transect
+levels(range.finals$year.site.transect)
+range.finals$year.site.transect<- factor(range.finals$year.site.transect, levels = c("2015.27.1", "2015.27.2", "2015.27.3", "2015.32.1", "2015.32.2", "2015.32.3", "2015.30.1", "2015.30.2", "2015.30.3", "2015.8.1", "2015.8.2", "2015.8.3", "2015.35.1", "2015.35.2", "2015.35.3", "2015.34.1", "2015.34.2", "2015.34.3", "2015.15.1", "2015.15.2", "2015.15.3", "2015.19.1", "2015.19.2", "2015.5.1", "2015.5.2", "2015.5.3","2017.27.1", "2017.27.2", "2017.27.3", "2017.32.1", "2017.32.2", "2017.32.3", "2017.30.1", "2017.30.2", "2017.30.3", "2017.8.1", "2017.8.2", "2017.8.3", "2017.35.1", "2017.35.2", "2017.35.3", "2017.34.1", "2017.34.2", "2017.34.3", "2017.15.1", "2017.15.2", "2017.15.3", "2017.19.1", "2017.19.2", "2017.19.3", "2017.5.1", "2017.5.2", "2017.5.3", "2017.37.1", "2017.37.2", "2017.37.3", "2019.27.1", "2019.27.2", "2019.27.3", "2019.32.1", "2019.32.2", "2019.32.3", "2019.30.1", "2019.30.2", "2019.30.3", "2019.8.1", "2019.8.2", "2019.8.3", "2019.35.1", "2019.35.2", "2019.35.3", "2019.34.1", "2019.34.2", "2019.34.3", "2019.5.1", "2019.5.2", "2019.5.3", "2019.37.1", "2019.37.2", "2019.37.3"))
+levels(range.finals$year.site.transect)
 
-unique(ki_full$Species[is.na(ki_full$CoarseFG)])
+#Re-Order dataframe
+range.finals<- range.finals[order(range.finals$year.site.transect),]
+row.names(range.finals) <- 1:nrow(range.finals) #Changes the row names so that they are re-orderd 1-80
+
+#Subset by DEM scale
+range.final.1cm <- subset(range.finals, DEM == 1)
+range.final.4cm <- subset(range.finals, DEM == 4)
+range.final.8cm <- subset(range.finals, DEM == 8)
+
+#Create Final dataframes
+range.1cm.f <- subset(range.final.1cm, select = c("year", "site", "ppq", "vrm.range", "pro.range", "plan.range", "year.site.transect"))
+row.names(range.1cm.f) <- 1:nrow(range.1cm.f) #Changes the row names so that they are re-orderd 1-80
+
+range.4cm.f <- subset(range.final.4cm, select = c("year", "site", "ppq", "vrm.range", "pro.range", "plan.range", "year.site.transect"))
+row.names(range.4cm.f) <- 1:nrow(range.4cm.f) #Changes the row names so that they are re-orderd 1-80
+
+range.8cm.f <- subset(range.final.8cm, select = c("year", "site", "ppq", "vrm.range", "pro.range", "plan.range", "year.site.transect"))
+row.names(range.8cm.f) <- 1:nrow(range.8cm.f) #Changes the row names so that they are re-orderd 1-80
 
 
-# Add in FineFG info for species not in 'trophic' dataset
-unique(ki_full$Species[is.na(ki_full$FineFG)])
-
-ki_full$FineFG[ki_full$Species == "Acanthurus sp"] <- "Cropper"
-ki_full$FineFG[ki_full$Species == "Arothron caeruleopunctatus"] <- "Benthic intertivore"
-ki_full$FineFG[ki_full$Species == "Bothus pantherinus"] <- "Generalist carnivore"
-ki_full$FineFG[ki_full$Species == "Chlorurus sp."] <- "Excavator"
-ki_full$FineFG[ki_full$Species == "Chromis atripes"] <- "Diurnal planktivore"
-ki_full$FineFG[ki_full$Species == "Cirripectes auritus"] <- "Cropper"
-ki_full$FineFG[ki_full$Species == "Cirripectes sp."] <- "Cropper"
-ki_full$FineFG[ki_full$Species == "Epinephelus sp."] <- "Diurnal piscivore"
-ki_full$FineFG[ki_full$Species == "Eviota cometa"] <- "Diurnal planktivore"
-ki_full$FineFG[ki_full$Species == "Gnatholepis anjerensis"] <- "Benthic omnivore"
-ki_full$FineFG[ki_full$Species == "Gobiidae sp"] <- "NA"
-ki_full$FineFG[ki_full$Species == "Gymnothorax thyrsoideus"] <- "Generalist carnivore"
-ki_full$FineFG[ki_full$Species == "Halichoeres sp."] <- "Invertivore"
-ki_full$FineFG[ki_full$Species == "Halichoeres chrysus"] <- "Invertivore"
-ki_full$FineFG[ki_full$Species == "Iniistius auropunctatus"] <- "Invertivore"
-ki_full$FineFG[ki_full$Species == "Kyphosus sp"] <- "Browser"
-ki_full$FineFG[ki_full$Species == "Labridae sp"] <- "NA"
-ki_full$FineFG[ki_full$Species == "Naso sp"] <- "NA"
-ki_full$FineFG[ki_full$Species == "Neosynchiropus ocellatus"] <- "Invertivore"
-ki_full$FineFG[ki_full$Species == "Ostorhinchus angustatus"] <- "Nocturnal planktivore"
-ki_full$FineFG[ki_full$Species == "Ostorhinchus apogonoides"] <- "Nocturnal planktivore"
-ki_full$FineFG[ki_full$Species == "Parapercis sp."] <- "Generalist carnivore"
-ki_full$FineFG[ki_full$Species == "Parapercis lata"] <- "Generalist carnivore"
-ki_full$FineFG[ki_full$Species == "Plagiotremus sp."] <- "Diurnal piscivore"
-ki_full$FineFG[ki_full$Species == "Priacanthus hamrur"] <- "Nocturnal planktivore"
-ki_full$FineFG[ki_full$Species == "Pseudanthias sp"] <- "Diurnal planktivore"
-ki_full$FineFG[ki_full$Species == "Ptereleotris sp"] <- "Diurnal planktivore"
-ki_full$FineFG[ki_full$Species == "Pterocaesio sp."] <- "Diurnal planktivore"
-ki_full$FineFG[ki_full$Species == "Pterocaesio lativittata"] <- "Diurnal planktivore"
-ki_full$FineFG[ki_full$Species == "Pterois sp."] <- "Generalist carnivore"
-ki_full$FineFG[ki_full$Species == "Synodus jaculum"] <- "Diurnal piscivore"
-ki_full$FineFG[ki_full$Species == "Synodus sp."] <- "Diurnal piscivore"
-ki_full$FineFG[ki_full$Species == "Valenciennea sp."] <- "Invertivore"
-ki_full$FineFG[ki_full$Species == "Valenciennea helsdingenii"] <- "Invertivore"
-ki_full$FineFG[ki_full$Species == "Echidna nebulosus"] <- "Generalist carnivore" #THIS IS A GUESS
-ki_full$FineFG[ki_full$Species == "Caracanthus maculatus"] <- "Invertivore" #Leray 2015 paper
-ki_full$FineFG[ki_full$Species == "Echidna unicolor"] <- "Generalist carnivore" #this is a guess
-ki_full$FineFG[ki_full$Species == "Sebastapistes cyanostigma"] <- "Generalist carnivore" #this is a guess - its listed as an omnivore above but wtf. Its this.
-# Too much variation within Family/genus to assign FineFG to Gobiidae sp, Labridae sp, Naso sp
-
-unique(ki_full$Species[is.na(ki_full$FineFG)])
+#Merge All together into single DEM dataframes (Fractal dimension goes with 1cm dataframe)
+mpq.fish.1 <- cbind(mpq.f.1cm, range.1cm.f,frac.3yrs.f)
+mpq.fish.4 <- cbind(mpq.f.4cm, range.4cm.f,frac.3yrs.f)
+mpq.fish.8 <- cbind(mpq.f.8cm, range.8cm.f,frac.3yrs.f)
 
 
-# Specify corallivore groupings (oblivate vs. facultative)
-unique(ki_full$Species[ki_full$FineFG == "Corallivore"])
+colnames(mpq.fish.1)
 
-# ki_full$FineFG[ki_full$Species == "Amanses scopas"] <- "corallivore"
-ki_full$FineFG[ki_full$Species == "Arothron meleagris"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Cantherhines dumerilii"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon auriga"] <- "Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon bennetti"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon citrinellus"] <- "Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon ephippium"] <- "Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon kleinii"] <- "Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon lunulatus"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon meyeri"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon ornatissimus"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon pelewensis"] <- "Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon quadrimaculatus"] <- "Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon trifascialis"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon unimaculatus"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Chaetodon vagabundus"] <- "Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Heniochus chrysostomus"] <- " Facultative corallivore"
-ki_full$FineFG[ki_full$Species == "Labrichthys unilineatus"] <- "Obligate corallivore"
-ki_full$FineFG[ki_full$Species == "Plectroglyphidodon johnstonianus"] <- "Obligate corallivore"
+mpq.fish.1cm <- subset(mpq.fish.1, select =c("year", "site", "ppq", "year.site.transect",  "area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "vrm.range", "pro.range", "plan.range", "fractal.dimension"))
 
+mpq.fish.4cm <- subset(mpq.fish.4, select =c("year", "site", "ppq", "year.site.transect","area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "vrm.range", "pro.range", "plan.range", "fractal.dimension"))
 
-
-unique(ki_full$Species[is.na(ki_full$FineFG)])
-
-
-### Now add mass estimates
-# Add mass values from length-weight relationships
-ki_full$length <- ki_full$Size..cm.*ki_full$LENGTH_CONVERSION_FACTOR
-ki_full$MASS <- round(with(ki_full, lw_a*(length)^lw_b), digits = 2)
-
-dim(ki_full[is.na(ki_full$MASS), ])
-unique(ki_full$Species[is.na(ki_full$MASS)])
-
-
-### Add site data
-sites <- read.csv("Raw_Data/ki_sites_updatedMay2018_newFPressure_KLT_msc.csv")
-
-head(sites)
-
-ki_full$f.pressure <- factor(sites$f.pressure[match(ki_full$Site, sites$site)])
-ki_full$lat <- sites$lat[match(ki_full$Site, sites$site)]
-ki_full$lon <- sites$lon[match(ki_full$Site, sites$site)]
-ki_full$prod <- sites$smw.prod[match(ki_full$Site, sites$site)]
-
-
-
-### Fix a few dates
-ki_full$KI.Date[ki_full$KI.Date == "21_07_13"] <- "21_07_2013"
-ki_full$KI.Date[ki_full$KI.Date == "22_07_13"] <- "22_07_2013"
-ki_full$KI.Date[ki_full$KI.Date == "24_07_13"] <- "24_07_2013"
-ki_full$KI.Date[ki_full$KI.Date == "25_07_13"] <- "25_07_2013"
-ki_full$KI.Date[ki_full$KI.Date == "4_07_2015"] <- "04_07_2015"
-ki_full$KI.Date[ki_full$KI.Date == "5_07_2015"] <- "05_07_2015"
-ki_full$KI.Date[ki_full$KI.Date == " 06_07_2015"] <- "06_07_2015"
-ki_full$KI.Date[ki_full$KI.Date == "31.07.2011"] <- "31_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "31/07/2011"] <- "31_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "25.07.2011"] <- "25_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "20/7/19"] <- "20_07_2019"
-ki_full$KI.Date[ki_full$KI.Date == "24.07.2011"] <- "24_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "27.07.2011"] <- "27_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "28.07.2011"] <- "28_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "23/7/19"] <- "23_07_2019"
-ki_full$KI.Date[ki_full$KI.Date == "29.07.2011"] <- "29_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "30.07.2011"] <- "30_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "29.08.2011"] <- "29_07_2011" #pretty sure they got the month wrong here
-ki_full$KI.Date[ki_full$KI.Date == "19/7/19"] <- "19_07_2019"
-ki_full$KI.Date[ki_full$KI.Date == "02/08/2019"] <- "02_08_2019"
-ki_full$KI.Date[ki_full$KI.Date == "25/07/11"] <- "25_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "01.08.2011"] <- "01_08_2011"
-ki_full$KI.Date[ki_full$KI.Date == "21/7/19"] <- "21_07_2019"
-ki_full$KI.Date[ki_full$KI.Date == "03/08/2019"] <- "03_08_2019"
-ki_full$KI.Date[ki_full$KI.Date == "27/07/11"] <- "27_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "28/07/11"] <- "28_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "09/08/2019"] <- "09_08_2019"
-ki_full$KI.Date[ki_full$KI.Date == "22/7/19"] <- "22_07_2019"
-ki_full$KI.Date[ki_full$KI.Date == "29/7/19"] <- "29_07_2019"
-ki_full$KI.Date[ki_full$KI.Date == "27/7/19"] <- "27_07_2019"
-ki_full$KI.Date[ki_full$KI.Date == "05/08/2019"] <- "05_08_2019"
-ki_full$KI.Date[ki_full$KI.Date == "23.07.2011"] <- "23_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "29/07/11"] <- "29_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "21.08.2011"] <- "21_08_2011" #pretty sure they got the month wrong here too
-ki_full$KI.Date[ki_full$KI.Date == "30/07/11"] <- "30_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "23/07/11"] <- "23_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "01/08/11"] <- "01_08_2011"
-ki_full$KI.Date[ki_full$KI.Date == "24/07/11"] <- "24_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "24/07/11"] <- "24_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "04/08/2019"] <- "04_08_2019"
-ki_full$KI.Date[ki_full$KI.Date == "31/07/11"] <- "31_07_2011"
-ki_full$KI.Date[ki_full$KI.Date == "5_08_2019"] <- "05_08_2019"
-
-
-unique(ki_full$KI.Date)
-
-
-### Create unique codes for each date/site/transect combo
-ki_full$unique.site <- paste(ki_full$KI.Date, ki_full$Transect, ki_full$Site, sep = "_")
-unique(ki_full$unique.site)
-
-
-### Get variables in the correct class
-head(ki_full)
-str(ki_full)
-
-ki_full$Site <- as.factor(ki_full$Site)
-ki_full$Observer <- as.factor(ki_full$Observer)
-ki_full$Transect <- as.factor(ki_full$Transect)
-ki_full$Year <- as.factor(ki_full$Year)
-ki_full$f.pressure <- as.factor(ki_full$f.pressure)
-
-
-### Need to correct abundances of small fish for smaller survey area
-ki_small <- ki_full[ki_full$length < 20, ]
-ki_large <- ki_full[ki_full$length >= 20, ]
-
-### Need to double ki small to account for smaller survey area (300m2 compared to 600m2 for large fish)
-ki_small$Number <- ki_small$Number*2
-ki_full <- rbind(ki_small, ki_large)
-
-
-### DATA IS CLEAN!!! ###
-
-### Save and quit
-save(ki_full, file = "Raw_Data/KI_UVC_11_13_15_17_18_19.Rdata")
-
-
-
+mpq.fish.8cm <- subset(mpq.fish.8, select =c("year", "site", "ppq", "year.site.transect","area_3d", "rug", "vrm", "curv", "pro.curv", "plan.curv", "vrm.range", "pro.range", "plan.range", "fractal.dimension"))
 
 ```
 
+# Merge fish + complex dataframes
+```{R}
+#Fish Abundances with Complexity DF's
+mpq.fish.1cm
+mpq.fish.4cm
+mpq.fish.8cm
+
+#Fish DF's
+ki.herb #80 rows
+ki.plank #80 rows
+ki.carn #80 rows
+ki.det #68 rows
+ki.om #79 rows
+ki.plcr #11 rows
+
+
+#Merge together
+herb.com.1  <-  cbind(mpq.fish.1cm, ki.herb)
+herb.com.1 <-herb.com.1[,-c(20)] #remove row 20
+herb.com.1 <-herb.com.1[,-c(15:17)] #remove row 15-17
+
+herb.com.4 <- cbind(mpq.fish.4cm, ki.herb)
+herb.com.4 <-herb.com.4[,-c(20)] #remove row 20
+herb.com.4 <-herb.com.4[,-c(15:17)] #remove row 15-17
+
+herb.com.8 <-  cbind(mpq.fish.8cm, ki.herb)
+herb.com.8 <-herb.com.8[,-c(20)] #remove row 20
+herb.com.8 <-herb.com.8[,-c(15:17)] #remove row 15-17
+
+
+
+
+#Correlelograms
+library(corrgram)
+corrgram(herb.com.1, lower.panel=panel.shade,upper.panel=panel.pie, text.panel=panel.txt, main="Coral Morphology Correlations")
+corrgram(herb.com.4, lower.panel=panel.shade,upper.panel=panel.pie, text.panel=panel.txt, main="Coral Morphology Correlations")
+corrgram(herb.com.8, lower.panel=panel.shade,upper.panel=panel.pie, text.panel=panel.txt, main="Coral Morphology Correlations")
+
+
+
+#Scatterplots
+#RUG
+ggscatter(herb.com.1, x = "rug", y = "Abundance", add = "reg.line") + stat_cor(label.x = 2, label.y = 100) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.4, x = "rug", y = "Abundance", add = "reg.line") + stat_cor(label.x = 1.6, label.y = 160) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.8, x = "rug", y = "Abundance", add = "reg.line") + stat_cor(label.x = 2, label.y = 160) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+
+#VRM
+ggscatter(herb.com.1, x = "vrm", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.075, label.y = 100) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.4, x = "vrm", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.075, label.y = 100) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.8, x = "vrm", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.075, label.y = 100) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+#VRM Range
+ggscatter(herb.com.1, x = "vrm.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.60, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.4, x = "vrm.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.5, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.8, x = "vrm.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.35, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+
+#Fractal Dimension
+ggscatter(herb.com.1, x = "fractal.dimension", y = "Abundance", add = "reg.line") + stat_cor(label.x = 2, label.y = 100) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+#Profile Curvature
+ggscatter(herb.com.1, x = "pro.curv", y = "Abundance", add = "reg.line") + stat_cor(label.x = -400, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.4, x = "pro.curv", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.2, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.8, x = "pro.curv", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.6, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+#Profile Curvature Range
+ggscatter(herb.com.1, x = "pro.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 1000000, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.4, x = "pro.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 50000, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.8, x = "pro.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 12000, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+
+#Planform Curvature
+ggscatter(herb.com.1, x = "plan.curv", y = "Abundance", add = "reg.line") + stat_cor(label.x = -400, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.4, x = "plan.curv", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.2, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.8, x = "plan.curv", y = "Abundance", add = "reg.line") + stat_cor(label.x = 0.6, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+#Planform Curvature Range
+ggscatter(herb.com.1, x = "plan.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 1000000, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.4, x = "plan.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 50000, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+ggscatter(herb.com.8, x = "plan.range", y = "Abundance", add = "reg.line") + stat_cor(label.x = 12000, label.y = 140) #+ stat_regline_equation(label.x = 2, label.y = 100, colour= "red")
+
+```
