@@ -914,14 +914,13 @@ ranges$plan.range <- ranges$plan.max - ranges$plan.min
 #Create final dataframe to later merge with other complexity dataset
 range.final <- ranges[,-(6:14)]
 
-# ggplot(range.final, aes(x = year, y=pro.range, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") +  theme(legend.position="none") 
-
 
 
 #Add onto complexity dataframe
 mpq.all #complexity metrics
 colnames(mpq.all)
 mpq <- cbind(mpq.all, range.final)
+
 
 #Add collumns of log-transformed profile range
 mpq$pro.range.log <- log(mpq$pro.range)
@@ -930,8 +929,13 @@ mpq$plan.range.log <- log(mpq$plan.range)
 #ReOrder dataframe
 colnames(mpq)
 mpq <- subset(mpq, select = c("year", "pub.site",  "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "DEM", "year.site.ppq", "area_2d", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range.log", "plan.curv", "plan.range.log"))
+# mpq.test <- subset(mpq, select = c("year", "pub.site",  "site", "ppq", "hum_dist", "hdist.cont", "sqrt.hdist.cont", "island.side", "region.3", "DEM", "year.site.ppq", "area_2d", "area_3d", "rug", "vrm", "vrm.range", "curv", "pro.curv", "pro.range", "plan.curv", "plan.range"))
 
-# ggplot(mpq, aes(x = year, y=pro.range.log, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") +  theme(legend.position="none") 
+
+# ggplot(mpq.test, aes(x = year, y=pro.range, fill=year)) + facet_wrap(~hum_dist) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") +  theme(legend.position="none") 
+# ggplot(mpq.test, aes(x = year, y=plan.range, fill=year)) + facet_wrap(~hum_dist) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") +  theme(legend.position="none") 
+
+
 # 
 # ggplot(mpq, aes(x = year, y=plan.range.log, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") +  theme(legend.position="none") 
 
@@ -1738,7 +1742,7 @@ for(i in c(1:nrow(dig.jm))) {
   } else if(dig.jm$Benthic_Morphology[i]=="Dead_Tabulate") {
     dig.jm$Benthic_Morphology[i] <- "Abiotic"
   } else if(dig.jm$Benthic_Morphology[i]=="NonCoral_Branching") {
-    dig.jm$Benthic_Morphology[i] <- "Plating"
+    dig.jm$Benthic_Morphology[i] <- "Branching"
   } else if(dig.jm$Benthic_Morphology[i]=="NonCoral_Encrusting") {
     dig.jm$Benthic_Morphology[i] <- "Massive"
   } else if(dig.jm$Benthic_Morphology[i]=="NonCoral_Massive") {

@@ -1,0 +1,325 @@
+---
+title: "1.5.3.Publication.Random.Forests"
+author: "Kevin Bruce"
+date: "11/03/2021"
+output: html_document
+---
+
+#Load Packages/Data
+```{r Load the packages and load mpq data, include=FALSE}
+rm(list = ls()) #This clears the environment
+dev.off()
+
+library(dplyr)
+library(ggplot2)
+library(stats)
+library(Rmisc)
+library(here)
+library(ggpmisc)
+library(knitr)
+library(magick)
+library(gridExtra)
+library(car)
+library(tidyr)
+library(readxl)
+library(vegan)
+library(tidyverse)
+library(ade4)
+library(MASS)
+library(ellipse)
+library(FactoMineR)
+library(arm)
+library(ape)
+library(ggrepel)
+library(FactoMineR)
+library(ggpubr)
+library(corrplot)
+library(Matrix)
+library(lme4)
+library(TMB)
+library(glmmTMB)
+library(MuMIn)
+library(vegan)
+library(nlme)
+library(randomForest)
+library(qpcR)
+library(emmeans)
+library(sjPlot)
+library(lmtest) #Durbin-Watson Test
+
+
+
+
+# <---------------------------- DATA -------------------------->
+# #ArcMap Complexity/Curvature Data for 1cm Resolution
+# mpq.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_1cm_Data_14Jan21.csv", row.names=1)
+
+#Random Forest Data
+mpq.rf <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_1cm_Data_11Jan21.csv", row.names=1)
+ 
+nrow(mpq.rf) #80
+
+#Rename Porites to Mounding_Lobate
+colnames(mpq.rf)
+names(mpq.rf)[names(mpq.rf) == 'Live_Porites'] <- 'Live_Mounding_Lobate'
+colnames(mpq.rf)
+
+
+#<-------Split RF Data into 2015 and 2017 & 2019 categories -------------------------->
+rf.2015 <- subset(mpq.rf, year == 2015)
+nrow(rf.2015) #26
+rf.2017.19 <- subset(mpq.rf, year == 2017 | year == 2019)
+nrow(rf.2017.19) #54
+
+
+#<-------Create Dataframes for RF's of each metric -------------------------->
+
+#1. 2015 group
+vrm.pre <- rf.2015[c(12,20:41)]
+sc.pre <- rf.2015[c(11,20:41)]
+pro.pre <- rf.2015[c(16,20:41)]
+plan.pre <- rf.2015[c(18,20:41)]
+frac.pre <- rf.2015[c(19,20:41)]
+
+#2. 2017 & 2019 group
+vrm.post <- rf.2017.19[c(12,20:41)]
+sc.post <- rf.2017.19[c(11,20:41)]
+pro.post <- rf.2017.19[c(16,20:41)]
+plan.post <- rf.2017.19[c(18,20:41)]
+frac.post <- mpq.rf[c(19,20:41)]
+
+#3. All together
+vrm.all <- mpq.rf[c(12,20:41)]
+sc.all <- mpq.rf[c(11,20:41)]
+frac.all <- mpq.rf[c(19,20:41)]
+pro.all <- mpq.rf[c(16,20:41)]
+plan.all <- mpq.rf[c(18,20:41)]
+
+
+
+```
+
+
+# Random Forests
+## VRM
+```{r VRM RF's}
+##### <----- 2015 ----->
+#Create training data
+set.seed(2)
+nrow(vrm.pre) #26 rows total
+train.vrm.pre = sample(1:nrow(vrm.pre),17) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+vrm.pre.classify <- randomForest(vrm ~., data = vrm.pre, subset = train.vrm.pre, ntree = 500, importance=TRUE)
+print(vrm.pre.classify)
+plot(vrm.pre.classify)
+varImpPlot(vrm.pre.classify) #71.41% variance explained
+
+
+##### <----- 2017,2019 ----->
+#Create training data
+set.seed(2)
+nrow(vrm.post) #54 rows total
+train.vrm.post = sample(1:nrow(vrm.post),36) #36 rows = 66.6% of the rows in full dataset
+
+#Run Random Forest
+vrm.post.classify <- randomForest(vrm ~., data = vrm.post, subset = train.vrm.post, ntree = 500, importance=TRUE)
+print(vrm.post.classify)
+plot(vrm.post.classify)
+varImpPlot(vrm.post.classify) #10.86% variance explained
+
+
+0.0##### <----- All years together ----->
+#Create training data
+set.seed(2)
+nrow(vrm.all) #26 rows total
+train.vrm.all = sample(1:nrow(vrm.all),53) #53 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+vrm.all.classify <- randomForest(vrm ~., data = vrm.all, subset = train.vrm.all, ntree = 500, importance=TRUE)
+print(vrm.all.classify)
+plot(vrm.all.classify)
+varImpPlot(vrm.all.classify) #47.23% variance explained
+
+
+```
+
+## Surface Complexity
+```{r Surface Complexity rfs}
+##### <----- 2015 ----->
+#Create training data
+set.seed(2)
+nrow(sc.pre) #26 rows total
+train.sc.pre = sample(1:nrow(sc.pre),17) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+sc.pre.classify <- randomForest(rug ~., data = sc.pre, subset = train.sc.pre, ntree = 500, importance=TRUE)
+print(sc.pre.classify)
+plot(sc.pre.classify)
+varImpPlot(sc.pre.classify) #55.78% variance explained
+
+##### <----- 2017,2019 ----->
+#Create training data
+set.seed(2)
+nrow(sc.post) #54 rows total
+train.sc.post = sample(1:nrow(sc.post),36) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+sc.post.classify <- randomForest(rug ~., data = sc.post, subset = train.sc.post, ntree = 500, importance=TRUE)
+print(sc.post.classify)
+plot(sc.post.classify)
+varImpPlot(sc.post.classify) #46.2% variance explained
+
+
+##### <----- All years together ----->
+#Create training data
+set.seed(2)
+nrow(sc.all) #80 rows total
+train.sc.all = sample(1:nrow(sc.all),53) #53 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+sc.all.classify <- randomForest(rug ~., data = sc.all, subset = train.sc.all, ntree = 500, importance=TRUE)
+print(sc.all.classify)
+plot(sc.all.classify)
+varImpPlot(sc.all.classify) #49.9% variance explained
+
+
+
+```
+
+## Fractal Dimension
+```{r frac rfs}
+##### <----- 2015 ----->
+#Create training data
+set.seed(2)
+nrow(frac.pre) #26 rows total
+train.frac.pre = sample(1:nrow(frac.pre),17) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+frac.pre.classify <- randomForest(fractal.dimension ~., data = frac.pre, subset = train.frac.pre, ntree = 500, importance=TRUE)
+print(frac.pre.classify)
+plot(frac.pre.classify)
+varImpPlot(frac.pre.classify) #74.94% variance explained
+
+##### <----- 2017,2019 ----->
+#Create training data
+set.seed(2)
+nrow(frac.post) #54 rows total
+train.frac.post = sample(1:nrow(frac.post),36) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+frac.post.classify <- randomForest(fractal.dimension ~., data = frac.post, subset = train.frac.post, ntree = 500, importance=TRUE)
+print(frac.post.classify)
+plot(frac.post.classify)
+varImpPlot(frac.post.classify) #32.6% variance explained
+
+
+##### <----- All years together ----->
+#Create training data
+set.seed(2)
+nrow(frac.all) #80 rows total
+train.frac.all = sample(1:nrow(frac.all),53) #53 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+frac.all.classify <- randomForest(fractal.dimension ~., data = frac.all, subset = train.frac.all, ntree = 500, importance=TRUE)
+print(frac.all.classify)
+plot(frac.all.classify)
+varImpPlot(frac.all.classify) #53.38% variance explained
+
+
+
+```
+
+
+## Pro Curv Range
+```{r }
+##### <----- 2015 ----->
+#Create training data
+set.seed(2)
+nrow(pro.pre) #26 rows total
+train.pro.pre = sample(1:nrow(pro.pre),17) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+pro.pre.classify <- randomForest(pro.range.log ~., data = pro.pre, subset = train.pro.pre, ntree = 500, importance=TRUE)
+print(pro.pre.classify)
+plot(pro.pre.classify)
+varImpPlot(pro.pre.classify) #-9.87% variance explained
+
+##### <----- 2017,2019 ----->
+#Create training data
+set.seed(2)
+nrow(pro.post) #54 rows total
+train.pro.post = sample(1:nrow(pro.post),36) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+pro.post.classify <- randomForest(pro.range.log ~., data = pro.post, subset = train.pro.post, ntree = 500, importance=TRUE)
+print(pro.post.classify)
+plot(pro.post.classify)
+varImpPlot(pro.post.classify) #8.46% variance explained
+
+
+##### <----- All years together ----->
+#Create training data
+set.seed(2)
+nrow(pro.all) #80 rows total
+train.pro.all = sample(1:nrow(pro.all),53) #53 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+pro.all.classify <- randomForest(pro.range.log ~., data = pro.all, subset = train.pro.all, ntree = 500, importance=TRUE)
+print(pro.all.classify)
+plot(pro.all.classify)
+varImpPlot(pro.all.classify) #9.83% variance explained
+
+
+
+```
+
+## Plan Curv Range
+```{r}
+##### <----- 2015 ----->
+#Create training data
+set.seed(2)
+nrow(plan.pre) #26 rows total
+train.plan.pre = sample(1:nrow(plan.pre),17) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+plan.pre.classify <- randomForest(plan.range.log ~., data = plan.pre, subset = train.plan.pre, ntree = 500, importance=TRUE)
+print(plan.pre.classify)
+plot(plan.pre.classify)
+varImpPlot(plan.pre.classify) #-6.59% variance explained
+
+##### <----- 2017,2019 ----->
+#Create training data
+set.seed(2)
+nrow(plan.post) #54 rows total
+train.plan.post = sample(1:nrow(plan.post),36) #17 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+plan.post.classify <- randomForest(plan.range.log ~., data = plan.post, subset = train.plan.post, ntree = 500, importance=TRUE)
+print(plan.post.classify)
+plot(plan.post.classify)
+varImpPlot(plan.post.classify) #-0.08% variance explained
+
+
+##### <----- All years together ----->
+#Create training data
+set.seed(2)
+nrow(plan.all) #80 rows total
+train.plan.all = sample(1:nrow(plan.all),53) #53 rows = 66% of the rows in full dataset
+
+#Run Random Forest
+plan.all.classify <- randomForest(plan.range.log ~., data = plan.all, subset = train.plan.all, ntree = 500, importance=TRUE)
+print(plan.all.classify)
+plot(plan.all.classify)
+varImpPlot(plan.all.classify) #49.9% variance explained
+
+
+
+```
+
+
+
+
+
+
+

@@ -48,81 +48,157 @@ library(vegan)
 library(randomForest)
 library(RColorBrewer)
 library(emmeans)
+library(grid)
+
 
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------
 #Set the Working Directory
 setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
 
-### 1. Habitat Volume Data
-cc <- read.csv( "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_FINAL_14Jan2021.csv",header=TRUE, row.names=1)
+# ### 1. Habitat Volume Data
+# cc <- read.csv( "~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_FINAL_14Jan2021.csv",header=TRUE, row.names=1)
+# 
+# str(cc)
+# unique(cc$timepoint)
+# 
+# 
+# # #Change name of volume.change to hab.vol
+# # colnames(cc)[which(names(cc)=="volume.change")] <- "hab.vol"
+# 
+# # #Change site to a factor (for the random effect modelling)
+# # cc$site <- as.factor(cc$site)
+# 
+# #Factor disturbance and region variables
+# # cc$hum_dist <- factor(cc$hum_dist, levels = c("Very High", "Medium", "Very Low"))
+# cc$region.3 <- factor(cc$region.3, levels = c("Leeward", "Windward", "South Shore"))
+# cc$island.side <- factor(cc$island.side, levels = c("Leeward", "Windward"))
+# 
+# # #Factor time.interval & timepoint in order
+# # cc$timepoint<- as.factor(cc$timepoint)
+# # cc$timepoint <- factor(cc$timepoint, levels = c("2015-2017", "2017-2019", "2015-2019"))
+# cc$time.interval <- factor(cc$time.interval, levels = c("'15-'17", "'17-'19", "'15-'19"))
+# 
+# #Create 2 timeinterval dataframe
+# cc.2tps <- subset(cc, timepoint == "2015-2017" | timepoint == "2017-2019")
+# 
+# 
+# #Add collumn for simplified hum_dist
+# cc$hdist <- "low"
+# 
+# for(i in 1:length(cc$hum_dist)) {
+#   if(cc$hum_dist[i] == "Very Low"){
+#     cc$hdist[i] <-"Low"} 
+#   if(cc$hum_dist[i] == "Medium"){
+#     cc$hdist[i] <- "Medium" }
+#   if(cc$hum_dist[i] == "Very High"){
+#     cc$hdist[i] <- "High" }
+#   }
+# 
+# #Correct Levels of each human disturbance dataframe
+# cc$hum_dist <- factor(cc$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+# cc$hdist <- factor(cc$hdist, levels = c("Low", "Medium", "High"))
+# 
 
-str(cc)
-unique(cc$timepoint)
-
-
-#Change name of volume.change to hab.vol
-colnames(cc)[which(names(cc)=="volume.change")] <- "hab.vol"
-
-#Change site to a factor (for the random effect modelling)
-cc$site <- as.factor(cc$site)
-
-#Factor disturbance and region variables
-# cc$hum_dist <- factor(cc$hum_dist, levels = c("Very High", "Medium", "Very Low"))
-cc$region.3 <- factor(cc$region.3, levels = c("Leeward", "Windward", "South Shore"))
-cc$island.side <- factor(cc$island.side, levels = c("Leeward", "Windward"))
-
-#Factor time.interval & timepoint in order
-cc$timepoint<- as.factor(cc$timepoint)
-cc$timepoint <- factor(cc$timepoint, levels = c("2015-2017", "2017-2019", "2015-2019"))
-cc$time.interval <- factor(cc$time.interval, levels = c("'15-'17", "'17-'19", "'15-'19"))
-
-
-
-#--------------------------------#ArcMap Data-------------------------
+#--------------------------------#3D Structural ArcMap Data-----------------
 #5 year timepoint Data
 mpq.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_1cm_Data_14Jan21.csv", row.names=1)
 
-mpq.4cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_4cm_Data_22Jan21.csv", row.names=1)
+# mpq.4cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_4cm_Data_22Jan21.csv", row.names=1)
+# 
+# mpq.8cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_8cm_Data_22Jan21.csv", row.names=1)
 
-mpq.8cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_8cm_Data_22Jan21.csv", row.names=1)
+#<----- 1cm DATA ----->
+#Add collumn for simplified hum_dist
+mpq.1cm$hdist <- "low"
 
+for(i in 1:length(mpq.1cm$hum_dist)) {
+  if(mpq.1cm$hum_dist[i] == "Very Low"){
+    mpq.1cm$hdist[i] <-"Low"} 
+  if(mpq.1cm$hum_dist[i] == "Medium"){
+    mpq.1cm$hdist[i] <- "Medium" }
+  if(mpq.1cm$hum_dist[i] == "Very High"){
+    mpq.1cm$hdist[i] <- "High" }
+  }
 
-
-
-#Correct levels of hum_dist in each dataframe
-levels(mpq$hum_dist)
-mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very Low", "Medium", "Very High"))
-levels(mpq$hum_dist)
-
-#Change site to a factor (for the random effect modelling)
-mpq$site <- as.factor(mpq$site)
-
-
-# mpq.range <- mpq[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cells without any coverage in the plot. 
-
+#Correct Levels of each human disturbance dataframe
+mpq.1cm$hum_dist <- factor(mpq.1cm$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+mpq.1cm$hdist <- factor(mpq.1cm$hdist, levels = c("Low", "Medium", "High"))
 
 #Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
-levels(mpq$year)
-mpq$year <- factor(mpq$year, levels=c("2015", "2016a", "2016b", "2017", "2019"))
-levels(mpq$year)
+mpq.1cm$year <- factor(mpq.1cm$year, levels=c("2015", "2016a", "2016b", "2017", "2019"))
+
+# #<----- 4cm DATA ----->
+# #Add collumn for simplified hum_dist
+# mpq.4cm$hdist <- "low"
+# 
+# for(i in 1:length(mpq.4cm$hum_dist)) {
+#   if(mpq.4cm$hum_dist[i] == "Very Low"){
+#     mpq.4cm$hdist[i] <-"Low"} 
+#   if(mpq.4cm$hum_dist[i] == "Medium"){
+#     mpq.4cm$hdist[i] <- "Medium" }
+#   if(mpq.4cm$hum_dist[i] == "Very High"){
+#     mpq.4cm$hdist[i] <- "High" }
+#   }
+# 
+# #Correct Levels of each human disturbance dataframe
+# mpq.4cm$hum_dist <- factor(mpq.1cm$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+# mpq.4cm$hdist <- factor(mpq.1cm$hdist, levels = c("Low", "Medium", "High"))
+# 
+# #Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
+# mpq.4cm$year <- factor(mpq.1cm$year, levels=c("2015", "2016a", "2016b", "2017", "2019"))
+# 
+# 
+# #<----- 8cm DATA ----->
+# #Add collumn for simplified hum_dist
+# mpq.8cm$hdist <- "low"
+# 
+# for(i in 1:length(mpq.8cm$hum_dist)) {
+#   if(mpq.8cm$hum_dist[i] == "Very Low"){
+#     mpq.8cm$hdist[i] <-"Low"} 
+#   if(mpq.8cm$hum_dist[i] == "Medium"){
+#     mpq.8cm$hdist[i] <- "Medium" }
+#   if(mpq.8cm$hum_dist[i] == "Very High"){
+#     mpq.8cm$hdist[i] <- "High" }
+#   }
+# 
+# #Correct Levels of each human disturbance dataframe
+# mpq.8cm$hum_dist <- factor(mpq.8cm$hum_dist, levels = c("Very Low", "Medium", "Very High"))
+# mpq.8cm$hdist <- factor(mpq.8cm$hdist, levels = c("Low", "Medium", "High"))
+# 
+# #Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
+# mpq.8cm$year <- factor(mpq.8cm$year, levels=c("2015", "2016a", "2016b", "2017", "2019"))
+# 
+
+# 
+# 
+# 
+# # #Change site to a factor (for the random effect modelling)
+# # mpq$site <- as.factor(mpq$site)
+# # mpq.range <- mpq[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cells without any coverage in the plot. 
+# 
+# 
+# #Correct levels for how the morphologies will show up on the graph (first ones listed will be the bars stacked on the top)
+# mpq.1cm$year <- factor(mpq.1cm$year, levels=c("2015", "2016a", "2016b", "2017", "2019"))
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
 ##### Digitization Data for Random Forest Regressions and later modelling
 #Import Data
 mpq.dig.1 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_1cm_Data_11Dec20.csv", row.names = 1) #DEM 1cm
-mpq.dig.4 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_4cm_Data_11Dec20.csv", row.names = 1) #DEM 4cm
-mpq.dig.8 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_8cm_Data_11Dec20.csv", row.names = 1) #DEM 8cm
+# mpq.dig.4 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_4cm_Data_11Dec20.csv", row.names = 1) #DEM 4cm
+# mpq.dig.8 <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_8cm_Data_11Dec20.csv", row.names = 1) #DEM 8cm
 
 
 
 
-#######################################################################################
-################################# Colour Palette #####################################
-#######################################################################################
+####################################################################################
+################################# Colour Palette ##################################
+####################################################################################
+
 display.brewer.all()
 display.brewer.all(colorblindFriendly = TRUE) #Only Color Blind Friendly schemes    **Look to use Paired or Dark2
-
+display.brewer.all(DarkRedtoBlue)
 
 #Complexity + Curvature Colour Palette
 mpq.1 #Set each year to be a specific colour
@@ -132,7 +208,13 @@ levels(mpq.1$year)
 display.brewer.pal(11, "RdYlBu") #Go to website to get specific hexcodes for colorblind safe -->  #https://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=9
 brewer.pal(11, "RdYlBu") #Or go here and select from here
 
-year.cols <-  c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1", "#313695") #ffffbf = Yellow
+year.cols <-  c("#FDAE61", "#D73027", "#E0F3F8", "#ABD9E9", "#74ADD1") 
+
+
+#OLD COLOUR SCALE
+#year.cols <-  c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1") 
+
+#ffffbf = Yellow   Took out: "#313695"
 year.colscale<- scale_fill_manual(name="", values=year.cols, breaks=c("2015", "2016a", "2016b", "2017", "2019"))
 
 ggplot(mpq.1, aes(y=vrm, x=hum_dist, fill= year)) + geom_boxplot() + year.colscale
@@ -152,12 +234,35 @@ brewer.pal(3, "Dark2") #All color hex codes from BuGn
 
 
 
+##<------Set Colour Pallettes for each timepoint type ----->
+cc$time <- "a"
+#Assign Region values
+for(i in c(1:nrow(cc))) {
+  if(cc$timepoint[i]=="2015-2017") {
+    cc$time[i] <- "A"
+  } else if(cc$timepoint[i]=="2017-2019") {
+    cc$time[i] <- "B"
+  } else if(cc$timepoint[i]=="2015-2019") {
+    cc$time[i] <- "C"
+  }}
 
-##<------Set Colour Pallettes for each morphology type ----->
-cc.cols <- c("#F46D43","#E0F3F8", "#313695")
+display.brewer.pal(10, "PRGn")
+brewer.pal(10, "PRGn") #Go with 9th green colour
+
+
+# cc.cols <- c("#F46D43","#ABD9E9", "#1B7837")
+
+cc.cols <- c("#7fbf7b","#af8dc3", "#d8b365") #Updated colours
+
+
+
+
 cc.colscale<- scale_fill_manual(name="", values=cc.cols, breaks=c("A", "B", "C"))
 
-ggplot(cc, aes(y=hab.vol, x=timepoint, fill= timepoint)) + geom_boxplot() + cc.colscale
+ggplot(cc, aes(y=volume.change, x=time.interval, fill=time)) + geom_boxplot() + cc.colscale
+
+
+
 
 
 # 2. Colour Palette for human disturbance colour coding for facetwrapped plot
@@ -170,96 +275,527 @@ ggplot(cc, aes(y=hab.vol, x=timepoint, fill= timepoint)) + geom_boxplot() + cc.c
 
 ```
 
+#THESIS FIGURES
+# Figure 1: Map figure with DHW top panel
+```{r map code}
+rm(list=ls())
 
-# Metric Panel through time at 1cm
+dev.off()
 
+
+## Script for creating KI map for Kevin Bruce's MSc Chapter One on Coral Diversity
+
+# last updated 26 Nov 19
+
+library(here)
+library(dichromat)
+library(rgeos)
+library(maptools)
+library(scales)
+library(RColorBrewer)
+library(rgdal)
+library(ggplot2)
+library(graphics)
+
+### site data
+sites<-read.csv('KI/data/KI_Monitoring_Site_Names_for_Publications_Sept2019.csv')
+
+### Sites included in this paper
+sites.to.keep<-c(5,8,35,34,32,27,30,15,19,37)
+sites<-sites[sites$site%in%sites.to.keep,]
+sites <- droplevels(sites)
+
+###village data
+
+villages3 <- data.frame(c(1.989386333, 2.022090868, 1.983594483, 1.865048333, 1.885, 1.916, 1.94))
+villages3$lon <- c(-157.4760637, -157.4884092, -157.3683462, -157.5522183, -157.2025, -157.2025, -157.2025)
+villages3$pop <- c(1879, 2311, 955, 441, 1500, 1000, 500)
+villages3$village <- c("London", "Tabwakea", "Banana", "Poland", "legend1500", "legend1000", "legend500")
+colnames(villages3)[1]<-"lat"
+
+
+### reordering levels for colouring plot
+levels(sites$pressure.group)
+#sites$level <- as.factor(sites$level)
+#levels(sites$level)
+str(sites)   #site is an integer here.... shouldn't it be a character??
+
+sites$level<-as.numeric(factor(sites$pressure.group, levels(factor(sites$pressure.group))[c(3,1,2)]))
+sites$pressure.group<-factor(sites$pressure.group, levels(factor(sites$pressure.group))[c(3,1,2)])
+
+## set palette for fishing pressure
+
+fishing.cols<-colorschemes$DarkRedtoBlue.12[c(12, 9, 5)]
+palette(fishing.cols)
+
+# fishing.cols.df <- as.data.frame(fishing.cols)
+# fishing.cols.df$level <- c(1,2,3,4,5)
+# 
+# sites$col <- fishing.cols.df$fishing.cols[match(sites$level, fishing.cols.df$level)]
+
+############### village + sites + bigger ####################
+ 
+#tiff(file="KI/images/KI_map_sites_villages_inset_KB_MSc_Ch1.tiff",width = 7.6, height = 7.2,units="in",res=300)
+#jpeg(file="KI/images/KI_map_sites_villages_inset_KB_MSc_Ch1.jpeg",width = 7.5, height = 7,units="in",res=300)
+pdf(file="KI/images/KI_map_sites_villages_inset_KB_MSc_CAPI.pdf", width = 7.5, height =7)
+#png(file="KI/images/KI_map_sites_villages_inset_KB_MSc_Ch1.png", width = 7.5, height = 7,units="in",res=300)
+source("KI/scripts/KI_Base_B&W_bigger_JM.R")
+
+# village markers sized by population
+symbols(villages3$lon, villages3$lat, circles=(villages3$pop)/10, add=TRUE,inches=0.3, bg=alpha("red", 0.4))
+### Legend for village size
+text(-157.1695, 1.941, "500", cex = 0.8)  
+text(-157.1675, 1.915, "1000", cex = 0.8)
+text(-157.1675, 1.887, "1500", cex = 0.8) 
+#with(villages[!villages$village=="legend",], text(lon, lat, label=village, pos=1, offset=0.5, font=2, col="black"))
+
+#create points for sites
+points(sites$lon, sites$lat, bg=alpha(sites$level,0.8), pch=21, cex=2.75) 
+
+#label sites
+#with(sites[!(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=site, cex=0.5))
+#with(sites[(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=site, cex=0.5, col="white"))
+with(sites[!(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=pub.name, cex=0.5))
+with(sites[(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=pub.name, cex=0.5, col="white"))
+
+#legends
+legend(-157.22, 2.064, legend = levels(sites$pressure.group), pt.bg = c(1:4), pch = 21, 
+       bty = "n", pt.cex = 1.75, cex = 0.8, y.intersp = 1.25)
+text(-157.24, 2.02, "Human disturbance", srt = 90, cex = 0.8)
+text(-157.239, 1.907, "Village population", srt = 90, cex = 0.8)
+segments(-157.225, 1.975, -157.225, 2.065)
+segments(-157.225, 1.8675, -157.225, 1.9475)
+text(-157.31, 1.88, "Bay of\nWrecks", cex = 0.45)
+ text(-157.508, 1.825, "Vaskess\nBay", cex = 0.45)
+# text(-157.375, 2.035, "North Shore", cex = 0.45)
+# text(-157.524, 2, "North\nLagoon", cex = 0.45)
+# text(-157.515, 1.965, "Mid\nLagoon", cex = 0.45)
+# text(-157.565, 1.925, "South\nLagoon", cex = 0.45)
+# text(-157.568, 1.845, "Poland", cex = 0.45)
+
+#par(mar=c(1.3,0.9,0.5,0.5))
+par(mar=c(4,3.25,1.25,0))
+#source("KI/scripts/KI_base_inset_bigger.R")
+source("KI/scripts/KI_base_inset.R")
+
+dev.off()
+
+```
+
+```{r dhw temp figure to add to map multipanel}
+# Load necessary packages
+library(imager)
+
+# Load in Data
+# You will need to be in the KI_Platy directory for this to work
+# load("data/temperature/KI_SB_temp_DHW.RData")
+# load("data/temperature/KI_satellite_heat.RData")
+# load(file="data/temperature/KI_SB_temp_1hr.RData")
+# load(file="data/temperature/KI_SB_temp_DHW_allsites.RData")
+
+#####################################################################
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+dhw.data <- load("NOAA_DHW_5km_1985_2020.RData")
+coral.temp <- load("NOAA_CoralTemp_5km_2011_2020.RData")
+
+#Data from Claar et al 2020
+# load("data/temperature/KI_SB_temp_DHW_NOAAMMM_minOffsetnoEN.RData") # DHW calculated in [Claar et al. 2019 Coral Reefs] with in situ offset
+# load(file="data/temperature/KI_SB_temp_1hr.RData") # hourly temperature data
+
+meanMMM <- mean(27.6, # VB # All values from temperature paper, 
+                            # Claar et al 2019 Coral Reefs
+                27.4, # SL
+                27.44, # LF
+                27.36, # NL
+                27.58, # NS
+                28.03)# BOW 
+
+bleaching_threshold <- meanMMM+1 # Bleaching threshold is MMM + 1
+
+# Calculate mean DHW on KI based on in situ data
+KI_meanDHW <- cbind(dhw_BOW_1985_2020,
+                    dhw_lagoonface_1985_2020$dhw,
+                    dhw_northlagoon_1985_2020$dhw,
+                    dhw_northshore_1985_2020$dhw,
+                    dhw_southlagoon_1985_2020$dhw,
+                    dhw_vaskess_1985_2020$dhw)
+
+
+colnames(KI_meanDHW) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanDHW <- subset(KI_meanDHW, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanDHW$KI_meanDHW <- rowMeans(KI_meanDHW[2:7],na.rm = TRUE)
+
+# Set a start and end date for plotting
+startdate <- as.POSIXct("2015-01-01 00:00:00",tz="Pacific/Kiritimati", 
+                        format="%Y-%m-%d %H:%M:%S")
+enddate <- as.POSIXct("2019-12-31 00:00:00",tz="Pacific/Kiritimati", 
+                      format="%Y-%m-%d %H:%M:%S")
+
+# Truncate time for DHW data
+KI_heat <- KI_meanDHW[which(KI_meanDHW$time>startdate),]
+KI_heat <- KI_heat[which(KI_heat$time<enddate),]
+
+
+### Temperature Data 
+# Calculate mean DHW on KI based on in situ data
+KI_meanTemp <- cbind(sst_BOW_2011_2020,
+                    sst_lagoonface_2011_2020$sst,
+                    sst_northlagoon_2011_2020$sst,
+                    sst_northshore_2011_2020$sst,
+                    sst_southlagoon_2011_2020$sst,
+                    sst_vaskess_2011_2020$sst)
+
+
+colnames(KI_meanTemp) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanTemp <- subset(KI_meanTemp, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanTemp$KI_meanTemp <- rowMeans(KI_meanTemp[2:7],na.rm = TRUE)
+
+# Truncate time for temperature data
+KI_temp <- KI_meanTemp[which(KI_meanTemp$time>startdate),]
+KI_temp <- KI_temp[which(KI_temp$time<enddate),]
+
+# Create new color palette to match old one (but able to take more values)
+heat.palette <- colorRampPalette(c("#ffffff","#ffffc1","#ffff84",
+                                   "#ffff46","#ffff09","#ffed00",
+                                   "#ffd200","#ffb700","#ffa700",
+                                   "#ff9700","#ff8600","#ff7600",
+                                   "#ff6600","#ff5500","#ff4500",
+                                   "#ff3300","#ff2400","#ff1100",
+                                   "#ff0400","#ea0000","#d30000",
+                                   "#bc0000","#a40000","#8c0000",
+                                   "#750000","#5e0000","#460000",
+                                   "#2f0000","#170000","#000000"))
+
+dhw.floor <- floor(KI_heat$KI_meanDHW)+1 # Calculate which color goes where by 1 degree increments
+heat.cbar <- heat.palette(32) # create a color palette with 32 colors based on our generated palette
+dhw.cc <- heat.cbar[dhw.floor] # Match the color palette to the DHW values
+
+from <- KI_heat$time-1.75*86400
+to <- KI_heat$time+1.75*86400
+
+#################################################################################
+# polycurve function
+# http://www.fromthebottomoftheheap.net/2013/01/11/shading-regions-under-a-curve/
+polyCurve <- function(x, y, from, to, n = 50, miny,
+                      col = "red", border = col) {
+  drawPoly <- function(fun, from, to, n = 50, miny, col, border) {
+    Sq <- seq(from = from, to = to, length = n)
+    polygon(x = c(Sq[1], Sq, Sq[n]),
+            y = c(miny, fun(Sq), miny),
+            col = col, border = border)
+  }
+  lf <- length(from)
+  stopifnot(identical(lf, length(to)))
+  if(length(col) != lf)
+    col <- rep(col, length.out = lf)
+  if(length(border) != lf)
+    border <- rep(border, length.out = lf)
+  if(missing(miny))
+    miny <- min(y)
+  interp <- approxfun(x = x, y = y)
+  mapply(drawPoly, from = from, to = to, col = col, border = border,
+         MoreArgs = list(fun = interp, n = n, miny = miny))
+  invisible()
+}
+#################################################################################
+
+# Colours for shading
+cols <- c(heat.cbar[1], heat.cbar[4], heat.cbar[8], 
+          heat.cbar[12], heat.cbar[24])
+
+# Set dates for each field season in the study
+
+KI2015 <- as.POSIXct("2015-05-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016a <- as.POSIXct("2016-03-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016b <- as.POSIXct("2016-11-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2017 <- as.POSIXct("2017-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2019 <- as.POSIXct("2019-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+
+
+###################################################################################
+
+############# Export File ################
+jpeg(filename = "figure1top.jpg", width = 40, height = 20, units = "cm", pointsize = 13, quality = 100, res = 300) #res = dpi/resolution
+
+
+# Set both inner and outer margins to 0
+par(oma=c(0,0,0,0),mar=c(1.5,3.5,0.25,2.5))
+# Plot with the polycurve function
+with(KI_heat, plot(KI_heat$time,KI_heat$KI_meanDHW, type="l", 
+                   xlab="", ylab="", ylim=c(0,33),
+                   cex.axis=1,cex.lab=1.2,
+                   yaxs="i",xaxs="i",lwd=0.5,xaxt='n',yaxt='n', 
+                   col="gray40",
+                   panel.first = # Panel first allows ablines to be plotted before polycurve, looks nicer.
+                     c(abline(v=KI2015,col="black",lwd=1,lty=2),
+                       abline(v=KI2016a,col="black",lwd=1,lty=2),
+                       abline(v=KI2016b,col="black",lwd=1,lty=2),
+                       abline(v=KI2017,col="black",lwd=1,lty=2),                                          abline(v=KI2019,col="black",lwd=1,lty=2),
+                       polyCurve(KI_heat$time, KI_heat$KI_meanDHW, 
+                                 from = from, to = to, miny = 0,
+                                 col = dhw.cc)
+                     )))
+Y <- c(0,5,10,15,20,25,30) # Set up y axis
+# Add 2nd y axis
+axis(side=2,at=Y,cex.axis=0.93,tck=0.03, lwd.ticks=1.5, las=2,hadj=0)
+
+par(new=T) # To add the temperature data to the same plot
+plot(KI_temp$time, KI_temp$KI_meanTemp,type='l',col="darkgray",
+     ylim=c(25,31.5),xlim=c(startdate,enddate),
+     xlab="",ylab="",xaxs="i",xaxt='n',yaxt="n") # Plot the temperature data
+abline(bleaching_threshold,0,col=cols[5],lwd=2) # Bleaching threshold
+abline(meanMMM,0,col="black") # Mean Monthly Maximum - MMM
+
+title(ylab="Degree Heating Weeks (°C-weeks)", line=1.2, cex.lab=1.2) # Label y axis
+# Add in time axes (multiple axes added to allow for customization)
+axis.POSIXct(side=1,KI_heat$time,cex.axis=0.93,
+             tck=0.02,lwd.ticks=2,labels=FALSE)
+axis.POSIXct(side=1,at=seq(KI_heat$time[1],KI_heat$time[1826],
+                       by="month"),tck=0.01,
+             cex.axis=0.93,labels=c("","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","",""),
+             lwd.ticks=1.5,padj=-1.5)
+
+
+axis.POSIXct(side=1,KI_heat$time,cex.axis=0.93,tck=0,padj=-1.5)
+Z <- c(26,27,28,29,30,31) # To be used as temperature y-axis values
+axis(side=4,at=Z,cex.axis=0.93,tck=0.03, lwd.ticks=1.5, las=2,hadj=0.95)
+mtext("i",side=2, line=-4, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("ii",side=2, line=-15.2, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("iii",side=2, line=-24.2, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("iv",side=2, line=-33.1, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("v",side=2, line=-59.8, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("Temperature (°C)",side=4, cex=1.2,line=1.2)
+# mtext("Mean Monthly Max.",side=2,line=-47.7,cex=0.72,las=2,padj=0.2) # Label MMM line
+# mtext("Bleaching Threshold",side=2,line=-47.7,cex=0.72,las=2,padj=-2.5) # Label bleaching threshold line
+
+
+
+dev.off() # Close
+
+```
+
+
+
+# Figure 2. Habitat structure through time for all metrics at 1cm resolution
 ```{r habitat structure by year}
 #VRM
-p.1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + year.colscale +  theme(legend.position="none") + theme(text=element_text(family="Times")) + scale_y_continuous(breaks = c(0.02, 0.045, 0.075, 0.1 ,0.12))
+p.1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "VRM") +  
+  scale_y_continuous(breaks = c(0.02, 0.05, 0.08, 0.11), limits = c(0.02, 0.12)) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,0.095, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 2.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 3.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 4.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 5.1 ,0.078, label = "A", fontface =2,family = "Times New Roman", size=4) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none") +
+ #Annotate Multipanel plots
+  annotate("label", 0.57 ,0.115, label = "i", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+  
+
+
 
 #Surface Complexity
-p.2 <- ggplot(mpq.1cm, aes(x = year, y=rug, fill = year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Surface Complexity") + year.colscale +  theme(legend.position="none") + theme(text=element_text(family="Times")) #+ scale_y_continuous(breaks = c(1.0, 1.4, 1.8, 2.2, 2.6)))
+p.2 <- ggplot(mpq.1cm, aes(x = year, y=rug, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Surface Complexity") +  
+  scale_y_continuous(breaks = c(1.20, 1.60, 2.00, 2.40, 2.80), limits = c(1.19, 2.85), labels=c("1.20", "1.60", "2.00", "2.40", "2.80")) + 
+  #Annotate Tukey results
+  annotate("text", 1.15 ,2.31, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 2.15 ,1.94, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 3.15 ,1.92, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 4.15 ,1.99, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 5.15 ,1.99, label = "A", fontface =2,family = "Times New Roman", size=4) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+       legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.57 ,2.82, label = "iii", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+       
+
 
 
 #Fractal Dimension
-p.3 <- ggplot(mpq.1cm, aes(x = year, y=fractal.dimension, fill=year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("Year") + ylab("Fractal Dimension") + year.colscale +  theme(legend.position="none") + theme(text=element_text(family="Times")) #+ scale_y_continuous(breaks = c(1.0, 1.4, 1.8, 2.2, 2.6)))) 
+p.3 <- ggplot(mpq.1cm, aes(x = year, y=fractal.dimension, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Fractal Dimension") +  
+  scale_y_continuous(breaks = c(2.10, 2.15, 2.20, 2.25, 2.30, 2.35), limits = c(2.08, 2.35)) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,2.26, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 2.1 ,2.2, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 3.1 ,2.215, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 4.1 ,2.195, label = "B", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 5.15 ,2.215, label = "AB", fontface =2,family = "Times New Roman", size=4) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y=  element_text(family = "Times New Roman"),       
+        legend.position="none") +
+ #Annotate Multipanel plots
+  annotate("label", 0.57 ,2.34, label = "v", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
 
-#Habitat Volume
-p.4 <- ggplot(cc, aes(x = time.interval, y=hab.vol, fill= time.interval)) + geom_boxplot()+ cc.colscale + theme_classic(base_size = 18) + labs(y = expression ("Volumetric Change"~m^3), x = "Time Interval") + theme(legend.position = "none") + scale_y_continuous(limits = c(-2.2, 1)) +   geom_vline(xintercept=2.5, linetype='dashed', col = 'gray60')+ theme(text=element_text(family="Times"))
 
 #Profile Curv Range
-p.6 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Profile Range") + ggtitle("") + year.colscale +  theme(legend.position="none") + theme(text=element_text(family="Times"))
+p.4 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Pro Range") +  
+  scale_y_continuous(breaks = c(12.5, 13, 13.5, 14, 14.5, 15), limits = c(12.5, 14.5), labels = c("12.50", "13.00", "13.50", "14.00", "14.50", "15.00")) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,14.1, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 2.1 ,13.75, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 3.1 ,13.8, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 4.1 ,13.8, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 5.1 ,13.95, label = "A", fontface =2,family = "Times New Roman", size=4) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.57 ,14.425, label = "ii", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
 
 
 #Planform Curv range
-p.7 <- ggplot(mpq.1cm, aes(x = year, y=plan.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("Year") + ylab("Planform Range") + ggtitle("") + year.colscale +  theme(legend.position="none") + theme(text=element_text(family="Times"))
+p.5 <- ggplot(mpq.1cm, aes(x = year, y=plan.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Plan Range") +  
+  scale_y_continuous(breaks = c(11.75,12.25, 12.75, 13.25, 13.75, 14.25), limits = c(11.75, 14.5)) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,14.2, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 2.15 ,13.8, label = "B", fontface =2, family = "Times New Roman",size=4)+ 
+  annotate("text", 3.15 ,13.8, label = "B", fontface =2,family = "Times New Roman",size=4)+ 
+  annotate("text", 4.1 ,13.7, label = "B", fontface =2,family = "Times New Roman",size=4)+ 
+  annotate("text", 5.15 ,13.95, label = "AB", fontface =2,family = "Times New Roman",size=4) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.57 ,14.37, label = "iv", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
 
 
-#Now put all plots together:
-library(cowplot)
-left <- plot_grid(p.1, p.2, p.3,
-                align = 'vh',
-                labels = c("A", "C", "E"),
-                label_x = 0.36,
-                hjust = 10, #Horizontal Label movement
-                vjust = 2, #Vertical Label movement
-                ncol=1,
-                nrow = 3)
 
-right <- plot_grid(p.6, p.7,p.4,
-                align = 'vh',
-                labels = c("B", "D", "F"),
-                label_x = 0.36,
-                hjust = 10, #Horizontal Label movement
-                vjust = 2, #Vertical Label movement
-                ncol=1,
-                nrow = 3)
+#Habitat Volume
+p.6 <- ggplot(cc, aes(x = time.interval, y=volume.change, fill= time)) + geom_boxplot()+ cc.colscale + labs(y = expression ("Δ Volume"~m^3), x = "Time Interval") +
+  geom_vline(xintercept=2.5, linetype='dashed', col = 'gray60') +   
+  scale_y_continuous(breaks = c(-2, -1, 0, 1), limits = c(-2, 1.02), labels = c("-2.00", "-1.00", "0.00", "1.00")) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,0.30, label = "A", fontface =2,family = "Times New Roman", size=4)+ 
+  annotate("text", 2.1 ,0.35, label = "A", fontface =2, family = "Times New Roman",size=4) +
+    theme_classic(base_size = 16) + 
+   #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_text(family = "Times New Roman"), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.505 ,0.96, label = "vi", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
 
-plot_grid(left, right, rel_widths = c(1,1))
+
+#MERGE ALL PLOTS INTO A SINGLE MULTIPANEL
+multiplot(p.1,p.2,p.3,p.4,p.5,p.6, layout = matrix(c(1,4,
+                                                     2,5,
+                                                     3,6), nrow=3, ncol=2, byrow=TRUE))
+
+
+
+#KT Method for adding Text labels to the plots
+# grid.text("a", x = unit(0.015, "npc"), y = unit(0.98, "npc"), gp = gpar(fontsize=15))
+# 
+# grid.text("b", x = unit(0.015, "npc"), y = unit(0.68, "npc"), gp = gpar(fontsize=15))
+# 
+# grid.text("c", x = unit(0.015, "npc"), y = unit(0.34, "npc"), gp = gpar(fontsize=15))
+
+
+
+
+
+
+# #Exporting plot for publication
+# jpeg(filename = "figure2.jpg", width = 30, height = 20, units = "cm", pointsize = 13, quality = 100, res = 300) #res = dpi/resolution
+# 
+# multiplot(p.1,p.2,p.3,p.4,p.5,p.6, layout = matrix(c(1,4,
+#                                                      2,5,
+#                                                      3,6), nrow=3, ncol=2, byrow=TRUE))
+# 
+# dev.off()
 
 
 ```
 
-## DEM Complexity changes (VRM,Rug,Frac) 
-```{r rug and vrm DEM complexity changes , echo=FALSE}
+
+# Figure 3. Complexity (SC, VRM) and curvature (pro, plan) changes across DEM resolutions 
+```{r metrics across DEM complexity changes , echo=FALSE}
 #Add collumn to use as headers for facet_wrap
 mpq.1cm$DEM_cm <- "1.0 cm"
 mpq.4cm$DEM_cm <- "4.0 cm"
 mpq.8cm$DEM_cm <- "8.0 cm"
 
-
+mpq.1cm
 #VRM
-v.dem1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + ylim(0.01, 0.12) + year.colscale + theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+v.dem1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + ylim(0.01, 0.12) + year.colscale + theme(legend.position="none") + facet_wrap(~DEM_cm) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-v.dem4 <- ggplot(mpq.4cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) + theme_classic(base_size = 18) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+v.dem4 <- ggplot(mpq.4cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-v.dem8 <- ggplot(mpq.8cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+v.dem8 <- ggplot(mpq.8cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 16) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
 
 #Surface Complexity
-r.dem1 <-ggplot(mpq.1cm, aes(x= year, y= rug, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Surface Complexity") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+r.dem1 <-ggplot(mpq.1cm, aes(x= year, y= rug, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Surface Complexity") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 16) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-r.dem4 <- ggplot(mpq.4cm, aes(x= year, y= rug, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) +  theme_classic(base_size = 18) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+r.dem4 <- ggplot(mpq.4cm, aes(x= year, y= rug, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) +  theme_classic(base_size = 16) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-r.dem8 <- ggplot(mpq.8cm, aes(x= year, y= rug, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+r.dem8 <- ggplot(mpq.8cm, aes(x= year, y= rug, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 16) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
 #Pro.Curve Range
-pro.r.dem1 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Pro Range")  + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+pro.r.dem1 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Pro Range")  + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 16) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-pro.r.dem4 <- ggplot(mpq.4cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("")  + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+pro.r.dem4 <- ggplot(mpq.4cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("")  + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 16) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-pro.r.dem8 <- ggplot(mpq.8cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+pro.r.dem8 <- ggplot(mpq.8cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 16) + theme(legend.position = "none")+ theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
 
 #Plan Curve Range
-plan.r.dem1 <-ggplot(mpq.1cm, aes(x= year, y= plan.range.log, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Plan Range") + year.colscale +  theme(legend.position="none")  + theme_classic(base_size = 18) + theme(legend.position = "none")
+plan.r.dem1 <-ggplot(mpq.1cm, aes(x= year, y= plan.range.log, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Plan Range") + year.colscale +  theme(legend.position="none")  + theme_classic(base_size = 16) + theme(legend.position = "none")
 
-plan.r.dem4 <- ggplot(mpq.4cm, aes(x= year, y= plan.range.log, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none")  +  theme_classic(base_size = 18) + theme(legend.position = "none") 
+plan.r.dem4 <- ggplot(mpq.4cm, aes(x= year, y= plan.range.log, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none")  +  theme_classic(base_size = 16) + theme(legend.position = "none") 
 
-plan.r.dem8 <- ggplot(mpq.8cm, aes(x= year, y= plan.range.log, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none")
+plan.r.dem8 <- ggplot(mpq.8cm, aes(x= year, y= plan.range.log, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 16) + theme(legend.position = "none")
 
 #Arrange all plots together
-library(cowplot)
+# library(cowplot)
 
 vrm.dem <- plot_grid(v.dem1, v.dem4, v.dem8,
                 align = 'vh',
@@ -293,411 +829,292 @@ plot_grid(vrm.dem, rug.dem, pro.r.dem, plan.r.dem, ncol=1, nrow=4, rel_widths = 
 
 ```
 
-## DEM Island.side plot
-```{r rug and vrm DEM complexity changes , echo=FALSE}
-#VRM (I removed , fill=year from the aes line to have it average)
-v.dem1.island <- ggplot(mpq.1cm, aes(x = island.side, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-v.dem4.island <- ggplot(mpq.4cm, aes(x = island.side, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+# Figure 4. Multipanel Metric Preditctions
+```{r predicted values plot}
+#1. Assign years to a color scale
+year.cols <-  c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1", "#313695") #ffffbf = Yellow....
+year.colscale<- scale_fill_manual(name="", values=year.cols, breaks=c("2015", "2016a", "2016b", "2017", "2019"))
 
-v.dem8.island <- ggplot(mpq.8cm, aes(x = island.side, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+#2. Predict values and plot for each metric
+## VRM
+set.seed(2)
+vrm6 <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm)
 
+#Predict values for the model
+predslm = predict(vrm6, interval = "confidence")
+head(predslm)
 
-#Surface Complexity
-r.dem1.island <-ggplot(mpq.1cm, aes(x= island.side, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Surface Complexity") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+vrm.predict = cbind(mpq.1cm, predslm)
+vrm.predict2 <- subset(vrm.predict, sqrt.hdist.cont > 0)
 
-r.dem4.island <- ggplot(mpq.4cm, aes(x= island.side, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+v <- ggplot(vrm.predict2, aes(x = sqrt.hdist.cont, y = vrm, color = year)) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr, fill = year, color = NULL), alpha = .15) + 
+  guides(fill="none") + geom_line( aes(y = fit), size = 1)+ 
+  labs(y ="VRM", color="Year") + 
+  theme_classic(base_size = 16)  + year.colscale + 
+  scale_color_manual(values=c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1", "#313695"), labels = c("July 2015", "March 2016", "Nov 2016", "July 2017", "July 2019")) + 
+  theme(axis.title.x=element_blank(), axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"),
+        axis.ticks.x = element_blank(),
+        legend.text = element_text(family = "Times New Roman"))+
+   scale_y_continuous(breaks = c(0.02, .04, 0.06, 0.08), limits = c(0.02, 0.08))
  
-r.dem8.island <- ggplot(mpq.8cm, aes(x= island.side, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
 
-#Arrange all plots together
-library(cowplot)
-vrm.island <- plot_grid(v.dem1.island, v.dem4.island, v.dem8.island,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
+v
 
-rug.island <- plot_grid(r.dem1.island, r.dem4.island, r.dem8.island,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
+#<-----------------------------------------------------------------------------
+##Surface Complexity
+set.seed(2)
+rug5 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
 
-plot_grid(vrm.island, rug.island, ncol=1, nrow=2, rel_widths = c(0.5,1))
+#Predict values for the model
+predslmrug = predict(rug5, interval = "confidence")
+head(predslmrug)
 
+rug.predict = cbind(mpq.1cm, predslmrug)
+rug.predict2 <- subset(rug.predict, sqrt.hdist.cont > 0)
 
-################ Curvature Metrics #################
+sc <- ggplot(rug.predict2, aes(x = sqrt.hdist.cont, y = rug, color = year)) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr, fill = year, color = NULL), alpha = .15) + 
+  guides(fill="none") + geom_line( aes(y = fit), size = 1)+ 
+  labs(y ="Surface Complexity", color="Year") + 
+  theme_classic(base_size = 16)  + year.colscale + 
+  scale_color_manual(values=c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1", "#313695"), labels = c("July 2015", "March 2016", "Nov 2016", "July 2017", "July 2019")) + 
+  theme(axis.title.x=element_blank(), axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"),
+        axis.ticks.x = element_blank(),
+        legend.position = "none") +  
+  scale_y_continuous(breaks = c(1.4, 1.6, 1.8, 2.0), limits = c(1.3, 2.1))
 
-#Pro.Curve Range
-pro1.island <- ggplot(mpq.1cm, aes(x = island.side, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Pro Range")  + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-pro4.island <- ggplot(mpq.4cm, aes(x = island.side, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("")  + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-pro8.island <- ggplot(mpq.8cm, aes(x = island.side, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-
-#Plan Curve Range
-plan1.island <-ggplot(mpq.1cm, aes(x= island.side, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Plan Range") + year.colscale +  theme(legend.position="none")  + theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
-
-plan4.island <- ggplot(mpq.4cm, aes(x= island.side, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none")  +  theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
-
-plan8.island <- ggplot(mpq.8cm, aes(x= island.side, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
-
-#Arrange all plots together
-library(cowplot)
-
-pro.island <- plot_grid(pro1.island, pro4.island, pro8.island,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
-
-plan.island <- plot_grid(plan1.island, plan4.island, plan8.island,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
-
-plot_grid(pro.island, plan.island, ncol=1, nrow=2, rel_widths = c(0.5,1))
+sc
 
 
-#Try all together in 1 multipanel plot!
-plot_grid(vrm.island,rug.island, pro.island, plan.island, ncol=1, nrow=4, rel_widths = c(0.5,1))
+
+
+#<-----------------------------------------------------------------------------
+##Fractal Dimension
+set.seed(2)
+fractal.dimension5 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm) 
+
+#Predict values for the model
+predslm.frac = predict(fractal.dimension5, interval = "confidence")
+head(predslm.frac)
+
+frac.predict = cbind(mpq.1cm, predslm.frac)
+frac.predict2 <- subset(frac.predict, sqrt.hdist.cont > 0)
+
+
+f <- ggplot(frac.predict2, aes(x = sqrt.hdist.cont, y = rug, color = year)) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr, fill = year, color = NULL), alpha = .15) + 
+  guides(fill="none") + geom_line( aes(y = fit), size = 1)+ 
+  labs(y ="Fractal Dimension", x = "Human Disturbance") + 
+  theme_classic(base_size = 16)  + year.colscale + 
+  scale_color_manual(values=c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1", "#313695"), labels = c("July 2015", "March 2016", "Nov 2016", "July 2017", "July 2019")) + 
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"),
+        axis.ticks.x = element_blank(),
+        legend.position = "none") +
+ scale_y_continuous(breaks = c(2.10, 2.12, 2.14, 2.16, 2.18, 2.2, 2.22), limits = c(2.095, 2.22))
+ 
+
+
+
+
+
+#<-----------------------------------------------------------------------------
+##Profile Curvature Range
+set.seed(2)
+pro.range.log5 <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm)
+
+#Predict values for the model
+predslm.pro = predict(pro.range.log5, interval = "confidence")
+head(predslm.pro)
+
+pro.predict = cbind(mpq.1cm, predslm.pro)
+pro.predict2 <- subset(pro.predict, sqrt.hdist.cont > 0)
+
+
+prc <- ggplot(pro.predict2, aes(x = sqrt.hdist.cont, y = rug, color = year)) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr, fill = year, color = NULL), alpha = .15) + 
+  guides(fill="none") + geom_line( aes(y = fit), size = 1)+ 
+  labs(y ="Pro Range", color="Year") + 
+  theme_classic(base_size = 16)  + year.colscale + 
+  scale_color_manual(values=c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1", "#313695"), labels = c("July 2015", "March 2016", "Nov 2016", "July 2017", "July 2019")) + 
+  theme(axis.title.x=element_blank(), axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"),
+        axis.ticks.x = element_blank(),
+        legend.position = "none") +
+   scale_y_continuous(breaks = c(13.0, 13.2, 13.4, 13.6, 13.8), limits = c(13, 13.8)) 
+
+prc
+
+
+
+#<-----------------------------------------------------------------------------
+##Planform Curvature Range
+set.seed(2)
+plan.range.log2 <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm)
+
+#Predict values for the model
+predslm.plan = predict(plan.range.log2, interval = "confidence")
+head(predslm.plan)
+
+plan.predict = cbind(mpq.1cm, predslm.plan)
+plan.predict2 <- subset(plan.predict, sqrt.hdist.cont > 0)
+
+
+plc <- ggplot(plan.predict2, aes(x = sqrt.hdist.cont, y = plan.range.log, color = year)) +
+  geom_ribbon( aes(ymin = lwr, ymax = upr, fill = year, color = NULL), alpha = .15) + 
+  guides(fill="none") + geom_line( aes(y = fit), size = 1)+ 
+  labs(y ="Plan Range", x= "Human Disturbance") + 
+  theme_classic(base_size = 16)  + year.colscale + 
+  scale_color_manual(values=c("#ffffbf", "#d73027", "#f46d43", "#abd9e9", "#74add1", "#313695"), labels = c("July 2015", "March 2016", "Nov 2016", "July 2017", "July 2019")) + 
+  theme(axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"),
+        axis.ticks.x = element_blank(),
+        legend.position = "none")+
+   scale_y_continuous(breaks = c(12.5, 13.0, 13.5, 14.0), limits = c(12.48, 14.01)) 
+
+
+plc
+
+#<-----------------------------------------------------------------------------
+
+#To Plot
+#1. Create Legend
+g_legend<-function(a.gplot){
+    tmp <- ggplot_gtable(ggplot_build(a.gplot))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    return(legend)
+}
+legend <- g_legend(v)
+
+
+#2. Arrange all together
+grid.arrange(arrangeGrob(v + theme(legend.position = "none"),sc,f,prc,plc, legend, layout_matrix = rbind(c(1,6), 
+                                                                                                        c(2,4),
+                                                                                                        c(3,5))))
+
+
 
 
 ```
 
-## DEM Human Disturbance plot
-```{r rug and vrm DEM complexity changes , echo=FALSE}
-mpq.1cm$hum_dist <- factor(mpq.1cm$hum_dist, levels = c("Very High", "Medium", "Very Low"))
-mpq.4cm$hum_dist <- factor(mpq.4cm$hum_dist, levels = c("Very High", "Medium", "Very Low"))
-mpq.8cm$hum_dist <- factor(mpq.8cm$hum_dist, levels = c("Very High", "Medium", "Very Low"))
 
-
-#VRM (I removed , fill=year from the aes line to have it average)
-v.hum1 <- ggplot(mpq.1cm, aes(x = hum_dist, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-v.hum4 <- ggplot(mpq.4cm, aes(x = hum_dist, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-v.hum8 <- ggplot(mpq.8cm, aes(x = hum_dist, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-
-#Surface Complexity
-r.hum1 <-ggplot(mpq.1cm, aes(x= hum_dist, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("S.Complex") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-r.hum4 <- ggplot(mpq.4cm, aes(x= hum_dist, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
- 
-r.hum8 <- ggplot(mpq.8cm, aes(x= hum_dist, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-#Arrange all plots together
-library(cowplot)
-vrm.hum <- plot_grid(v.hum1, v.hum4, v.hum8,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
-
-rug.hum <- plot_grid(r.hum1, r.hum4, r.hum8,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
-
-
-
-################ Curvature Metrics #################
-
-#Pro.Curve Range
-pro.hum1 <- ggplot(mpq.1cm, aes(x = hum_dist, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Pro Range")  + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-pro.hum4 <- ggplot(mpq.4cm, aes(x = hum_dist, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("")  + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-pro.hum8 <- ggplot(mpq.8cm, aes(x = hum_dist, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
-
-
-#Plan Curve Range
-plan.hum1 <-ggplot(mpq.1cm, aes(x= hum_dist, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Plan Range") + year.colscale +  theme(legend.position="none")  + theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
-
-plan.hum4 <- ggplot(mpq.4cm, aes(x= hum_dist, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none")  +  theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
-
-plan.hum8 <- ggplot(mpq.8cm, aes(x= hum_dist, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
-
-#Arrange all plots together
-pro.hum <- plot_grid(pro.hum1, pro.hum4, pro.hum8,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
-
-plan.hum <- plot_grid(plan.hum1, plan.hum4, plan.hum8,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=3,
-                nrow = 1)
-
-plot_grid(pro.hum, plan.hum, ncol=1, nrow=2, rel_widths = c(0.5,1))
-
-
-#Try all together in 1 multipanel plot!
-plot_grid(vrm.hum,rug.hum, pro.hum, plan.hum, ncol=1, nrow=4, rel_widths = c(0.5,1))
-
-
-```
-
-
-
-
-# Metric Panel across disturbance
+# Figure S1: Complexity Changes across levels of human Disturbance plot
 ```{r habitat structure by disturbance}
+levels(mpq.1cm$hdist)
+levels(cc$hdist)
+
 #VRM
-p.h.1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + facet_wrap(~hum_dist)+ geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + ylim(0.02, 0.12) + year.colscale +  theme(legend.position="none") 
+p.h.1 <- ggplot(mpq.1cm, aes(x = hdist, y=vrm, fill= year))  + 
+  geom_boxplot() + theme_classic(base_size = 16) + 
+  labs(x = "", y = "VRM") + year.colscale +  
+    scale_y_continuous(breaks = c(0.02, 0.04, 0.06, 0.08, 0.10, 0.12), limits = c(0.02, 0.12), labels=c("0.02", "0.04", "0.06", "0.08", "0.10", "0.12")) +
+  theme(axis.title.x=element_blank(), axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none") +  
+ #Annotate Tukey results/# of each plot in the multipanel 
+  annotate("label", 0.5 ,0.116, label = "i", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
 
 #Surface Complexity
-p.h.2 <- ggplot(mpq.1cm, aes(x = hum_dist, y=rug, fill = year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Surface Complexity") + year.colscale +  theme(legend.position="none") 
+p.h.2 <- ggplot(mpq.1cm, aes(x = hdist, y=rug, fill = year)) + 
+  geom_boxplot() + theme_classic(base_size = 16) + 
+  labs(x="", y = "Surface Complexity") + year.colscale +  
+    scale_y_continuous(breaks = c(1.2, 1.6, 2.0, 2.4, 2.8), limits = c(1.2, 2.81), labels = c("1.20", "1.60", "2.00", "2.40", "2.80"))+  
+theme(axis.title.x=element_blank(), 
+      axis.title.y = element_text(family = "Times New Roman"),
+      axis.text.x=element_blank(), 
+      axis.text.y= element_text(family = "Times New Roman"),
+      legend.position = "none") +  
+ #Annotate Tukey results/# of each plot in the multipanel 
+  annotate("label", 0.5 ,2.78, label = "iii", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
 
 #Fractal Dimension
-p.h.3 <- ggplot(mpq.1cm, aes(x = hum_dist, y=frac, fill=year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("Year") + ylab("Fractal Dimension") + year.colscale +  theme(legend.position="none") 
+p.h.3 <- ggplot(mpq.1cm, aes(x = hdist, y=fractal.dimension, fill=year)) + 
+  geom_boxplot() + theme_classic(base_size = 16) + 
+  labs(x="Human Disturbance", y="Fractal Dimension") + year.colscale +  
+    scale_y_continuous(breaks = c(2.09, 2.15, 2.21, 2.27, 2.33), limits = c(2.086, 2.332)) + 
+  theme(axis.title.x=element_text(family = "Times New Roman"), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none") +  
+ #Annotate Tukey results/# of each plot in the multipanel 
+  annotate("label", 0.5 ,2.325, label = "v", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
 
 #Habitat Volume
-p.h.4 <- ggplot(cc, aes(x = hum_dist, y=hab.vol, fill= timepoint)) + geom_boxplot()+ cc.colscale + theme_classic(base_size = 18) + labs(y = expression ("Volumetric Change"~m^3), x = "Timepoint") + theme(legend.position = "none") + scale_y_continuous(limits = c(-2.2, 1)) +   geom_vline(xintercept=2.5, linetype='dashed', col = 'gray60') #+   geom_vline(yintercept=0, linetype='dashed', col = 'red')
+p.h.4 <- ggplot(cc, aes(x = hdist, y=volume.change, fill= time)) + 
+  geom_boxplot()+ cc.colscale + theme_classic(base_size = 16) + 
+  labs(y = expression ("Δ Volume"~m^3), x = "Human Disturbance") + 
+  scale_y_continuous(limits = c(-1.98, 1), breaks = c(-2, -1.0, 0.0, 1), labels = c("-2.00", "-1.00", "0.00", "1.00")) +
+theme(axis.title.x=element_text(family = "Times New Roman"), 
+      axis.title.y = element_text(family = "Times New Roman"),
+      axis.text.x=element_text(family = "Times New Roman"), 
+      axis.text.y= element_text(family = "Times New Roman"),
+      legend.position = "none")  +
+ #Annotate Tukey results/# of each plot in the multipanel 
+  annotate("label", 0.5 ,0.9, label = "vi", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
 
 #Profile Curv Range
-p.h.5 <- ggplot(mpq.1cm, aes(x = hum_dist, y=pro.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Profile Range") + ggtitle("") + year.colscale +  theme(legend.position="none") 
+p.h.5 <- ggplot(mpq.1cm, aes(x = hdist, y=pro.range.log, fill = year)) + 
+  geom_boxplot() + theme_classic(base_size = 16) + 
+  labs(x= "", y= "Pro Range") + year.colscale +  
+  scale_y_continuous(breaks = c(12.5, 13, 13.5, 14, 14.5, 15), limits = c(12.5, 14.5)) +
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none") +  
+   #Annotate # of each plot in the multipanel 
+  annotate("label", 0.5 ,14.48, label = "ii", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
 
+p.h.5
 
 #Planform Curv range
-p.h.6 <- ggplot(mpq.1cm, aes(x = hum_dist, y=plan.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("Year") + ylab("Planform Range") + ggtitle("") + year.colscale +  theme(legend.position="none") 
+p.h.6 <- ggplot(mpq.1cm, aes(x = hdist, y=plan.range.log, fill = year)) + 
+  geom_boxplot() + theme_classic(base_size = 16) + 
+  labs(x="Year", y="Plan Range") + year.colscale +  
+  scale_y_continuous(breaks = c(11.9, 12.4, 12.9, 13.4, 13.9, 14.3), limits = c(11.9, 14.3))+
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none") +  
+   #Annotate Tukey results/# of each plot in the multipanel 
+  annotate("label", 0.5 ,14.25, label = "iv", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+p.h.6
 
 
-#Now put all plots together:
-library(cowplot)
-
-plot_grid(p.h.1, p.h.5, p.h.2, p.h.6, p.h.3, p.h.4,
-                align = 'vh',
-                labels="AUTO",
-                label_x = 0.36,
-                ncol=2,
-                nrow = 3)
-
-
-
-
-```
-
-
-
-
-
-
-
-# JM Figure 3 (Complexity Changes) {.tabset}
-
-- I need to setup a color pallete so that the year color bars from the left sided plots match the corresponding year plots on the right
-
-## Complexity changes (VRM,Rug,Frac) across time and across human disturbance
-```{r changes in complexity over time, echo=FALSE}
-#Need to match up colours with year **Create specific color pallette for this....
-#These plots involve all applicable data collected at all timepoints (no sites were left out)
-p.1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + ylim(0.02, 0.12) + year.colscale +  theme(legend.position="none") #+ annotate("text", x=5, y=0.12, label= "p=2.81E-10", size = 7) + annotate("text", x= 1, y=0.115, label= "A", size = 6) + annotate("text", x= 2, y=0.095, label= "B", size = 6) + annotate("text", x= 3, y=0.095, label= "B", size = 6) + annotate("text", x= 4, y=0.095, label= "B", size = 6) + annotate("text", x= 5, y=0.095, label= "AB", size = 6) 
-
-#plot 2 covers differences in local human disturbance....
-p.1.1 <- ggplot(mpq.1cm, aes(x= hum_dist, y= vrm, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + ylim(0.02, 0.12)+ xlab("") + ylab("") + year.colscale
-
-p1 <- ggarrange(p.1, p.1.1, ncol = 2, nrow = 1)
-
-#Surface Complexity 
-p.2 <- ggplot(mpq.1, aes(x = year, y=rug, fill = year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Surface Complexity") + year.colscale +  theme(legend.position="none") 
-
-p.2.1 <- ggplot(mpq.1, aes(x= hum_dist, y= rug, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") 
-
-p2 <- ggarrange(p.2, p.2.1, ncol = 2, nrow = 1)
-
-#Fractal Dimension
-p.3 <- ggplot(frac, aes(x = year, y=frac, fill=year)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("Year") + ylab("Fractal Dimension") + year.colscale +  theme(legend.position="none") 
-
-p.3.1 <- ggplot(frac, aes(x= hum_dist, y= frac, fill=year)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("Human Disturbance") + ylab("") + year.colscale +  theme(legend.position="none") 
-
-p3 <- ggarrange(p.3, p.3.1, ncol = 2, nrow = 1)
-
-
-#Now put all plots together:
-#ggarrange(p1, p2, p3, ncol = 1, nrow = 3) #VRM, Rug, Frac
+#Create the Multipanel Plot
+multiplot(p.h.1,p.h.2,p.h.3,p.h.5,p.h.6,p.6, layout = matrix(c(1,4,
+                                                                 2,5,
+                                                                 3,6), 
+                                                               nrow=3, ncol=2, byrow=TRUE))
 
 
 
 
+# #Exporting plot for publication
 
-
-
-
-######## Different way of positioning plots so that I can label them nicely ####
-#Arrange all plots together
-library(cowplot)
-
-p.4 <- plot_grid(p.1, p.2, p.3,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=1,
-                nrow = 3)
-
-p.5 <- plot_grid(p.1.1, p.2.1, p.3.1,
-                align = 'vh',
-                labels = NULL,
-                label_x = 0.36,
-                ncol=1,
-                nrow = 3)
-
-plot_grid(p.4, p.5, rel_widths = c(0.5,1))
-
-
-
-```
-
-```{r changes in curvature over time, echo=FALSE}
-#Profile Curve Range
-p.6 <- ggplot(mpq.1.range, aes(x = year, y=pro.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Profile Curvature Range") + ggtitle("") + year.colscale +  theme(legend.position="none") 
-
-#plot 2 covers differences in local human disturbance....
-p.6.1<- ggplot(mpq.1.range, aes(x = hum_dist, y=pro.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("") + ggtitle("") + year.colscale +  theme(legend.position="none") 
-
-
-p6 <- ggarrange(p.6, p.6.1, ncol = 2, nrow = 1)
-
-
-#Planform Curve Range
-p.7 <- ggplot(mpq.1.range, aes(x = year, y=plan.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Planform Curvature Range") + ggtitle("") + year.colscale +  theme(legend.position="none") 
-
-#plot 2 covers differences in local human disturbance....
-p.7.1<- ggplot(mpq.1.range, aes(x = hum_dist, y=plan.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("") + ggtitle("") + year.colscale +  theme(legend.position="none") 
-
-
-p7 <- ggarrange(p.7, p.7.1, ncol = 2, nrow = 1)
-
-
-ggarrange(p6, p7, ncol = 1, nrow =2)
-
-#Human disturbance plot only:
-ggarrange(p.6.1, p.7.1, ncol = 1, nrow =2)
-
-
-# #Now put all plots together:
-# library(cowplot)
+# jpeg(filename = "figureS1.jpg", width = 30, height = 20, units = "cm", pointsize = 13, quality = 100, res = 300) #res = dpi/resolution
 # 
-# p6a <- plot_grid(p.6, p., p.3,
-#                 align = 'vh',
-#                 labels = NULL,
-#                 label_x = 0.36,
-#                 ncol=1,
-#                 nrow = 3)
+# multiplot(p.h.1,p.h.2,p.h.3,p.h.5,p.h.6,p.6, layout = matrix(c(1,4,
+#                                                                  2,5,
+#                                                                  3,6), 
+#                                                                nrow=3, ncol=2, byrow=TRUE))
 # 
-# p7a <- plot_grid(p.1.1, p.2.1, p.3.1,
-#                 align = 'vh',
-#                 labels = NULL,
-#                 label_x = 0.36,
-#                 ncol=1,
-#                 nrow = 3)
-# 
-# plot_grid(p.4, p.5, rel_widths = c(0.5,1))
-# 
-# 
-
-```
+# dev.off()
 
 
-## Curvature Ranges {.tabset}
- 
-- I need to check and see if KI2016b_Site30_MPQ1 range value is correct. It is an odd outlier by a large amount, so I feel like it most likely isn't (probably a math mistake or data collection error)
-
-### Mean vs Range values
-
-- Mean = Change in shape orientation through time from more negative curvature values to more positive values
-
-- Range = Shows a similar trend to the other complexity metrics (steep decline initially, then stagnates)
-
-```{r Curvature range and mean plot, echo=FALSE}
-
-a1 <- ggplot(mpq.1.range, aes(x = year, y=pro.curv, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") + year.colscale +  theme(legend.position="none") 
-
-a2 <- ggplot(mpq.1.range, aes(x = year, y=pro.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Range") + ggtitle("") + year.colscale +  theme(legend.position="none")   
-
-b1 <- ggplot(mpq.1.range, aes(x = year, y=plan.curv, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("") + ggtitle("Planform Curvature") + year.colscale +  theme(legend.position="none") 
-
-b2 <- ggplot(mpq.1.range, aes(x = year, y=plan.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("") + ggtitle("") + year.colscale +  theme(legend.position="none") 
-
-
-ggarrange(a1, b1, a2, b2, nrow=2, ncol= 2)
-
-
-```
-
-### Profile Curvature
-```{r curvature range graphing, echo=FALSE}
-
-#Profile Curv RANGE GRAPHING
-pro.1 <- ggplot(mpq.1.range, aes(x=pro.range, fill=year)) + geom_density(alpha=0.2)
-pro.2 <- ggplot(mpq.1.range, aes(x=pro.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
-
-pro.3 <- ggplot(mpq.1.range, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.4) + year.colscale + xlab("Profile Curvature")
-pro.4 <- ggplot(mpq.1.range, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
-
-pro.5 <- ggplot(mpq.1.range, aes(x=pro.range, fill=year)) + geom_density(alpha=0.2)
-pro.6 <- ggplot(mpq.1.range, aes(x=pro.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
-
-grid.arrange(pro.1, pro.2, nrow=2)
-grid.arrange(pro.3, pro.4, nrow=2)
-grid.arrange(pro.5, pro.6, nrow=2)
-
-#Make a violin plot of the curvature data 
-#Profile Curvature Data
-c1<- ggplot(mpq.1.range, aes(x=year, y=pro.curv, fill=year)) + 
-  geom_violin(trim=FALSE)+
-  geom_boxplot(width=0.1, fill="white")+
-  labs(x="Year", y = "Profile Curvature") + year.colscale +  theme(legend.position="none") 
-
-#Profile Curvature Range Data
-c2<- ggplot(mpq.1.range, aes(x=year, y=pro.range, fill=year)) + 
-  geom_violin(trim=FALSE)+
-  geom_boxplot(width=0.1, fill="white")+
-  labs(x="Year", y = "Profile Curvature Range") + year.colscale +  theme(legend.position="none") 
-
-#Profile Curvature Data
-c3<- ggplot(mpq.1.range, aes(x=year, y=plan.curv, fill=year)) + 
-  geom_violin(trim=FALSE)+
-  geom_boxplot(width=0.1, fill="white")+
-  labs(x="Year", y = "Planform Curvature") + year.colscale +  theme(legend.position="none") 
-
-#Profile Curvature Range Data
-c4 <- ggplot(mpq.1.range, aes(x=year, y=plan.range, fill=year)) + 
-  geom_violin(trim=FALSE)+
-  geom_boxplot(width=0.1, fill="white")+
-  labs(x="Year", y = "Planform Curvature Range") + year.colscale +  theme(legend.position="none") 
-
-ggarrange(c1, c3, nrow=1, ncol=2)
-ggarrange(c2, c4, nrow=1, ncol=2)
-
-```
-
-### Planform Curvature
-```{r plan curv range, echo=FALSE}
-#Planform Curv Range
-plan.1 <- ggplot(mpq.1, aes(x=plan.range, fill=year)) + geom_density(alpha=0.2)
-plan.2 <- ggplot(mpq.1, aes(x=plan.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
-
-plan.3 <- ggplot(mpq.1, aes(x=plan.curv, fill=year)) + geom_density(alpha=0.2)
-plan.4 <- ggplot(mpq.1, aes(x=plan.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
-
-grid.arrange(plan.1, plan.2, nrow=2)
-grid.arrange(plan.3, plan.4, nrow=2)
 
 
 ```
@@ -705,89 +1122,6 @@ grid.arrange(plan.3, plan.4, nrow=2)
 
 # Parameter Estimates(JM figure 4) {.tabset}
 ```{r Parameter estimates plot, eval=FALSE, include=FALSE}
-#Load the Data
-### 1. Habitat Volume Data
-cc <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_CloudCompare_Data_Clean_11Dec2020.csv",header=TRUE, row.names=1)
-
-str(cc)
-unique(cc$timepoint)
-
-
-#Change name of volume.change to hab.vol
-colnames(cc)[which(names(cc)=="volume.change")] <- "hab.vol"
-
-#Change site to a factor (for the random effect modelling)
-cc$site <- as.factor(cc$site)
-
-unique(cc$hum_dist)
-cc$hum_dist <- factor(cc$hum_dist, levels = c("Very High", "Medium", "Very Low"))
-cc$island.side <- factor(cc$island.side, levels = c("Leeward", "Windward"))
-
-cc$timepoint<- as.factor(cc$timepoint)
-cc$timepoint <- factor(cc$timepoint, levels = c("2015-2017", "2017-2019", "2015-2019"))
-    
-#Data histrogram
-# hist(cc$hab.vol)
-# qqnorm(cc$hab.vol)
-# qqline(cc$hab.vol)
-
-#Model 2 timepoints
-cc.2tps <- subset(cc, timepoint == "2015-2017" | timepoint == "2017-2019")
-
-
-
-#----------------------------------------------------------------------------------------------------------------------------------------------------------
-### 2. Fractal Dimension Data
-frac <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Fractal_Dimension_Data_Clean.csv", row.names = 1)
-
-#Rename fractal dimension collumn to frac
-colnames(frac)[which(names(frac)=="fractal.dimension")] <- "frac"
-
-#Change site to a factor (for the random effect modeling)
-frac$site <- as.factor(frac$site)
-
-
-#Test for normality.....
-hist(frac$frac)
-
-    
-#----------------------------------------------------------------------------------------------------------------------------------------------------------
-# 3. Complexity Data
-# mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_ALL_Data_Clean_FINAL.11Dec2020.csv", header=TRUE, row.names = 1)
-
-mpq <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Complexity.Data.Final.21Dec2020.csv", header=TRUE, row.names = 1)
-
-
-#Correct levels of hum_dist
-levels(mpq$hum_dist)
-mpq$hum_dist <- factor(mpq$hum_dist, levels = c("Very Low", "Medium", "Very High"))
-levels(mpq$hum_dist)
-
-#Change site to a factor (for the random effect modelling)
-mpq$site <- as.factor(mpq$site)
-
-#Create subsets for each DEM
-mpq.1 <- subset (mpq, DEM == 1) 
-mpq.4 <- subset (mpq, DEM == 4) 
-mpq.8 <- subset (mpq, DEM == 8) 
-
-
-#Range Data for 1cm DEM
-mpq.1.range <- mpq.1[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cells without any coverage in the plot. 
-
-# #Transformed Data
-# mpq.1.range$plan.range.t2 <- log10(mpq.1.range$plan.range) #Log Transformed
-# mpq.1.range$plan.range.t <- sqrt(mpq.1.range$plan.range) #Square Root Transformed
-
-#REMOVE ROW 54 for range data
-mpq.1.range <- mpq.1[-54,] #Drop 2016b Site 30 MPQ1 for DEM1cm as there are cells without any coverage in the plot. 
-
-# LOG Transform Profile and Planform Range data
-mpq.1.range$pro.range.log <- log10(mpq.1.range$pro.range)
-mpq.1.range$plan.range.log <- log10(mpq.1.range$plan.range)
-
-#____________________________________________________________________________________________
-
 #Top Model Set of each metric
 vrm12 <- lm(vrm ~ year*sqrt.hdist.cont + region.3, data = mpq.1)
 rug9 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1)
@@ -870,17 +1204,185 @@ dwplot(by_trans,
 
 
 
-# JM Figure 5 (Habitat Volume)
+#Extra plots not used in manuscript
 
-- Story to tell: Unexpected declines occured only in the first year, with less or 0 loss occuring in the 2nd timepoint. However, overall there was a net-loss in habitat volume throughout the study. 
+## Changes in Complexity (SC, VRM) and curvature (pro, plan) based on Island.side
+```{r rug and vrm DEM complexity changes , echo=FALSE}
+map.colors <- colorschemes$DarkRedtoBlue.12[c(12, 9, 5)] #These are the 3 colours of local human disturbance used on the map
 
-- No modeling Needed!
+##<------Set Colour Pallettes for each level of disturbance type ----->
+hdist.cols <-  c("#A60021", "#FFAD73", "#ABF8FF") # = Yellow
+hdist.colscale<- scale_fill_manual(name="", values=hdist.cols, breaks=c("Very Low", "Medium", "Very High"))
 
 
+
+
+#VRM (I removed , fill=year from the aes line to have it average)
+v.dem1.island <- ggplot(mpq.1cm, aes(x = island.side, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("VRM") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none") #+ theme(axis.title.x=element_blank(), axis.text.x=element_blank()) + scale_color_manual(values=c("#A60021", "#FFAD73", "#ABF8FF"))
+
+v.dem4.island <- ggplot(mpq.4cm, aes(x = island.side, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+
+v.dem8.island <- ggplot(mpq.8cm, aes(x = island.side, y=vrm)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + ylim(0.01, 0.12) + year.colscale +  theme(legend.position="none") + facet_wrap(~DEM_cm) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+
+
+#Surface Complexity
+r.dem1.island <-ggplot(mpq.1cm, aes(x= island.side, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Surface Complexity") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+
+r.dem4.island <- ggplot(mpq.4cm, aes(x= island.side, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+ 
+r.dem8.island <- ggplot(mpq.8cm, aes(x= island.side, y= rug)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + ylim(1, 2.8) + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+
+#Arrange all plots together
+library(cowplot)
+vrm.island <- plot_grid(v.dem1.island, v.dem4.island, v.dem8.island,
+                align = 'vh',
+                labels = NULL,
+                label_x = 0.36,
+                ncol=3,
+                nrow = 1)
+
+rug.island <- plot_grid(r.dem1.island, r.dem4.island, r.dem8.island,
+                align = 'vh',
+                labels = NULL,
+                label_x = 0.36,
+                ncol=3,
+                nrow = 1)
+
+plot_grid(vrm.island, rug.island, ncol=1, nrow=2, rel_widths = c(0.5,1))
+
+
+################ Curvature Metrics #################
+
+#Pro.Curve Range
+pro1.island <- ggplot(mpq.1cm, aes(x = island.side, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("Pro Range")  + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+
+pro4.island <- ggplot(mpq.4cm, aes(x = island.side, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("")  + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+
+pro8.island <- ggplot(mpq.8cm, aes(x = island.side, y=pro.range.log)) + geom_boxplot() + theme_classic(base_size = 16) + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") +  theme_classic(base_size = 18) + theme(legend.position = "none") + theme(axis.title.x=element_blank(), axis.text.x=element_blank())
+
+
+#Plan Curve Range
+plan1.island <-ggplot(mpq.1cm, aes(x= island.side, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("Plan Range") + year.colscale +  theme(legend.position="none")  + theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
+
+plan4.island <- ggplot(mpq.4cm, aes(x= island.side, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none")  +  theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
+
+plan8.island <- ggplot(mpq.8cm, aes(x= island.side, y= plan.range.log)) + theme_classic(base_size = 16) +  theme(legend.position="none") + geom_boxplot() + xlab("") + ylab("") + year.colscale +  theme(legend.position="none") + theme_classic(base_size = 18) + theme(legend.position = "none") #+ ylim(1, 2.8)
+
+#Arrange all plots together
+library(cowplot)
+
+pro.island <- plot_grid(pro1.island, pro4.island, pro8.island,
+                align = 'vh',
+                labels = NULL,
+                label_x = 0.36,
+                ncol=3,
+                nrow = 1)
+
+plan.island <- plot_grid(plan1.island, plan4.island, plan8.island,
+                align = 'vh',
+                labels = NULL,
+                label_x = 0.36,
+                ncol=3,
+                nrow = 1)
+
+plot_grid(pro.island, plan.island, ncol=1, nrow=2, rel_widths = c(0.5,1))
+
+
+#Try all together in 1 multipanel plot!
+plot_grid(vrm.island,rug.island, pro.island, plan.island, ncol=1, nrow=4, rel_widths = c(0.5,1))
+
+
+```
+
+### Mean vs Range values
+
+- Mean = Change in shape orientation through time from more negative curvature values to more positive values
+
+- Range = Shows a similar trend to the other complexity metrics (steep decline initially, then stagnates)
+
+```{r Curvature range and mean plot, echo=FALSE}
+
+a1 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Mean") + ggtitle("Profile Curvature") + year.colscale +  theme(legend.position="none") 
+
+a2 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("Range") + ggtitle("") + year.colscale +  theme(legend.position="none")   
+
+b1 <- ggplot(mpq.1cm, aes(x = year, y=plan.range.log, fill=year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("") + ggtitle("Planform Curvature") + year.colscale +  theme(legend.position="none") 
+
+b2 <- ggplot(mpq.1cm, aes(x = year, y=plan.range.log, fill = year)) + geom_boxplot() + theme_classic(base_size = 18) + xlab("") + ylab("") + ggtitle("") + year.colscale +  theme(legend.position="none") 
+
+
+ggarrange(a1, b1, a2, b2, nrow=2, ncol= 2)
+
+
+```
+
+## Profile Curvature
+```{r curvature range graphing, echo=FALSE}
+
+#Profile Curv RANGE GRAPHING
+pro.1 <- ggplot(mpq.1.range, aes(x=pro.range, fill=year)) + geom_density(alpha=0.2)
+pro.2 <- ggplot(mpq.1.range, aes(x=pro.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+pro.3 <- ggplot(mpq.1.range, aes(x=pro.curv, fill=year)) + geom_density(alpha=0.4) + year.colscale + xlab("Profile Curvature")
+pro.4 <- ggplot(mpq.1.range, aes(x=pro.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+pro.5 <- ggplot(mpq.1.range, aes(x=pro.range, fill=year)) + geom_density(alpha=0.2)
+pro.6 <- ggplot(mpq.1.range, aes(x=pro.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+grid.arrange(pro.1, pro.2, nrow=2)
+grid.arrange(pro.3, pro.4, nrow=2)
+grid.arrange(pro.5, pro.6, nrow=2)
+
+#Make a violin plot of the curvature data 
+#Profile Curvature Data
+c1<- ggplot(mpq.1.range, aes(x=year, y=pro.curv, fill=year)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  labs(x="Year", y = "Profile Curvature") + year.colscale +  theme(legend.position="none") 
+
+#Profile Curvature Range Data
+c2<- ggplot(mpq.1.range, aes(x=year, y=pro.range, fill=year)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  labs(x="Year", y = "Profile Curvature Range") + year.colscale +  theme(legend.position="none") 
+
+#Profile Curvature Data
+c3<- ggplot(mpq.1.range, aes(x=year, y=plan.curv, fill=year)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  labs(x="Year", y = "Planform Curvature") + year.colscale +  theme(legend.position="none") 
+
+#Profile Curvature Range Data
+c4 <- ggplot(mpq.1.range, aes(x=year, y=plan.range, fill=year)) + 
+  geom_violin(trim=FALSE)+
+  geom_boxplot(width=0.1, fill="white")+
+  labs(x="Year", y = "Planform Curvature Range") + year.colscale +  theme(legend.position="none") 
+
+ggarrange(c1, c3, nrow=1, ncol=2)
+ggarrange(c2, c4, nrow=1, ncol=2)
+
+```
+
+### Planform Curvature
+```{r plan curv range, echo=FALSE}
+#Planform Curv Range
+plan.1 <- ggplot(mpq.1, aes(x=plan.range, fill=year)) + geom_density(alpha=0.2)
+plan.2 <- ggplot(mpq.1, aes(x=plan.range)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+plan.3 <- ggplot(mpq.1, aes(x=plan.curv, fill=year)) + geom_density(alpha=0.2)
+plan.4 <- ggplot(mpq.1, aes(x=plan.curv)) + geom_density(alpha=0.2)+facet_wrap(~year, scales = "fixed", ncol= 3)
+
+grid.arrange(plan.1, plan.2, nrow=2)
+grid.arrange(plan.3, plan.4, nrow=2)
+
+
+```
+
+## Habitat volume solo plot 
 ```{r habitat volume, echo=FALSE}
 #It would be nice to color the facet titles specific colors used on the map for local human disturbance
 
-p.cc.2 <- ggplot(cc, aes(x = time.interval, y=hab.vol, fill= time.interval)) + geom_boxplot() + theme_classic(base_size = 18) + cc.colscale +
+p.cc.2 <- ggplot(cc, aes(x = time.interval, y=volume.change, fill= time.interval)) + geom_boxplot() + theme_classic(base_size = 18) + cc.colscale +
     labs(y = expression ("∆ Volume"~m^3), x = "Time Interval") + theme(legend.position = "none") + scale_y_continuous(limits = c(-2.2, 1)) #+ annotate("text", x=1, y=1.2, label= "A", size =6 ,fontface =2)
 
 
@@ -945,51 +1447,1638 @@ dev.off()
 ```
 
 
+# PUBLICATION PLOTS
 
-# Multipanel Preditction plots
-```{r}
-#Top Models for each metric
-vrm6 <- lm(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.5yr)
-rug5 <- lm(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.5yr) 
-fractal.dimension5 <- lm(fractal.dimension ~ year + sqrt.hdist.cont + island.side, data = mpq.5yr) 
-volume.change7 <- lm(volume.change~ time.interval + island.side, data = cc.2tps)
-pro.range.log5 <- lm(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.5yr) 
-plan.range.log2 <- lm(plan.range.log ~ year + sqrt.hdist.cont, data = plan.no.out)
-plan.range.log5 <- lm(plan.range.log ~ year + sqrt.hdist.cont + island.side, data = plan.no.out) 
+## Figure 1: Map figure with DHW top panel
+```{r map code}
+rm(list=ls())
 
-#Code for parameter estimate plots
-p.v <- plot_model(vrm6, type = "pred", terms = c("sqrt.hdist.cont", "year"))
-p.r <- plot_model(rug5, type = "pred", terms = c("sqrt.hdist.cont", "year"))
-p.f <- plot_model(fractal.dimension5, type = "pred", terms = c("sqrt.hdist.cont", "year"))
-# p.hab <- plot_model(volume.change7, type = "pred", terms = c("time.interval", "island.side")) #Doesn't work nicely for this. I can leave it as a parameter estimate plot.
-p.pro <- plot_model(pro.range.log5, type = "pred", terms = c("sqrt.hdist.cont", "year"))
-p.plan <- plot_model(plan.range.log2, type = "pred", terms = c("year", "sqrt.hdist.cont"))
-
-#This is what I anticipate will be the top model selected when I fix the outliers
-p.plan2 <-plot_model(plan.range.log5, type = "pred", terms = c("sqrt.hdist.cont","year"))
+dev.off()
 
 
-top <- ggarrange(p.r, p.f)
-middle <- ggarrange(p.pro, p.plan2)
-bottom <- ggarrange(p.v)
+## Script for creating KI map for Kevin Bruce's MSc Chapter One on Coral Diversity
 
-ggarrange(top, middle, bottom, ncol = 1, nrow=3)
+# last updated 26 Nov 19
+
+library(here)
+library(dichromat)
+library(rgeos)
+library(maptools)
+library(scales)
+library(RColorBrewer)
+library(rgdal)
+library(ggplot2)
+library(graphics)
+
+### site data
+sites<-read.csv('KI/data/KI_Monitoring_Site_Names_for_Publications_Sept2019.csv')
+
+### Sites included in this paper
+sites.to.keep<-c(5,8,35,34,32,27,30,15,19,37)
+sites<-sites[sites$site%in%sites.to.keep,]
+sites <- droplevels(sites)
+
+###village data
+
+villages3 <- data.frame(c(1.989386333, 2.022090868, 1.983594483, 1.865048333, 1.885, 1.916, 1.94))
+villages3$lon <- c(-157.4760637, -157.4884092, -157.3683462, -157.5522183, -157.2025, -157.2025, -157.2025)
+villages3$pop <- c(1879, 2311, 955, 441, 1500, 1000, 500)
+villages3$village <- c("London", "Tabwakea", "Banana", "Poland", "legend1500", "legend1000", "legend500")
+colnames(villages3)[1]<-"lat"
+
+
+### reordering levels for colouring plot
+levels(sites$pressure.group)
+#sites$level <- as.factor(sites$level)
+#levels(sites$level)
+str(sites)   #site is an integer here.... shouldn't it be a character??
+
+sites$level<-as.numeric(factor(sites$pressure.group, levels(factor(sites$pressure.group))[c(3,1,2)]))
+sites$pressure.group<-factor(sites$pressure.group, levels(factor(sites$pressure.group))[c(3,1,2)])
+
+## set palette for fishing pressure
+
+fishing.cols<-colorschemes$DarkRedtoBlue.12[c(12, 9, 5)]
+palette(fishing.cols)
+
+# fishing.cols.df <- as.data.frame(fishing.cols)
+# fishing.cols.df$level <- c(1,2,3,4,5)
+# 
+# sites$col <- fishing.cols.df$fishing.cols[match(sites$level, fishing.cols.df$level)]
+
+############### village + sites + bigger ####################
+ 
+#tiff(file="KI/images/KI_map_sites_villages_inset_KB_MSc_Ch1.tiff",width = 7.6, height = 7.2,units="in",res=300)
+#jpeg(file="KI/images/KI_map_sites_villages_inset_KB_MSc_Ch1.jpeg",width = 7.5, height = 7,units="in",res=300)
+pdf(file="KI/images/KI_map_sites_villages_inset_KB_MSc_CAPI.pdf", width = 7.5, height =7)
+#png(file="KI/images/KI_map_sites_villages_inset_KB_MSc_Ch1.png", width = 7.5, height = 7,units="in",res=300)
+source("KI/scripts/KI_Base_B&W_bigger_JM.R")
+
+# village markers sized by population
+symbols(villages3$lon, villages3$lat, circles=(villages3$pop)/10, add=TRUE,inches=0.3, bg=alpha("red", 0.4))
+### Legend for village size
+text(-157.1695, 1.941, "500", cex = 0.8)  
+text(-157.1675, 1.915, "1000", cex = 0.8)
+text(-157.1675, 1.887, "1500", cex = 0.8) 
+#with(villages[!villages$village=="legend",], text(lon, lat, label=village, pos=1, offset=0.5, font=2, col="black"))
+
+#create points for sites
+points(sites$lon, sites$lat, bg=alpha(sites$level,0.8), pch=21, cex=2.75) 
+
+#label sites
+#with(sites[!(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=site, cex=0.5))
+#with(sites[(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=site, cex=0.5, col="white"))
+with(sites[!(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=pub.name, cex=0.5))
+with(sites[(sites$pressure.group=="Very low"|sites$pressure.group=="Very high"),], text(lon, lat, label=pub.name, cex=0.5, col="white"))
+
+#legends
+legend(-157.22, 2.064, legend = levels(sites$pressure.group), pt.bg = c(1:4), pch = 21, 
+       bty = "n", pt.cex = 1.75, cex = 0.8, y.intersp = 1.25)
+text(-157.24, 2.02, "Human disturbance", srt = 90, cex = 0.8)
+text(-157.239, 1.907, "Village population", srt = 90, cex = 0.8)
+segments(-157.225, 1.975, -157.225, 2.065)
+segments(-157.225, 1.8675, -157.225, 1.9475)
+text(-157.31, 1.88, "Bay of\nWrecks", cex = 0.45)
+ text(-157.508, 1.825, "Vaskess\nBay", cex = 0.45)
+# text(-157.375, 2.035, "North Shore", cex = 0.45)
+# text(-157.524, 2, "North\nLagoon", cex = 0.45)
+# text(-157.515, 1.965, "Mid\nLagoon", cex = 0.45)
+# text(-157.565, 1.925, "South\nLagoon", cex = 0.45)
+# text(-157.568, 1.845, "Poland", cex = 0.45)
+
+#par(mar=c(1.3,0.9,0.5,0.5))
+par(mar=c(4,3.25,1.25,0))
+#source("KI/scripts/KI_base_inset_bigger.R")
+source("KI/scripts/KI_base_inset.R")
+
+dev.off()
+
+```
+
+### a. REALLY old DHW figure (from thesis- replace with copy C here)
+```{r dhw temp figure to add to map multipanel}
+# Load necessary packages
+library(imager)
+
+# Load in Data
+# You will need to be in the KI_Platy directory for this to work
+# load("data/temperature/KI_SB_temp_DHW.RData")
+# load("data/temperature/KI_satellite_heat.RData")
+# load(file="data/temperature/KI_SB_temp_1hr.RData")
+# load(file="data/temperature/KI_SB_temp_DHW_allsites.RData")
+
+#####################################################################
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+dhw.data <- load("NOAA_DHW_5km_1985_2020.RData")
+coral.temp <- load("NOAA_CoralTemp_5km_2011_2020.RData")
+
+#Data from Claar et al 2020
+# load("data/temperature/KI_SB_temp_DHW_NOAAMMM_minOffsetnoEN.RData") # DHW calculated in [Claar et al. 2019 Coral Reefs] with in situ offset
+# load(file="data/temperature/KI_SB_temp_1hr.RData") # hourly temperature data
+
+meanMMM <- mean(27.6, # VB # All values from temperature paper, 
+                            # Claar et al 2019 Coral Reefs
+                27.4, # SL
+                27.44, # LF
+                27.36, # NL
+                27.58, # NS
+                28.03)# BOW 
+
+bleaching_threshold <- meanMMM+1 # Bleaching threshold is MMM + 1
+
+# Calculate mean DHW on KI based on in situ data
+KI_meanDHW <- cbind(dhw_BOW_1985_2020,
+                    dhw_lagoonface_1985_2020$dhw,
+                    dhw_northlagoon_1985_2020$dhw,
+                    dhw_northshore_1985_2020$dhw,
+                    dhw_southlagoon_1985_2020$dhw,
+                    dhw_vaskess_1985_2020$dhw)
+
+
+colnames(KI_meanDHW) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanDHW <- subset(KI_meanDHW, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanDHW$KI_meanDHW <- rowMeans(KI_meanDHW[2:7],na.rm = TRUE)
+
+# Set a start and end date for plotting
+startdate <- as.POSIXct("2015-01-01 00:00:00",tz="Pacific/Kiritimati", 
+                        format="%Y-%m-%d %H:%M:%S")
+enddate <- as.POSIXct("2019-12-31 00:00:00",tz="Pacific/Kiritimati", 
+                      format="%Y-%m-%d %H:%M:%S")
+
+# Truncate time for DHW data
+KI_heat <- KI_meanDHW[which(KI_meanDHW$time>startdate),]
+KI_heat <- KI_heat[which(KI_heat$time<enddate),]
+
+
+### Temperature Data 
+# Calculate mean DHW on KI based on in situ data
+KI_meanTemp <- cbind(sst_BOW_2011_2020,
+                    sst_lagoonface_2011_2020$sst,
+                    sst_northlagoon_2011_2020$sst,
+                    sst_northshore_2011_2020$sst,
+                    sst_southlagoon_2011_2020$sst,
+                    sst_vaskess_2011_2020$sst)
+
+
+colnames(KI_meanTemp) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanTemp <- subset(KI_meanTemp, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanTemp$KI_meanTemp <- rowMeans(KI_meanTemp[2:7],na.rm = TRUE)
+
+# Truncate time for temperature data
+KI_temp <- KI_meanTemp[which(KI_meanTemp$time>startdate),]
+KI_temp <- KI_temp[which(KI_temp$time<enddate),]
+
+# Create new color palette to match old one (but able to take more values)
+heat.palette <- colorRampPalette(c("#ffffff","#ffffc1","#ffff84",
+                                   "#ffff46","#ffff09","#ffed00",
+                                   "#ffd200","#ffb700","#ffa700",
+                                   "#ff9700","#ff8600","#ff7600",
+                                   "#ff6600","#ff5500","#ff4500",
+                                   "#ff3300","#ff2400","#ff1100",
+                                   "#ff0400","#ea0000","#d30000",
+                                   "#bc0000","#a40000","#8c0000",
+                                   "#750000","#5e0000","#460000",
+                                   "#2f0000","#170000","#000000"))
+
+dhw.floor <- floor(KI_heat$KI_meanDHW)+1 # Calculate which color goes where by 1 degree increments
+heat.cbar <- heat.palette(32) # create a color palette with 32 colors based on our generated palette
+dhw.cc <- heat.cbar[dhw.floor] # Match the color palette to the DHW values
+
+from <- KI_heat$time-1.75*86400
+to <- KI_heat$time+1.75*86400
+
+#################################################################################
+# polycurve function
+# http://www.fromthebottomoftheheap.net/2013/01/11/shading-regions-under-a-curve/
+polyCurve <- function(x, y, from, to, n = 50, miny,
+                      col = "red", border = col) {
+  drawPoly <- function(fun, from, to, n = 50, miny, col, border) {
+    Sq <- seq(from = from, to = to, length = n)
+    polygon(x = c(Sq[1], Sq, Sq[n]),
+            y = c(miny, fun(Sq), miny),
+            col = col, border = border)
+  }
+  lf <- length(from)
+  stopifnot(identical(lf, length(to)))
+  if(length(col) != lf)
+    col <- rep(col, length.out = lf)
+  if(length(border) != lf)
+    border <- rep(border, length.out = lf)
+  if(missing(miny))
+    miny <- min(y)
+  interp <- approxfun(x = x, y = y)
+  mapply(drawPoly, from = from, to = to, col = col, border = border,
+         MoreArgs = list(fun = interp, n = n, miny = miny))
+  invisible()
+}
+#################################################################################
+
+# Colours for shading
+cols <- c(heat.cbar[1], heat.cbar[4], heat.cbar[8], 
+          heat.cbar[12], heat.cbar[24])
+
+# Set dates for each field season in the study
+
+KI2015 <- as.POSIXct("2015-05-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016a <- as.POSIXct("2016-03-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016b <- as.POSIXct("2016-11-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2017 <- as.POSIXct("2017-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2019 <- as.POSIXct("2019-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+
+
+###################################################################################
+
+############# Export File ################
+jpeg(filename = "figure1top.jpg", width = 40, height = 20, units = "cm", pointsize = 13, quality = 100, res = 300) #res = dpi/resolution
+
+
+# Set both inner and outer margins to 0
+par(oma=c(0,0,0,0),mar=c(1.5,3.5,0.25,2.5))
+# Plot with the polycurve function
+with(KI_heat, plot(KI_heat$time,KI_heat$KI_meanDHW, type="l", 
+                   xlab="", ylab="", ylim=c(0,33),
+                   cex.axis=1,cex.lab=1.2,
+                   yaxs="i",xaxs="i",lwd=0.5,xaxt='n',yaxt='n', 
+                   col="gray40",
+                   panel.first = # Panel first allows ablines to be plotted before polycurve, looks nicer.
+                     c(abline(v=KI2015,col="black",lwd=1,lty=2),
+                       abline(v=KI2016a,col="black",lwd=1,lty=2),
+                       abline(v=KI2016b,col="black",lwd=1,lty=2),
+                       abline(v=KI2017,col="black",lwd=1,lty=2),                                          abline(v=KI2019,col="black",lwd=1,lty=2),
+                       polyCurve(KI_heat$time, KI_heat$KI_meanDHW, 
+                                 from = from, to = to, miny = 0,
+                                 col = dhw.cc)
+                     )))
+Y <- c(0,5,10,15,20,25,30) # Set up y axis
+# Add 2nd y axis
+axis(side=2,at=Y,cex.axis=0.93,tck=0.03, lwd.ticks=1.5, las=2,hadj=0)
+
+par(new=T) # To add the temperature data to the same plot
+plot(KI_temp$time, KI_temp$KI_meanTemp,type='l',col="darkgray",
+     ylim=c(25,31.5),xlim=c(startdate,enddate),
+     xlab="",ylab="",xaxs="i",xaxt='n',yaxt="n") # Plot the temperature data
+abline(bleaching_threshold,0,col=cols[5],lwd=2) # Bleaching threshold
+abline(meanMMM,0,col="black") # Mean Monthly Maximum - MMM
+
+title(ylab="Degree Heating Weeks (°C-weeks)", line=1.2, cex.lab=1.2) # Label y axis
+# Add in time axes (multiple axes added to allow for customization)
+axis.POSIXct(side=1,KI_heat$time,cex.axis=0.93,
+             tck=0.02,lwd.ticks=2,labels=FALSE)
+axis.POSIXct(side=1,at=seq(KI_heat$time[1],KI_heat$time[1826],
+                       by="month"),tck=0.01,
+             cex.axis=0.93,labels=c("","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","",""),
+             lwd.ticks=1.5,padj=-1.5)
+
+
+axis.POSIXct(side=1,KI_heat$time,cex.axis=0.93,tck=0,padj=-1.5)
+Z <- c(26,27,28,29,30,31) # To be used as temperature y-axis values
+axis(side=4,at=Z,cex.axis=0.93,tck=0.03, lwd.ticks=1.5, las=2,hadj=0.95)
+mtext("i",side=2, line=-4, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("ii",side=2, line=-15.2, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("iii",side=2, line=-24.2, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("iv",side=2, line=-33.1, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("v",side=2, line=-59.8, cex=1, las=2,padj=-27.5) # Add sampling date label
+mtext("Temperature (°C)",side=4, cex=1.2,line=1.2)
+# mtext("Mean Monthly Max.",side=2,line=-47.7,cex=0.72,las=2,padj=0.2) # Label MMM line
+# mtext("Bleaching Threshold",side=2,line=-47.7,cex=0.72,las=2,padj=-2.5) # Label bleaching threshold line
+
+
+
+dev.off() # Close
+
+```
+
+### b. (OLD- text size still too small- Map figure option with CEX 1.5 text)
+```{r dhw temp figure to add to map multipanel}
+# Load necessary packages
+library(imager)
+
+# Load in Data
+# You will need to be in the KI_Platy directory for this to work
+# load("data/temperature/KI_SB_temp_DHW.RData")
+# load("data/temperature/KI_satellite_heat.RData")
+# load(file="data/temperature/KI_SB_temp_1hr.RData")
+# load(file="data/temperature/KI_SB_temp_DHW_allsites.RData")
+
+#####################################################################
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+dhw.data <- load("NOAA_DHW_5km_1985_2020.RData")
+coral.temp <- load("NOAA_CoralTemp_5km_2011_2020.RData")
+
+#Data from Claar et al 2020
+# load("data/temperature/KI_SB_temp_DHW_NOAAMMM_minOffsetnoEN.RData") # DHW calculated in [Claar et al. 2019 Coral Reefs] with in situ offset
+# load(file="data/temperature/KI_SB_temp_1hr.RData") # hourly temperature data
+
+meanMMM <- mean(27.6, # VB # All values from temperature paper, 
+                            # Claar et al 2019 Coral Reefs
+                27.4, # SL
+                27.44, # LF
+                27.36, # NL
+                27.58, # NS
+                28.03)# BOW 
+
+bleaching_threshold <- meanMMM+1 # Bleaching threshold is MMM + 1
+
+# Calculate mean DHW on KI based on in situ data
+KI_meanDHW <- cbind(dhw_BOW_1985_2020,
+                    dhw_lagoonface_1985_2020$dhw,
+                    dhw_northlagoon_1985_2020$dhw,
+                    dhw_northshore_1985_2020$dhw,
+                    dhw_southlagoon_1985_2020$dhw,
+                    dhw_vaskess_1985_2020$dhw)
+
+
+colnames(KI_meanDHW) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanDHW <- subset(KI_meanDHW, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanDHW$KI_meanDHW <- rowMeans(KI_meanDHW[2:7],na.rm = TRUE)
+
+# Set a start and end date for plotting
+startdate <- as.POSIXct("2015-01-01 00:00:00",tz="Pacific/Kiritimati", 
+                        format="%Y-%m-%d %H:%M:%S")
+enddate <- as.POSIXct("2019-12-31 00:00:00",tz="Pacific/Kiritimati", 
+                      format="%Y-%m-%d %H:%M:%S")
+
+# Truncate time for DHW data
+KI_heat <- KI_meanDHW[which(KI_meanDHW$time>startdate),]
+KI_heat <- KI_heat[which(KI_heat$time<enddate),]
+
+
+### Temperature Data 
+# Calculate mean DHW on KI based on in situ data
+KI_meanTemp <- cbind(sst_BOW_2011_2020,
+                    sst_lagoonface_2011_2020$sst,
+                    sst_northlagoon_2011_2020$sst,
+                    sst_northshore_2011_2020$sst,
+                    sst_southlagoon_2011_2020$sst,
+                    sst_vaskess_2011_2020$sst)
+
+
+colnames(KI_meanTemp) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanTemp <- subset(KI_meanTemp, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanTemp$KI_meanTemp <- rowMeans(KI_meanTemp[2:7],na.rm = TRUE)
+
+# Truncate time for temperature data
+KI_temp <- KI_meanTemp[which(KI_meanTemp$time>startdate),]
+KI_temp <- KI_temp[which(KI_temp$time<enddate),]
+
+# Create new color palette to match old one (but able to take more values)
+heat.palette <- colorRampPalette(c("#ffffff","#ffffc1","#ffff84",
+                                   "#ffff46","#ffff09","#ffed00",
+                                   "#ffd200","#ffb700","#ffa700",
+                                   "#ff9700","#ff8600","#ff7600",
+                                   "#ff6600","#ff5500","#ff4500",
+                                   "#ff3300","#ff2400","#ff1100",
+                                   "#ff0400","#ea0000","#d30000",
+                                   "#bc0000","#a40000","#8c0000",
+                                   "#750000","#5e0000","#460000",
+                                   "#2f0000","#170000","#000000"))
+
+dhw.floor <- floor(KI_heat$KI_meanDHW)+1 # Calculate which color goes where by 1 degree increments
+heat.cbar <- heat.palette(32) # create a color palette with 32 colors based on our generated palette
+dhw.cc <- heat.cbar[dhw.floor] # Match the color palette to the DHW values
+
+from <- KI_heat$time-1.75*86400
+to <- KI_heat$time+1.75*86400
+
+#################################################################################
+# polycurve function
+# http://www.fromthebottomoftheheap.net/2013/01/11/shading-regions-under-a-curve/
+polyCurve <- function(x, y, from, to, n = 50, miny,
+                      col = "red", border = col) {
+  drawPoly <- function(fun, from, to, n = 50, miny, col, border) {
+    Sq <- seq(from = from, to = to, length = n)
+    polygon(x = c(Sq[1], Sq, Sq[n]),
+            y = c(miny, fun(Sq), miny),
+            col = col, border = border)
+  }
+  lf <- length(from)
+  stopifnot(identical(lf, length(to)))
+  if(length(col) != lf)
+    col <- rep(col, length.out = lf)
+  if(length(border) != lf)
+    border <- rep(border, length.out = lf)
+  if(missing(miny))
+    miny <- min(y)
+  interp <- approxfun(x = x, y = y)
+  mapply(drawPoly, from = from, to = to, col = col, border = border,
+         MoreArgs = list(fun = interp, n = n, miny = miny))
+  invisible()
+}
+#################################################################################
+
+# Colours for shading
+cols <- c(heat.cbar[1], heat.cbar[4], heat.cbar[8], 
+          heat.cbar[12], heat.cbar[24])
+
+# Set dates for each field season in the study
+
+KI2015 <- as.POSIXct("2015-05-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016a <- as.POSIXct("2016-03-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016b <- as.POSIXct("2016-11-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2017 <- as.POSIXct("2017-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2019 <- as.POSIXct("2019-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+
+
+###################################################################################
+
+############# Export File ################
+jpeg(filename = "figure1top.jpg", width = 40, height = 20, units = "cm", pointsize = 13, quality = 100, res = 300) #res = dpi/resolution
+
+
+# Set both inner and outer margins to 0
+par(oma=c(0,0,0,0),mar=c(2,5,0.25,5))
+
+# Plot with the polycurve function
+with(KI_heat, plot(KI_heat$time,KI_heat$KI_meanDHW, type="l", 
+                   xlab="", ylab="", ylim=c(0,33),
+                   cex.axis=1,cex.lab=1.2,
+                   yaxs="i",xaxs="i",lwd=0.5,xaxt='n',yaxt='n', 
+                   col="gray40",
+                   panel.first = # Panel first allows ablines to be plotted before polycurve, looks nicer.
+                     c(abline(v=KI2015,col="black",lwd=1.5,lty=2),
+                       abline(v=KI2016a,col="black",lwd=1.5,lty=2),
+                       abline(v=KI2016b,col="black",lwd=1.5,lty=2),
+                       abline(v=KI2017,col="black",lwd=1.5,lty=2),                                          
+                       abline(v=KI2019,col="black",lwd=1.5,lty=2),
+                       polyCurve(KI_heat$time, KI_heat$KI_meanDHW, 
+                                 from = from, to = to, miny = 0,
+                                 col = dhw.cc)
+                     )))
+Y <- c(5,10,15,20,25,30) # Set up y axis (got rid of 0, at the beginning as the 0 distracted from the 2015 timepoint)
+
+# Add 2nd y axis
+axis(side=2,at=Y,cex.axis=1.5,#### Left Y AXIS LABEL SIZE AND PLACEMENT
+     tck=0.04, #TICK SIZE
+     lwd.ticks=1.5, 
+     las=2,
+     hadj=0.35)  #Left/Right movement of the #'s    
+
+par(new=T) # To add the temperature data to the same plot
+plot(KI_temp$time, KI_temp$KI_meanTemp,type='l',col="darkgray",
+     ylim=c(25,31.5),xlim=c(startdate,enddate),
+     xlab="",ylab="",xaxs="i",xaxt='n',yaxt="n") # Plot the temperature data
+abline(bleaching_threshold,0,col=cols[5],lwd=3) # Bleaching threshold (lwd = the thickness of the line)
+abline(meanMMM,0,col="black", lwd = 3) # Mean Monthly Maximum - MMM
+
+title(ylab="Degree Heating Weeks (°C-weeks)", line=2.5, cex.lab=2.5) # Label right side y axis
+# Add in time axes (multiple axes added to allow for customization)
+axis.POSIXct(side=1,KI_heat$time,cex.axis=0.93,
+             tck=0.02,lwd.ticks=2,labels=FALSE)
+axis.POSIXct(side=1,at=seq(KI_heat$time[1],KI_heat$time[1826],
+                       by="month"),tck=0.01,
+             cex.axis=0.93,labels=c("","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","",""),
+             lwd.ticks=1.5,padj=-1.5)
+
+
+axis.POSIXct(side=1,KI_heat$time,cex.axis=1.5,tck=0,padj=-0.25)    #X AXIS Labels
+
+Z <- c(26,27,28,29,30,31) # To be used as temperature y-axis values
+
+axis(side=4,at=Z,cex.axis=1.5,tck=0.03, lwd.ticks=1.5, las=2, hadj=0.65)             #Right side Y axis tick/# sizes
+
+mtext("i",side=2, line=-4.7, cex=1.5, las=2,padj=-17.5) # Add sampling date label
+mtext("ii",side=2, line=-15.5, cex=1.5, las=2,padj=-17.5) # Add sampling date label
+mtext("iii",side=2, line=-24.1, cex=1.5, las=2,padj=-17.5) # Add sampling date label
+mtext("iv",side=2, line=-32.5, cex=1.5, las=2,padj=-17.5) # Add sampling date label
+mtext("v",side=2, line=-57.3, cex=1.5, las=2,padj=-17.5) # Add sampling date label
+mtext("Temperature (°C)",side=4, cex=2,line=2.5)
+# mtext("Mean Monthly Max.",side=2,line=-47.7,cex=0.72,las=2,padj=0.2) # Label MMM line
+# mtext("Bleaching Threshold",side=2,line=-47.7,cex=0.72,las=2,padj=-2.5) # Label bleaching threshold line
+
+
+
+
+dev.off() # Close
+
+```
+
+### c. KEEP THIS VERSION (Map figure option with CEX 2 text for axis labels)
+```{r dhw temp figure to add to map multipanel}
+# Load necessary packages
+library(imager)
+
+# Load in Data
+# You will need to be in the KI_Platy directory for this to work
+# load("data/temperature/KI_SB_temp_DHW.RData")
+# load("data/temperature/KI_satellite_heat.RData")
+# load(file="data/temperature/KI_SB_temp_1hr.RData")
+# load(file="data/temperature/KI_SB_temp_DHW_allsites.RData")
+
+#####################################################################
+#Set the Working Directory
+setwd("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data")
+dhw.data <- load("NOAA_DHW_5km_1985_2020.RData")
+coral.temp <- load("NOAA_CoralTemp_5km_2011_2020.RData")
+
+#Data from Claar et al 2020
+# load("data/temperature/KI_SB_temp_DHW_NOAAMMM_minOffsetnoEN.RData") # DHW calculated in [Claar et al. 2019 Coral Reefs] with in situ offset
+# load(file="data/temperature/KI_SB_temp_1hr.RData") # hourly temperature data
+
+meanMMM <- mean(27.6, # VB # All values from temperature paper, 
+                            # Claar et al 2019 Coral Reefs
+                27.4, # SL
+                27.44, # LF
+                27.36, # NL
+                27.58, # NS
+                28.03)# BOW 
+
+bleaching_threshold <- meanMMM+1 # Bleaching threshold is MMM + 1
+
+# Calculate mean DHW on KI based on in situ data
+KI_meanDHW <- cbind(dhw_BOW_1985_2020,
+                    dhw_lagoonface_1985_2020$dhw,
+                    dhw_northlagoon_1985_2020$dhw,
+                    dhw_northshore_1985_2020$dhw,
+                    dhw_southlagoon_1985_2020$dhw,
+                    dhw_vaskess_1985_2020$dhw)
+
+
+colnames(KI_meanDHW) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanDHW <- subset(KI_meanDHW, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanDHW$KI_meanDHW <- rowMeans(KI_meanDHW[2:7],na.rm = TRUE)
+
+# Set a start and end date for plotting
+startdate <- as.POSIXct("2015-01-01 00:00:00",tz="Pacific/Kiritimati", 
+                        format="%Y-%m-%d %H:%M:%S")
+enddate <- as.POSIXct("2019-12-31 00:00:00",tz="Pacific/Kiritimati", 
+                      format="%Y-%m-%d %H:%M:%S")
+
+# Truncate time for DHW data
+KI_heat <- KI_meanDHW[which(KI_meanDHW$time>startdate),]
+KI_heat <- KI_heat[which(KI_heat$time<enddate),]
+
+
+### Temperature Data 
+# Calculate mean DHW on KI based on in situ data
+KI_meanTemp <- cbind(sst_BOW_2011_2020,
+                    sst_lagoonface_2011_2020$sst,
+                    sst_northlagoon_2011_2020$sst,
+                    sst_northshore_2011_2020$sst,
+                    sst_southlagoon_2011_2020$sst,
+                    sst_vaskess_2011_2020$sst)
+
+
+colnames(KI_meanTemp) <- c("bayofwrecks","time","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay")
+
+#Reorder the collumns
+KI_meanTemp <- subset(KI_meanTemp, select = c("time","bayofwrecks","lagoonface",
+                          "northlagoon","northshore",
+                          "southlagoon","vaskessbay"))
+
+KI_meanTemp$KI_meanTemp <- rowMeans(KI_meanTemp[2:7],na.rm = TRUE)
+
+# Truncate time for temperature data
+KI_temp <- KI_meanTemp[which(KI_meanTemp$time>startdate),]
+KI_temp <- KI_temp[which(KI_temp$time<enddate),]
+
+# Create new color palette to match old one (but able to take more values)
+heat.palette <- colorRampPalette(c("#ffffff","#ffffc1","#ffff84",
+                                   "#ffff46","#ffff09","#ffed00",
+                                   "#ffd200","#ffb700","#ffa700",
+                                   "#ff9700","#ff8600","#ff7600",
+                                   "#ff6600","#ff5500","#ff4500",
+                                   "#ff3300","#ff2400","#ff1100",
+                                   "#ff0400","#ea0000","#d30000",
+                                   "#bc0000","#a40000","#8c0000",
+                                   "#750000","#5e0000","#460000",
+                                   "#2f0000","#170000","#000000"))
+
+dhw.floor <- floor(KI_heat$KI_meanDHW)+1 # Calculate which color goes where by 1 degree increments
+heat.cbar <- heat.palette(32) # create a color palette with 32 colors based on our generated palette
+dhw.cc <- heat.cbar[dhw.floor] # Match the color palette to the DHW values
+
+from <- KI_heat$time-1.75*86400
+to <- KI_heat$time+1.75*86400
+
+#################################################################################
+# polycurve function
+# http://www.fromthebottomoftheheap.net/2013/01/11/shading-regions-under-a-curve/
+polyCurve <- function(x, y, from, to, n = 50, miny,
+                      col = "red", border = col) {
+  drawPoly <- function(fun, from, to, n = 50, miny, col, border) {
+    Sq <- seq(from = from, to = to, length = n)
+    polygon(x = c(Sq[1], Sq, Sq[n]),
+            y = c(miny, fun(Sq), miny),
+            col = col, border = border)
+  }
+  lf <- length(from)
+  stopifnot(identical(lf, length(to)))
+  if(length(col) != lf)
+    col <- rep(col, length.out = lf)
+  if(length(border) != lf)
+    border <- rep(border, length.out = lf)
+  if(missing(miny))
+    miny <- min(y)
+  interp <- approxfun(x = x, y = y)
+  mapply(drawPoly, from = from, to = to, col = col, border = border,
+         MoreArgs = list(fun = interp, n = n, miny = miny))
+  invisible()
+}
+#################################################################################
+
+# Colours for shading
+cols <- c(heat.cbar[1], heat.cbar[4], heat.cbar[8], 
+          heat.cbar[12], heat.cbar[24])
+
+# Set dates for each field season in the study
+
+KI2015 <- as.POSIXct("2015-05-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016a <- as.POSIXct("2016-03-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2016b <- as.POSIXct("2016-11-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2017 <- as.POSIXct("2017-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+KI2019 <- as.POSIXct("2019-07-01 00:00:00",
+                      tz="Pacific/Kiritimati", format="%Y-%m-%d %H:%M:%S")
+
+
+###################################################################################
+
+############# Export File ################
+jpeg(filename = "mapDHWFig.jpg", width = 40, height = 20, units = "cm", pointsize = 13, quality = 100, res = 300) #res = dpi/resolution
+
+
+# Set both inner and outer margins to 0
+par(oma=c(0,0,0,0),mar=c(2,5,0.25,5))
+
+# Plot with the polycurve function
+with(KI_heat, plot(KI_heat$time,KI_heat$KI_meanDHW, type="l", 
+                   xlab="", ylab="", ylim=c(0,33),
+                   cex.axis=1,cex.lab=1.2,
+                   yaxs="i",xaxs="i",lwd=0.5,xaxt='n',yaxt='n', 
+                   col="gray40",
+                   panel.first = # Panel first allows ablines to be plotted before polycurve, looks nicer.
+                     c(abline(v=KI2015,col="black",lwd=1.5,lty=2),
+                       abline(v=KI2016a,col="black",lwd=1.5,lty=2),
+                       abline(v=KI2016b,col="black",lwd=1.5,lty=2),
+                       abline(v=KI2017,col="black",lwd=1.5,lty=2),                                          
+                       abline(v=KI2019,col="black",lwd=1.5,lty=2),
+                       polyCurve(KI_heat$time, KI_heat$KI_meanDHW, 
+                                 from = from, to = to, miny = 0,
+                                 col = dhw.cc)
+                     )))
+Y <- c(5,10,15,20,25,30) # Set up y axis (got rid of 0, at the beginning as the 0 distracted from the 2015 timepoint)
+
+# Add 2nd y axis
+axis(side=2,at=Y,cex.axis=2,#### Left Y AXIS LABEL SIZE AND PLACEMENT
+     tck=0.04, #TICK SIZE
+     lwd.ticks=1.5, 
+     las=2,
+     hadj=0.55)  #Left/Right movement of the #'s    
+
+par(new=T) # To add the temperature data to the same plot
+plot(KI_temp$time, KI_temp$KI_meanTemp,type='l',col="darkgray",
+     ylim=c(25,31.5),xlim=c(startdate,enddate),
+     xlab="",ylab="",xaxs="i",xaxt='n',yaxt="n", lwd = 2) # Plot the temperature data
+
+
+abline(bleaching_threshold,0,col=cols[5],lwd=4) # Bleaching threshold (lwd = the thickness of the line)
+abline(meanMMM,0,col="black", lwd = 4) # Mean Monthly Maximum - MMM (lwd = the thickness of the line)
+
+title(ylab="DHW (°C-weeks)", line=2.7, cex.lab=3) # Label right side y axis
+# Add in time axes (multiple axes added to allow for customization)
+axis.POSIXct(side=1,KI_heat$time,cex.axis=0.93,
+             tck=0.02,lwd.ticks=2,labels=FALSE)
+axis.POSIXct(side=1,at=seq(KI_heat$time[1],KI_heat$time[1826],
+                       by="month"),tck=0.01,
+             cex.axis=0.93,labels=c("","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","","",
+                                    "","","","","","","","","",
+                                    "","",""),
+             lwd.ticks=1.5,padj=-1.5)
+
+
+axis.POSIXct(side=1,KI_heat$time,cex.axis=2,tck=0,padj=-0.25)    #X AXIS Labels
+
+Z <- c(26,27,28,29,30,31) # To be used as temperature y-axis values
+
+axis(side=4,at=Z,cex.axis=2,tck=0.03, lwd.ticks=1.5, las=2, hadj=0.45)             #Right side Y axis tick/# sizes
+
+mtext("i",side=2, line=-4.7, cex=2, las=2,padj=-13) # Add sampling date label
+mtext("ii",side=2, line=-15.5, cex=2, las=2,padj=-13) # Add sampling date label
+mtext("iii",side=2, line=-24.3, cex=2, las=2,padj=-13) # Add sampling date label
+mtext("iv",side=2, line=-32.7, cex=2, las=2,padj=-13) # Add sampling date label
+mtext("v",side=2, line=-57.5, cex=2, las=2,padj=-13) # Add sampling date label
+mtext("Temperature (°C)",side=4, cex=3,line=3.5)
+# mtext("Mean Monthly Max.",side=2,line=-47.7,cex=0.72,las=2,padj=0.2) # Label MMM line
+# mtext("Bleaching Threshold",side=2,line=-47.7,cex=0.72,las=2,padj=-2.5) # Label bleaching threshold line
+
+
+
+
+dev.off() # Close
+
+```
 
 
 
 
 
 
+## Figure 2: Habitat structure through time for all metrics at 1cm resolution
+```{r Metrics by year}
+#VRM
+p.1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + labs(x="", y= "VRM") +  
+  scale_y_continuous(breaks = c(0.02, 0.05, 0.08, 0.11), limits = c(0.02, 0.12)) +
+ 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,0.095, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.1 ,0.078, label = "A", fontface =2,family = "Times New Roman", size=4) +
 
-library(ggeffects)
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+  #Legend work
+  legend.position = "bottom",legend.box = "horizontal",
+  legend.background = element_rect(fill="grey90",
+                                  size=0.5, linetype="solid", 
+                                  colour ="black"),
+  legend.text = element_text(family = "Times New Roman")) + 
+  scale_fill_manual(name = "", values = year.cols, labels = c("May 2015","March 2016", "November 2016", "July 2017",  "July 2019")) + 
+  guides(fill = guide_legend(nrow = 3)) +
+   #Annotate Multipanel plots
+  annotate("label", 0.63 ,0.119, label = "(a)", fontface =2,family = "Times New Roman", size=4, fill = "gray90") 
+  
 
-ggpredict(rug5, terms = "year") %>% 
-  ggplot(aes(rug, predicted)) +
-  geom_line()
 
-ggeffect(rug, terms = c("year", "sqrt.hdist.cont")) %>% 
-  plot()
+#Surface Complexity
+p.2 <- ggplot(mpq.1cm, aes(x = year, y=rug, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Surface Complexity") +  
+  scale_y_continuous(breaks = c(1.20, 1.60, 2.00, 2.40, 2.80), limits = c(1.19, 2.85), labels=c("1.20", "1.60", "2.00", "2.40", "2.80")) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,2.38, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,1.97, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,1.95, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,2.05, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.1 ,2.05, label = "A", fontface =2,family = "Times New Roman", size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+       legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,2.84, label = "(b)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+
+#Fractal Dimension
+p.3 <- ggplot(mpq.1cm, aes(x = year, y=fractal.dimension, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Fractal Dimension") +  
+  scale_y_continuous(breaks = c(2.10, 2.15, 2.20, 2.25, 2.30, 2.35), limits = c(2.08, 2.35)) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,2.28, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,2.2, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,2.215, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,2.205, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.15 ,2.225, label = "AB", fontface =2,family = "Times New Roman", size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y=  element_text(family = "Times New Roman"),       
+        legend.position="none") +
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,2.345, label = "(d)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+#Profile Curv Range
+p.4 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Pro Range") +  
+  scale_y_continuous(breaks = c(12.5, 13, 13.5, 14, 14.5, 15), limits = c(12.5, 14.5), labels = c("12.50", "13.00", "13.50", "14.00", "14.50", "15.00")) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,14.2, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,13.75, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,13.8, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,13.8, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.1 ,13.95, label = "A", fontface =2,family = "Times New Roman", size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,14.485, label = "(c)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#Planform Curv range
+p.5 <- ggplot(mpq.1cm, aes(x = year, y=plan.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Plan Range") +  
+  scale_y_continuous(breaks = c(11.75,12.25, 12.75, 13.25, 13.75, 14.25), limits = c(11.75, 14.5)) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,14.25, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,13.82, label = "B", fontface =2, family = "Times New Roman",size=4)+
+  annotate("text", 3.1 ,13.82, label = "B", fontface =2,family = "Times New Roman",size=4)+
+  annotate("text", 4.1 ,13.68, label = "B", fontface =2,family = "Times New Roman",size=4)+
+  annotate("text", 5.15 ,13.98, label = "AB", fontface =2,family = "Times New Roman",size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,14.45, label = "(e)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#### Create a legend. 
+#To Plot
+#1. Create Legend
+p_legend<-function(a.gplot){
+    tmp <- ggplot_gtable(ggplot_build(a.gplot))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    return(legend)
+}
+metric.legend <- p_legend(p.1) 
+
+
+#2. Arrange all together
+
+#Pdf life for exporting goes here...
+
+# grid.arrange(arrangeGrob(p.1 + theme(legend.position = "none"),p.2,p.3,p.4,p.5, metric.legend, layout_matrix = rbind(c(1,6), 
+#                                      c(2,4),
+#                                      c(3,5))))
+# library(grid)
+#grid.text("Expedition Years", x = unit(0.753, "npc"), y = unit(0.915, "npc"), gp = gpar(fontsize=15))
+# grid.text("Expedition", x = unit(0.75, "npc"), y = unit(0.895, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+# 
+
+
+
+#################################
+#################################
+#################################
+
+# #Export as nice figure with correct resolution
+jpeg(filename = "Fig2.Metrics~Year.jpeg", width = 30, height = 20, units = "cm", pointsize = 15, quality = 100, res = 400)
+
+grid.arrange(arrangeGrob(p.1 + theme(legend.position = "none"),p.2,p.3,p.4,p.5, metric.legend, layout_matrix = rbind(c(1,6),
+                                     c(2,4),
+                                     c(3,5))))
+
+grid.text("Expedition", x = unit(0.75, "npc"), y = unit(0.91, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+
+dev.off()
 
 
 ```
 
+```{r Metrics by year with n listed for each timepoint}
+#VRM
+# p.1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + labs(x="", y= "VRM") +  
+#   scale_y_continuous(breaks = c(0.02, 0.05, 0.08, 0.11), limits = c(0.02, 0.12)) +
+#  
+#   #Annotate Tukey results
+#   annotate("text", 1.1 ,0.095, label = "A", fontface =2,family = "Times New Roman", size=4)+
+#   annotate("text", 2.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+#   annotate("text", 3.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+#   annotate("text", 4.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+#   annotate("text", 5.1 ,0.078, label = "A", fontface =2,family = "Times New Roman", size=4) +
+# 
+#   #Add Themes so that all text is Times New Roman
+#   theme(axis.title.x=element_blank(), 
+#         axis.title.y = element_text(family = "Times New Roman"),
+#         axis.text.x=element_blank(), 
+#         axis.text.y= element_text(family = "Times New Roman"),
+#   #Legend work
+#   legend.position = "bottom",legend.box = "horizontal",
+#   legend.background = element_rect(fill="grey90",
+#                                   size=0.5, linetype="solid", 
+#                                   colour ="black"),
+#   legend.text = element_text(family = "Times New Roman")) + 
+#   scale_fill_manual(name = "", values = year.cols, labels = c("May 2015","March 2016", "November 2016", "July 2017",  "July 2019")) + 
+#   guides(fill = guide_legend(nrow = 3)) +
+#    #Annotate Multipanel plots
+#   annotate("label", 0.63 ,0.119, label = "(a)", fontface =2,family = "Times New Roman", size=4, fill = "gray90") 
+#   
+
+#####ALTERNATIVELY, if you want the n for each sample season listed
+p.1 <- ggplot(mpq.1cm, aes(x = year, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + labs(x="", y= "VRM") +
+  scale_y_continuous(breaks = c(0.02, 0.05, 0.08, 0.11), limits = c(0.02, 0.12)) +
+
+  #Annotate Tukey results
+  annotate("text", 1.1 ,0.095, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,0.063, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.1 ,0.078, label = "A", fontface =2,family = "Times New Roman", size=4) +
+
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(),
+        axis.text.y= element_text(family = "Times New Roman"),
+  #Legend work
+  legend.position = "bottom",legend.box = "horizontal",
+  legend.background = element_rect(fill="grey90",
+                                  size=0.5, linetype="solid",
+                                  colour ="black"),
+  legend.text = element_text(family = "Times New Roman")) +
+  scale_fill_manual(name = "", values = year.cols, labels = c("May 2015                (n = 26)",
+                                                              "March 2016             (n = 21)",
+                                                              "November 2016       (n = 26)",
+                                                              "July 2017                 (n = 30)",
+                                                              "July 2019                 (n = 24)")) +
+  guides(fill = guide_legend(nrow = 5)) +
+   #Annotate Multipanel plots
+  annotate("label", 0.63 ,0.119, label = "(a)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+
+
+#Surface Complexity
+p.2 <- ggplot(mpq.1cm, aes(x = year, y=rug, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Surface Complexity") +  
+  scale_y_continuous(breaks = c(1.20, 1.60, 2.00, 2.40, 2.80), limits = c(1.19, 2.85), labels=c("1.20", "1.60", "2.00", "2.40", "2.80")) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,2.38, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,1.97, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,1.95, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,2.05, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.1 ,2.05, label = "A", fontface =2,family = "Times New Roman", size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+       legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,2.84, label = "(b)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+
+#Fractal Dimension
+p.3 <- ggplot(mpq.1cm, aes(x = year, y=fractal.dimension, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Fractal Dimension") +  
+  scale_y_continuous(breaks = c(2.10, 2.15, 2.20, 2.25, 2.30, 2.35), limits = c(2.08, 2.35)) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,2.28, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,2.2, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,2.215, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,2.205, label = "B", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.15 ,2.225, label = "AB", fontface =2,family = "Times New Roman", size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y=  element_text(family = "Times New Roman"),       
+        legend.position="none") +
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,2.345, label = "(d)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+#Profile Curv Range
+p.4 <- ggplot(mpq.1cm, aes(x = year, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Pro Range") +  
+  scale_y_continuous(breaks = c(12.5, 13, 13.5, 14, 14.5, 15), limits = c(12.5, 14.5), labels = c("12.50", "13.00", "13.50", "14.00", "14.50", "15.00")) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,14.2, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,13.75, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 3.1 ,13.8, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 4.1 ,13.8, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 5.1 ,13.95, label = "A", fontface =2,family = "Times New Roman", size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,14.485, label = "(c)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#Planform Curv range
+p.5 <- ggplot(mpq.1cm, aes(x = year, y=plan.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Plan Range") +  
+  scale_y_continuous(breaks = c(11.75,12.25, 12.75, 13.25, 13.75, 14.25), limits = c(11.75, 14.5)) + 
+  #Annotate Tukey results
+  annotate("text", 1.1 ,14.25, label = "A", fontface =2,family = "Times New Roman", size=4)+
+  annotate("text", 2.1 ,13.82, label = "B", fontface =2, family = "Times New Roman",size=4)+
+  annotate("text", 3.1 ,13.82, label = "B", fontface =2,family = "Times New Roman",size=4)+
+  annotate("text", 4.1 ,13.68, label = "B", fontface =2,family = "Times New Roman",size=4)+
+  annotate("text", 5.15 ,13.98, label = "AB", fontface =2,family = "Times New Roman",size=4) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.63 ,14.45, label = "(e)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#### Create a legend. 
+#To Plot
+#1. Create Legend
+p_legend<-function(a.gplot){
+    tmp <- ggplot_gtable(ggplot_build(a.gplot))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    return(legend)
+}
+metric.legend <- p_legend(p.1) 
+
+
+#2. Arrange all together
+
+#Pdf life for exporting goes here...
+
+# grid.arrange(arrangeGrob(p.1 + theme(legend.position = "none"),p.2,p.3,p.4,p.5, metric.legend, layout_matrix = rbind(c(1,6), 
+#                                      c(2,4),
+#                                      c(3,5))))
+# library(grid)
+#grid.text("Expedition Years", x = unit(0.753, "npc"), y = unit(0.915, "npc"), gp = gpar(fontsize=15))
+# grid.text("Expedition", x = unit(0.75, "npc"), y = unit(0.895, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+# 
+
+
+
+#################################
+#################################
+#################################
+
+# #Export as nice figure with correct resolution
+jpeg(filename = "Fig2.Metrics~Year.With.n.jpeg", width = 30, height = 20, units = "cm", pointsize = 15, quality = 100, res = 400)
+
+grid.arrange(arrangeGrob(p.1 + theme(legend.position = "none"),p.2,p.3,p.4,p.5, metric.legend, layout_matrix = rbind(c(1,6),
+                                     c(2,4),
+                                     c(3,5))))
+
+grid.text("Expedition", x = unit(0.75, "npc"), y = unit(0.94, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+
+dev.off()
+
+
+```
+
+
+## Figure 3: Complexity Changes across levels of human Disturbance plot
+```{r Metrics by disturbance}
+#VRM
+p.h.1 <- ggplot(mpq.1cm, aes(x = hdist, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + labs(x="", y= "VRM") +  
+  scale_y_continuous(breaks = c(0.02, 0.05, 0.08, 0.11), limits = c(0.02, 0.12)) +
+   #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+  #Legend work
+  legend.position = "bottom",legend.box = "horizontal",
+  legend.background = element_rect(fill="grey90",
+                                  size=0.5, linetype="solid", 
+                                  colour ="black"),
+  legend.text = element_text(family = "Times New Roman")) + 
+  scale_fill_manual(name = "", values = year.cols, labels = c("May 2015", "November 2016", "July 2019", "March 2016", "July 2017")) + 
+  guides(fill = guide_legend(nrow = 3)) +
+  #Annotate Tukey results/# of each plot in the multipanel 
+   annotate("label", 0.55 ,0.119, label = "(a)", fontface =2,family = "Times New Roman", size=4, fill = "gray90") 
+
+
+#Surface Complexity
+p.h.2 <- ggplot(mpq.1cm, aes(x = hdist, y=rug, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Surface Complexity") +  
+  scale_y_continuous(breaks = c(1.20, 1.60, 2.00, 2.40, 2.80), limits = c(1.19, 2.85), labels=c("1.20", "1.60", "2.00", "2.40", "2.80")) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+       legend.position="none")+
+ #Annotate Multipanel plots
+ annotate("label", 0.55 ,2.84, label = "(b)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+      
+#Fractal Dimension
+p.h.3 <- ggplot(mpq.1cm, aes(x = hdist, y=fractal.dimension, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Disturbance", y= "Fractal Dimension") +  
+  scale_y_continuous(breaks = c(2.10, 2.15, 2.20, 2.25, 2.30, 2.35), limits = c(2.08, 2.35)) +   #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y=  element_text(family = "Times New Roman"),       
+        legend.position="none") +
+ #Annotate Multipanel plots
+  annotate("label", 0.55 ,2.345, label = "(d)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+#Profile Curv Range
+p.h.4 <- ggplot(mpq.1cm, aes(x = hdist, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Pro Range") +  
+  scale_y_continuous(breaks = c(12.5, 13, 13.5, 14, 14.5, 15), limits = c(12.5, 14.5), labels = c("12.50", "13.00", "13.50", "14.00", "14.50", "15.00")) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.55 ,14.48, label = "(c)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#Planform Curv range
+p.h.5 <- ggplot(mpq.1cm, aes(x = hdist, y=plan.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Disturbance", y= "Plan Range") +  
+  scale_y_continuous(breaks = c(11.75,12.25, 12.75, 13.25, 13.75, 14.25), limits = c(11.75, 14.5)) + 
+   #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.55 ,14.45, label = "(e)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#### Create a legend. 
+#To Plot
+#1. Create Legend
+p_legend<-function(a.gplot){
+    tmp <- ggplot_gtable(ggplot_build(a.gplot))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    return(legend)
+}
+disturbance.legend <- p_legend(p.1) 
+
+
+# #2. Arrange all together
+# grid.arrange(arrangeGrob(p.h.1 + theme(legend.position = "none"),p.h.2,p.h.3,p.h.4,p.h.5, disturbance.legend, layout_matrix = rbind(c(1,6), 
+#                                      c(2,4),
+#                                      c(3,5))))
+# #Add Legend title with this code
+# grid.text("Expedition Years", x = unit(0.753, "npc"), y = unit(0.915, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+
+
+
+#################################
+#####3. Export as JPEG ##########
+#################################
+
+# #Export as nice figure with correct resolution
+jpeg(filename = "Fig3.Metrics~Hdist.jpeg", width = 30, height = 20, units = "cm", pointsize = 15, quality = 100, res = 400)
+
+grid.arrange(arrangeGrob(p.h.1 + theme(legend.position = "none"),p.h.2,p.h.3,p.h.4,p.h.5, disturbance.legend, layout_matrix = rbind(c(1,6), 
+      c(2,4),
+      c(3,5))))
+
+#Add Legend title with this code
+grid.text("Expedition", x = unit(0.75, "npc"), y = unit(0.91, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+
+dev.off()
+
+```
+
+## Figure 4: Regional differences through timepoints (Don't worry about it too much just yet...)
+```{r Regional changes of metrics through time}
+vrm.region <- ggplot(mpq.1cm, aes(x = island.side, y=vrm, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "VRM") +  
+  scale_y_continuous(breaks = c(0.02, 0.05, 0.08, 0.11), limits = c(0.02, 0.12)) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), axis.text.y= element_text(family = "Times New Roman"))+
+ #Annotate Multipanel plots
+  annotate("label", 0.48 ,0.1195, label = "i", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+  
+
+#Surface Complexity
+sc.region <- ggplot(mpq.1cm, aes(x = island.side, y=rug, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Surface Complexity") +  
+  scale_y_continuous(breaks = c(1.20, 1.60, 2.00, 2.40, 2.80), limits = c(1.19, 2.85), labels=c("1.20", "1.60", "2.00", "2.40", "2.80")) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+       legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.48 ,2.845, label = "ii", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+       
+
+
+
+#Fractal Dimension
+frac.region <- ggplot(mpq.1cm, aes(x = island.side, y=fractal.dimension, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Fractal Dimension") +  
+  scale_y_continuous(breaks = c(2.10, 2.15, 2.20, 2.25, 2.30, 2.35), limits = c(2.08, 2.35)) + 
+   #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y=  element_text(family = "Times New Roman"),       
+        legend.position="none") +
+ #Annotate Multipanel plots
+  annotate("label", 0.48 ,2.345, label = "iv", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+#Profile Curv Range
+pro.region <- ggplot(mpq.1cm, aes(x = island.side, y=pro.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="", y= "Pro Range") +  
+  scale_y_continuous(breaks = c(12.5, 13, 13.5, 14, 14.5, 15), limits = c(12.5, 14.5), labels = c("12.50", "13.00", "13.50", "14.00", "14.50", "15.00")) + 
+   #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.48 ,14.449, label = "iii", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#Planform Curv range
+plan.region <- ggplot(mpq.1cm, aes(x = island.side, y=plan.range.log, fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + year.colscale  + labs(x="Year", y= "Plan Range") +  
+  scale_y_continuous(breaks = c(11.75,12.25, 12.75, 13.25, 13.75, 14.25), limits = c(11.75, 14.5)) + 
+   #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+         legend.position="none")+
+ #Annotate Multipanel plots
+  annotate("label", 0.48 ,14.45, label = "v", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#### Create a legend. 
+#To Plot
+#1. Create Legend
+region_legend<-function(a.gplot){
+    tmp <- ggplot_gtable(ggplot_build(a.gplot))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    return(legend)
+}
+legend <- region_legend(vrm.region)
+
+
+#2. Arrange all together
+grid.arrange(arrangeGrob(vrm.region + theme(legend.position = "none"),sc.region,frac.region,pro.region,plan.region, legend, layout_matrix = rbind(c(1,6),
+      c(2,4),
+     c(3,5))))
+ 
+
+
+#################################
+#####3. Export as JPEG ##########
+#################################
+
+# #Export as nice figure with correct resolution
+jpeg(filename = "Fig4.Metrics~Region.jpeg", width = 30, height = 20, units = "cm", pointsize = 15, quality = 100, res = 400)
+
+grid.arrange(arrangeGrob(vrm.region + theme(legend.position = "none"),sc.region,frac.region,pro.region,plan.region, legend, layout_matrix = rbind(c(1,6),
+      c(2,4),
+     c(3,5))))
+#  #Add Legend title with this code
+# grid.text("Expedition", x = unit(0.75, "npc"), y = unit(0.91, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+
+dev.off()
+
+```
+
+## Figure 4b. Regional Before/After changes 
+```{r Before/After Disturbance plots ~ region}
+regional.change <- mpq.1cm
+
+#Make a new collumn to put before/after in
+regional.change$Timepoint <- "a"
+
+#For Loop making 2015 = Before and 2016 --> = After
+for(i in c(1:nrow(regional.change))) {
+  if(regional.change$year[i]=="2015") {
+    regional.change$Timepoint[i] <- "Before"
+  } else if(regional.change$year[i]=="2016a") {
+    regional.change$Timepoint[i] <- "After"
+  } else if(regional.change$year[i]=="2016b") {
+    regional.change$Timepoint[i] <- "After"
+  } else if(regional.change$year[i]=="2017") {
+    regional.change$Timepoint[i] <- "After"
+  } else if(regional.change$year[i]=="2019") {
+    regional.change$Timepoint[i] <- "After"
+  }}
+
+#Levels for timepoint
+levels(regional.change$Timepoint)
+regional.change$Timepoint <- factor(regional.change$Timepoint, levels = c("Before", "After"))
+levels(regional.change$Timepoint)
+
+#Levels for island.side
+levels(regional.change$island.side)
+regional.change$island.side <- factor(regional.change$island.side, levels = c("Windward", "Leeward"))
+levels(regional.change$island.side)
+
+#Set Colourscale for before/after to match previous plots
+region.cols <-  c("#FDAE61","#ABD9E9") 
+region.colscale<- scale_fill_manual(name="", values=region.cols, breaks=c("Before", "After"))
+
+
+
+##### PLOT IT FOR ALL METRICS ##### 
+vrm.region <- ggplot(regional.change, aes(x = island.side, y=vrm, fill= Timepoint)) + geom_boxplot() + theme_classic(base_size = 16) + labs(x="", y= "VRM") +   
+  scale_y_continuous(breaks = c(0.02, 0.05, 0.08, 0.11), limits = c(0.02, 0.12)) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"),
+   #Legend work
+  legend.position = "bottom",legend.box = "horizontal",
+  legend.background = element_rect(fill="grey90",
+                                  size=0.5, linetype="solid", 
+                                  colour ="black"),
+  legend.text = element_text(family = "Times New Roman")) + 
+  scale_fill_manual(name = "", values = region.cols, labels = c("Pre-Heatwave","Post-Heatwave")) + 
+  guides(fill = guide_legend(nrow = 3)) +
+ #Annotate Multipanel plots
+  annotate("label", 0.55 ,0.119, label = "(a)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+sc.region <- ggplot(regional.change, aes(x = island.side, y=rug, fill= Timepoint)) + geom_boxplot() + theme_classic(base_size = 16) + region.colscale  + labs(x="", y= "Surface Complexity") +  
+  scale_y_continuous(breaks = c(1.20, 1.60, 2.00, 2.40, 2.80), limits = c(1.19, 2.85), labels=c("1.20", "1.60", "2.00", "2.40", "2.80")) + #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"), 
+        legend.position="none") +
+ #Annotate Multipanel plots
+ annotate("label", 0.55 ,2.84, label = "(b)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+  
+
+frac.region <- ggplot(regional.change, aes(x = island.side, y=fractal.dimension, fill= Timepoint)) + geom_boxplot() + theme_classic(base_size = 16) + region.colscale  + labs(x="Exposure", y= "Fractal Dimension") +  
+  scale_y_continuous(breaks = c(2.10, 2.15, 2.20, 2.25, 2.30, 2.35), limits = c(2.08, 2.35)) + #Add Themes so that all text is Times New Roman
+   theme(axis.title.x = element_text(family = "Times New Roman"), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x = element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"), 
+        legend.position="none") + 
+  #Annotate Multipanel plots
+  annotate("label", 0.55 ,2.345, label = "(d)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+pro.region <- ggplot(regional.change, aes(x = island.side, y=pro.range.log, fill= Timepoint)) + geom_boxplot() + theme_classic(base_size = 16) + region.colscale  + labs(x="", y= "Pro Range") +  
+  scale_y_continuous(breaks = c(12.5, 13, 13.5, 14, 14.5, 15), limits = c(12.5, 14.5), labels = c("12.50", "13.00", "13.50", "14.00", "14.50", "15.00")) + 
+  #Add Themes so that all text is Times New Roman
+theme(axis.title.x=element_blank(), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x=element_blank(), 
+        axis.text.y= element_text(family = "Times New Roman"), 
+        legend.position="none") +
+  #Annotate Multipanel plots
+  annotate("label", 0.55 ,14.48, label = "(c)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+#Planform Curv range
+plan.region <- ggplot(regional.change, aes(x = island.side, y=plan.range.log, fill= Timepoint)) + geom_boxplot() + theme_classic(base_size = 16) + region.colscale  + labs(x="Exposure", y= "Plan Range") +  
+  scale_y_continuous(breaks = c(11.75,12.25, 12.75, 13.25, 13.75, 14.25), limits = c(11.75, 14.5)) + 
+  #Add Themes so that all text is Times New Roman
+  theme( axis.title.x = element_text(family = "Times New Roman"), 
+        axis.title.y = element_text(family = "Times New Roman"),
+         axis.text.x = element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"), 
+        legend.position="none") +
+  #Annotate Multipanel plots
+  annotate("label", 0.55 ,14.45, label = "(e)", fontface =2,family = "Times New Roman", size=4, fill = "gray90")
+
+
+
+#### Create a legend. 
+#To Plot
+#1. Create Legend
+p_legend<-function(a.gplot){
+    tmp <- ggplot_gtable(ggplot_build(a.gplot))
+    leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+    legend <- tmp$grobs[[leg]]
+    return(legend)
+}
+disturbance.legend <- p_legend(vrm.region) 
+
+
+#2. Arrange all together
+grid.arrange(arrangeGrob(vrm.region + theme(legend.position = "none"),sc.region, frac.region, pro.region, plan.region, disturbance.legend, layout_matrix = rbind(c(1,6),
+                                     c(2,4),
+                                     c(3,5))))
+
+#Add Legend title with this code
+grid.text("Heatwave Status", x = unit(0.7498, "npc"), y = unit(0.91, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+
+
+
+#################################
+#####3. Export as JPEG ##########
+#################################
+# 
+# #Export as nice figure with correct resolution
+jpeg(filename = "Fig4.Metrics~Region.b4.after.jpeg", width = 30, height = 20, units = "cm", pointsize = 15, quality = 100, res = 400)
+
+grid.arrange(arrangeGrob(vrm.region + theme(legend.position = "none"),sc.region, frac.region, pro.region, plan.region, disturbance.legend, layout_matrix = rbind(c(1,6),
+                                     c(2,4),
+                                     c(3,5))))
+
+#Add Legend title with this code
+grid.text("Heatwave Status", x = unit(0.7498, "npc"), y = unit(0.91, "npc"), gp = gpar(fontsize=15, fontface = "bold",family = "Times New Roman"))
+
+dev.off()
+
+
+```
+
+
+## Figure 5: Idea if we stick with RF's as is - Changes in % cover of top morphologies
+```{r Original good plot}
+mpq.rf <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_1cm_Data_11Jan21.csv", row.names=1)
+
+#Subset entire dataset and see if any interesting relationships exist
+mpq.morph.all <- mpq.rf[c(1,20:41)]
+
+#Transform all dataset to long format
+mpq.morph.all.t <- gather(mpq.morph.all, morphology, per.cover, Dead_Branching:SoftCoral_Plating, factor_key=TRUE)
+
+#Make year a character
+str(mpq.morph.all.t)
+mpq.morph.all.t$year <- as.character((mpq.morph.all.t$year))
+
+#plot it to see
+# ggplot(mpq.morph.all.t, aes(x=morphology , y=per.cover , fill= year)) + geom_boxplot() + theme_classic(base_size = 16) + theme(plot.margin = unit(c(1,1,3,1), "cm")) + theme(legend.position = "none") +  theme(axis.text.x = element_text(angle = 270, vjust = 0.5, hjust=1))
+
+
+#Repeat process here with top morphologies I want to look at
+mpq.top.complex <- subset(mpq.rf, select = c("year", "Live_Branching", "Live_Foliose", "Live_Tabulate", "Live_SubMassive","Rubble", "Dead_Branching", "Dead_Foliose", "Dead_Tabulate", "Dead_Massive", "Live_Porites"))
+
+
+#Transform dataset to long format
+mpq.top.morphs <- gather(mpq.top.complex, morphology, per.cover, Live_Branching:Live_Porites, factor_key=TRUE)
+
+#Make year a character
+str(mpq.top.morphs)
+mpq.top.morphs$year <- as.character((mpq.top.morphs$year))
+
+#plot it to see
+#ggplot(mpq.top.morphs, aes(x=morphology , y=per.cover , fill= year)) + geom_boxplot() + theme_classic(base_size = 16)
+ 
+############### ############### ############### 
+############### PREP FOR FINAL GGPLOT ######### 
+############### ############### ############### 
+
+#Split up into indivdiual plots
+branching <- subset(mpq.top.morphs, morphology == "Live_Branching")
+foliose <- subset(mpq.top.morphs, morphology == "Live_Foliose")
+tabulate <- subset(mpq.top.morphs, morphology == "Live_Tabulate")
+submassive <- subset(mpq.top.morphs, morphology == "Live_SubMassive")
+porites <- subset(mpq.top.morphs, morphology == "Live_Porites")
+
+
+######## Creating the Plots
+### 1. Load in the PNG images, each scaled as 400 X 400 pixels in Photoshop
+branch.png <- readPNG("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Branching.scaled.png")
+tab.png <- readPNG("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Tabulate.scaled.png")
+fol.png <- readPNG("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Foliose.scaled.png")
+sub.png <- readPNG("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/Submassive.scaled.png")
+
+### 2. Transform PNG files to rasters
+br.raster <- rasterGrob(branch.png, interpolate=TRUE) 
+tab.raster <- rasterGrob(tab.png, interpolate=TRUE) 
+fol.raster <- rasterGrob(fol.png, interpolate=TRUE) 
+sub.raster <- rasterGrob(sub.png, interpolate=TRUE) 
+
+
+### 3. ggplot each of the multipanels I want separately
+
+#<- Tabulate ->
+tab <- ggplot(tabulate, aes(x=year , y=per.cover , fill= year)) + geom_boxplot() + labs(x="Year", y="% Tabulate") + year.colscale + theme_classic(base_size = 16)+ 
+  #Add Themes so that all text is Times New Roman
+    theme(axis.title.x=element_blank(),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_blank(),
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none")+
+  annotation_custom(
+    tab.raster,  xmin=2, xmax=3.7, ymin=14, ymax=35) + #Adds image to plot!
+  annotate("label", 0.6 ,32, label = "(a)", fontface =2,family = "Times New Roman", size=4, fill = "gray90") #Annotate Multipanel plots
+
+
+#<- Foliose ->
+fol <- ggplot(foliose, aes(x=year , y=per.cover , fill= year)) + geom_boxplot() + labs(x="Year", y="% Foliose") + 
+  year.colscale + theme_classic(base_size = 16) +  
+  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10), limits = c(0, 11)) + 
+ #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"),
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none")+
+  annotation_custom(
+    fol.raster,  xmin=2.3, xmax=3.6, ymin=4.5, ymax=12.5) + #Adds image to plot!
+  annotate("label", 0.6 ,11, label = "(c)", fontface =2,family = "Times New Roman", size=4, fill = "gray90") #Annotate Multipanel plots
+
+
+#<- Submassive ->
+sub <- ggplot(submassive, aes(x=year , y=per.cover , fill= year)) + geom_boxplot() + labs(x="Year", y="% Submassive") + year.colscale + theme_classic(base_size = 16) + 
+  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10), limits = c(0, 11)) +
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x = element_text(family = "Times New Roman"), 
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_text(family = "Times New Roman"), 
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none")+
+  annotation_custom(
+    sub.raster,  xmin=2.4, xmax=3.5, ymin=6, ymax=12) + #Adds image to plot!
+  annotate("label", 0.6 ,11, label = "(d)", fontface =2,family = "Times New Roman", size=4, fill = "gray90") #Annotate Multipanel plots
+  
+
+#<- Branching ->
+branch <- ggplot(branching, aes(x=year , y=per.cover , fill= year)) + geom_boxplot() + labs(x="", y="% Branching") + year.colscale + theme_classic(base_size = 16)+  
+  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10), limits = c(0, 11)) + 
+  #Add Themes so that all text is Times New Roman
+  theme(axis.title.x=element_blank(),
+        axis.title.y = element_text(family = "Times New Roman"),
+        axis.text.x= element_blank(),
+        axis.text.y= element_text(family = "Times New Roman"),
+        legend.position = "none") +
+  annotation_custom(
+    br.raster,  xmin=2.1, xmax=3.5, ymin=3.8, ymax=13.8) + #Adds image to plot!
+  annotate("label", 0.6 ,11, label = "(b)", fontface =2,family = "Times New Roman", size=4, fill = "gray90") #Annotate Multipanel plots
+
+###4. Arrange all panels together
+grid.arrange(arrangeGrob(tab),branch,fol,sub, layout_matrix = rbind(c(1,2),c(3,4)))
+
+#################################
+#####6. Export as JPEG/PNG ##########
+#################################
+
+# #Export as nice figure with correct resolution (jpeg)
+jpeg(filename = "Fig5.RF_Top.Morphs.pic.jpeg", width = 30, height = 20, units = "cm", pointsize = 15, quality = 100, res = 400)
+
+grid.arrange(arrangeGrob(tab),branch,fol,sub, layout_matrix = rbind(c(1,2),c(3,4)))
+
+dev.off()
+```
