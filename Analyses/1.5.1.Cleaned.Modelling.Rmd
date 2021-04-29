@@ -447,17 +447,21 @@ ggplot(mpq.1cm, aes(x=island.side, y=vrm)) + geom_boxplot()
 
 
 
-#Check top model set variance homogeneity
-par(mfrow=c(2,2))
-plot(vrm6)
-plot(vrm5)
+# #Check top model set variance homogeneity
+# par(mfrow=c(2,2))
+# plot(vrm6)
+# plot(vrm5)
 
 
 
+#Durbin-Watson Test for autocorrelation
+# vrm6 #Top model
+vrm.dw <- dwtest(vrm6, order.by = NULL,alternative = c("greater", "two.sided", "less"),
+       iterations = 15, exact = NULL, data = list())
+vrm.dw
 
-
-
-
+#Breusch-Godfrey Test (Null = there is no serial correlation of any order up to p.)
+bgtest(vrm ~ year * sqrt.hdist.cont + island.side, data = mpq.1cm, order=1) #P=0.9391
 
 ```
 
@@ -532,6 +536,16 @@ ggplot(mpq.1cm, aes(x=island.side, y=rug)) + geom_boxplot()
 par(mfrow=c(2,2))
 plot(rug5)
 
+#Durbin-Watson Test for autocorrelation
+# rug5 #Top model
+rug.dw <- dwtest(rug5, order.by = NULL,alternative = c("greater", "two.sided", "less"),
+       iterations = 15, exact = NULL, data = list())
+rug.dw
+
+#Breusch-Godfrey Test (Null = there is no serial correlation of any order up to p.)
+bgtest(rug ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm, order=1) #P=0.8985
+
+
 
 
 ```
@@ -593,6 +607,18 @@ ggplot(mpq.1cm, aes(x=island.side, y=fractal.dimension)) + geom_boxplot()
 par(mfrow=c(2,2))
 plot(fractal.dimension5)
 plot(fractal.dimension6)
+
+
+#Durbin-Watson Test for autocorrelation
+frac.dw <- dwtest(fractal.dimension5, order.by = NULL,alternative = c("greater", "two.sided", "less"),
+       iterations = 15, exact = NULL, data = list())
+frac.dw
+
+#Breusch-Godfrey Test (Null = there is no serial correlation of any order up to p.)
+bgtest(fractal.dimension ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm, order=1) #P=0.2364
+
+
+
 
 
 ```
@@ -667,6 +693,15 @@ pro.year <- emmeans(pro.range.log12, "year")
 pairs(pro.year) #2015-2017 sig different (2015-2016b close)
 
 
+#Durbin-Watson Test for autocorrelation
+pro.dw <- dwtest(pro.range.log5, order.by = NULL,alternative = c("greater", "two.sided", "less"),
+       iterations = 15, exact = NULL, data = list())
+pro.dw
+
+#Breusch-Godfrey Test (Null = there is no serial correlation of any order up to p.)
+bgtest(pro.range.log ~ year + sqrt.hdist.cont + island.side, data = mpq.1cm, order=1) #P=0.9443
+
+
 
 ```
 
@@ -728,6 +763,16 @@ plot(plan.range.log2)
 plot(plan.range.log5)
 
 
+#Durbin-Watson Test for autocorrelation
+plan.dw <- dwtest(plan.range.log2, order.by = NULL,alternative = c("greater", "two.sided", "less"),
+       iterations = 15, exact = NULL, data = list())
+plan.dw
+
+#Breusch-Godfrey Test (Null = there is no serial correlation of any order up to p.)
+bgtest(plan.range.log ~ year + sqrt.hdist.cont, data = mpq.1cm, order=1) #P=0.4421
+
+
+
 ```
 
 ## Habitat Volume
@@ -741,6 +786,12 @@ plot(plan.range.log5)
 hist(cc.2tps$volume.change)
 hist((cc.2tps$volume.change)^2)
 hist(1/(cc.2tps$volume.change))
+
+par(mfrow=c(1,1))
+
+str(cc.2tps$time.interval)
+#Change to character
+cc.2tps$time.interval <- as.character(cc.2tps$time.interval)
 
 
 #Models
@@ -775,6 +826,7 @@ summary(volume.change5)
 summary(volume.change6)
 summary(volume.change1)
 
+
 #Compute Range of each boxplot
 cc.2015to2017 <- cc.2tps[c(1:26),c(1:10)]
 cc.2017to2019 <- cc.2tps[c(27:50),c(1:10)]
@@ -805,11 +857,24 @@ pairs(hab.vol7.mean) #Sig difference between
 
 
 #Check top model set variance homogeneity
-par(mfrow=c(2,2))
-plot(volume.change7)
-plot(volume.change5)
-plot(volume.change6)
-plot(volume.change1)
+# par(mfrow=c(2,2))
+# plot(volume.change7)
+# plot(volume.change5)
+# plot(volume.change6)
+# plot(volume.change1)
+
+#Durbin-Watson Test for autocorrelation
+habvol.dw <- dwtest(volume.change7, order.by = NULL,alternative = c("greater", "two.sided", "less"),
+       iterations = 15, exact = NULL, data = list())
+habvol.dw
+
+
+#Breusch-Godfrey Test (Null = there is no serial correlation of any order up to p.)
+bgtest(volume.change~ time.interval + island.side, data = cc.2tps, order=1) #P=0.505
+
+
+
+
 
 
 ```
@@ -1234,10 +1299,6 @@ plan.range.8cm.mean <- emmeans(plan.range.log2.8cm, "year")
 pairs(plan.range.8cm.mean)
 
 
-#Compare top two models
-anova(plan.range.log12.8cm) #Random Effect included
-anova(plan.range.log4.8cm) #Fixed effect of human disturbance
-
 
 #Model Variance test
 par(mfrow=c(2,2))
@@ -1247,5 +1308,27 @@ plot(plan.range.log5.8cm)
 
 ```
 
+
+# Prepare data for publication upload
+```{r}
+#IE: Make this into R data
+mpq.1cm <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complexity_FULL_1cm_Data_14Jan21.csv", row.names=1)
+colnames(mpq.1cm)
+mpq.structure <- subset(mpq.1cm, select = c("year", "pub.site", "site", "ppq", "hum_dist", "sqrt.hdist.cont", "island.side", "vrm", "rug", "fractal.dimension",  "pro.range.log", "plan.range.log"))
+
+#Change colnames
+names(mpq.structure)[names(mpq.structure) == "rug"] <- "sc" #rug to sc
+names(mpq.structure)[names(mpq.structure) == "pro.range.log"] <- "pro.range" #pro.range.log to pro.range
+names(mpq.structure)[names(mpq.structure) == "plan.range.log"] <- "plan.range"#plan.range.log to plan.range
+names(mpq.structure)[names(mpq.structure) == "hum_dist"] <- "gradient"#plan.range.log to plan.range
+names(mpq.structure)[names(mpq.structure) == "sqrt.hdist.cont"] <- "dist"#plan.range.log to plan.range
+names(mpq.structure)[names(mpq.structure) == "island.side"] <- "exposure"#plan.range.log to plan.range
+
+#Save as Rdata for publication
+save(mpq.structure, file = "StructuralComplexityData.RData")
+# OLD VERSION save(mpq.1cm, file = "StructuralComplexityData.RData")
+
+
+```
 
 

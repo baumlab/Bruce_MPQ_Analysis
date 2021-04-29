@@ -56,13 +56,25 @@ library(lmtest) #Durbin-Watson Test
 
 #Random Forest Data
 mpq.rf <- read.csv("~/Desktop/GitHub/Bruce_MPQ_Analysis/Data/BaumLab_Complex+Digitization_SEMI_1cm_Data_11Jan21.csv", row.names=1)
- 
-nrow(mpq.rf) #80
 
 #Rename Porites to Mounding_Lobate
 colnames(mpq.rf)
 names(mpq.rf)[names(mpq.rf) == 'Live_Porites'] <- 'Live_Mounding_Lobate'
 colnames(mpq.rf)
+
+#Prepare the dataframe to remove unnecessary collumns for publication code
+mpq.pub <- mpq.rf
+colnames(mpq.rf)
+
+metric.rf <- subset(mpq.rf, select = c("year", "vrm", "rug", "fractal.dimension", "pro.range.log", "plan.range.log","Dead_Branching", "Dead_Columnar", "Dead_Foliose", "Dead_Massive","Dead_SoftCoral","Dead_Tabulate","Live_Branching","Live_Columnar","Live_Encrusting","Live_Encrusting_Columnar" ,"Live_Foliose", "Live_FreeLiving", "Live_Massive", "Live_Mounding_Lobate", "Live_SubMassive","Live_Tabulate", "Macroalgae", "NonCoral_SubMassive", "Rubble", "Sand", "SoftCoral_Nodular","SoftCoral_Plating"))
+
+#Change colnames
+names(metric.rf)[names(metric.rf) == "rug"] <- "sc" #rug to sc
+names(metric.rf)[names(metric.rf) == "pro.range.log"] <- "pro.range" #pro.range.log to pro.range
+names(metric.rf)[names(metric.rf) == "plan.range.log"] <- "plan.range"#plan.range.log to plan.range
+
+#Save as Rdata for publication
+save(metric.rf, file = "Perc.Cover.Metrics.RData")
 
 
 #<-------Split RF Data into 2015 and 2017 & 2019 categories -------------------------->
@@ -129,7 +141,7 @@ plot(vrm.post.classify)
 varImpPlot(vrm.post.classify) #10.86% variance explained
 
 
-0.0##### <----- All years together ----->
+##### <----- All years together ----->
 #Create training data
 set.seed(2)
 nrow(vrm.all) #26 rows total
@@ -141,6 +153,8 @@ print(vrm.all.classify)
 plot(vrm.all.classify)
 varImpPlot(vrm.all.classify) #47.23% variance explained
 
+#Print tree copy       
+reprtree:::plot.getTree(vrm.all.classify)
 
 ```
 
